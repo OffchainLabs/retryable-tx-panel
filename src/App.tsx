@@ -1,167 +1,370 @@
-import logo from './logo.svg';
-import './App.css';
-import React from "react"
-import { Bridge } from "arb-ts"
-import { Wallet, providers } from "ethers"
-import Web3Modal from "web3modal";
+import "./App.css";
+import React from "react";
+import { BridgeHelper } from "arb-ts";
+import { JsonRpcProvider } from "@ethersproject/providers";
+import { BigNumber } from "@ethersproject/bignumber";
+import { toUtf8String } from "ethers/lib/utils";
+// import Web3Modal from "web3modal";
 
 interface RetryableTxs {
-  "l1BlockExplorerUrl": string,
-  "l2BlockExplorerUrl": string,
-  "l1Tx": string,
-  "l2Tx": string,
-  "autoRedeem": string,
-  "ticket": string
+  l1BlockExplorerUrl: string;
+  l2BlockExplorerUrl: string;
+  l1Tx?: string;
+  l2Tx?: string;
+  autoRedeem?: string;
+  ticket?: string;
+  failReason?: string;
+}
+interface ArbTransactionReceipt {
+  to: string;
+  from: string;
+  contractAddress: string;
+  transactionIndex: string;
+  root?: string;
+  gasUsed: string;
+  logsBloom: string;
+  blockHash: string;
+  transactionHash: string;
+  logs: Array<any>;
+  blockNumber: string;
+  confirmations: string;
+  cumulativeGasUsed: string;
+  byzantium: boolean;
+  status?: string;
+
+  returnData: string;
+  returnCode: string;
+
+  feeStats: {
+    prices: {
+      l1Transaction: string;
+      l1Calldata: string;
+      l2Storage: string;
+      l2Computation: string;
+    };
+    unitsUsed: {
+      l1Transaction: string;
+      l1Calldata: string;
+      l2Storage: string;
+      l2Computation: string;
+    };
+    paid: {
+      l1Transaction: string;
+      l1Calldata: string;
+      l2Storage: string;
+      l2Computation: string;
+    };
+  };
 }
 
+const getArbTransactionReceipt = async (
+  l2Provider: JsonRpcProvider,
+  txHash: string
+) => {
+  if (txHash.length !== 66) throw new Error("Invalid tx hash length");
+  return l2Provider
+    .send("eth_getTransactionReceipt", [txHash])
+    .then((res: ArbTransactionReceipt) => {
+      if (!res) throw new Error("No tx receipt received");
+      if (!res.returnCode)
+        throw new Error(
+          "Tx receipt doesn't have returnCode field. prob a l1 provider"
+        );
+      return res;
+    });
+};
+
+// const connectMetamask = async () => {
+//   const providerOptions = {};
+//   const web3Modal = new Web3Modal({
+//     // network: "mainnet", // optional
+//     // cacheProvider: true, // optional
+//     providerOptions, // required
+//   });
+//   const instance = await web3Modal.connect();
+//   const provider = new providers.Web3Provider(instance);
+//   const signer = provider.getSigner();
+//   TODO: what if a user ignores the metamask popup?
+// }
+
+type SUPPORTED_NETWORKS = "1" | "42161" | "4" | "421611";
+
+const retryableSearch = async (txHash: string): Promise<RetryableTxs> => {
+  const providers: { [key in SUPPORTED_NETWORKS]: JsonRpcProvider } = {
+    "1": new JsonRpcProvider(
+      "https://mainnet.infura.io/v3/8838d00c028a46449be87e666387c71a"
+    ),
+    "4": new JsonRpcProvider(
+      "https://rinkeby.infura.io/v3/8838d00c028a46449be87e666387c71a"
+    ),
+    "42161": new JsonRpcProvider("https://arb1.arbitrum.io/rpc"),
+    "421611": new JsonRpcProvider("https://rinkeby.arbitrum.io/rpc"),
+  };
+
+  const receipts = await Promise.all(
+    Object.keys(providers).map((key) => {
+      const provider = providers[key as SUPPORTED_NETWORKS];
+      const receipt = provider.send("eth_getTransactionReceipt", [txHash]);
+      return receipt
+        .then((receiptFields) =>
+          !receiptFields
+            ? undefined
+            : {
+                ...receiptFields,
+                network: key as SUPPORTED_NETWORKS,
+              }
+        )
+        .catch((err) => {
+          console.log(err);
+          return undefined;
+        });
+    })
+  );
+
+  const receipt = receipts.filter((rec) => rec);
+  if (receipt.length !== 1) {
+    console.log(receipt);
+    throw new Error("Something went down with receipts");
+  }
+
+  const chainId = BigNumber.from(receipt[0].network);
+  const isTestnet = chainId.toNumber() === 4 || chainId.toNumber() === 421611;
+  const l1BlockExplorerUrl = isTestnet
+    ? "https://rinkeby.etherscan.io/tx/"
+    : "https://etherscan.io/tx/";
+  const l2BlockExplorerUrl = isTestnet
+    ? "https://rinkeby-explorer.arbitrum.io/tx/"
+    : "https://arbiscan.io/tx/";
+
+  if (chainId.toNumber() === 1 || chainId.toNumber() === 4) {
+    console.log("looking for l1 tx hash");
+    const l1Receipt = receipt[0];
+    console.log("getting seq num");
+    const _seqNums = await BridgeHelper.getInboxSeqNumFromContractTransaction(
+      l1Receipt,
+      // TODO: add L1 inbox to arb-ts networks object
+      isTestnet
+        ? "0x578BAde599406A8fE3d24Fd7f7211c0911F5B29e"
+        : "0x4dbd4fc535ac27206064b68ffcf827b0a60bab3f"
+    );
+    const l2ChainId = isTestnet
+      ? BigNumber.from(421611)
+      : BigNumber.from(42161);
+
+    if (!_seqNums) throw new Error("no seq nums");
+    const seqNum = _seqNums[0];
+
+    const autoRedeemHash =
+      await BridgeHelper.calculateRetryableAutoRedeemTxnHash(seqNum, l2ChainId);
+    const userTxnHash = await BridgeHelper.calculateL2RetryableTransactionHash(
+      seqNum,
+      l2ChainId
+    );
+    const retryableTicketHash = await BridgeHelper.calculateL2TransactionHash(
+      seqNum,
+      l2ChainId
+    );
+
+    const getFailReason = async () => {
+      const l2Provider = providers[l2ChainId.toString() as SUPPORTED_NETWORKS];
+
+      try {
+        const userTxnRec = await getArbTransactionReceipt(
+          l2Provider,
+          userTxnHash
+        );
+
+        // TODO: does the user tx ever actually have useful info?
+
+        switch (BigNumber.from(userTxnRec.returnCode).toNumber()) {
+          case 0:
+            return "Your transaction went through. Maybe the explorer is lagging behind."
+          case 1:
+            return userTxnRec.returnData.length < 10
+              ? "The L2 user tx reverted. Not sure why."
+              : `Your user txn reverted. The revert reason is: ${toUtf8String(
+                  `0x${userTxnRec.returnData.substr(10)}`
+                )}`;
+          default:
+            break;
+        }
+        if (userTxnRec.returnCode === "0x1") return;
+      } catch (e) {
+        return "No user transaction found. You should attempt to redeem it.";
+        // TODO: show redeem button to trigger user tx
+        // TODO: should we look for attempted redeems that reverted?
+      }
+
+      try {
+        const retryableTicketRec = await getArbTransactionReceipt(
+          l2Provider,
+          retryableTicketHash
+        );
+
+        if (retryableTicketRec.status === "0x0")
+          return "Retryable ticket creation reverted. maxSubmissionCost is too low?";
+      } catch (e) {
+        return "Has your transaction been included in the L2 yet?";
+      }
+
+      try {
+        const autoRedeemRec = await getArbTransactionReceipt(
+          l2Provider,
+          autoRedeemHash
+        );
+
+        switch (BigNumber.from(autoRedeemRec.returnCode).toNumber()) {
+          case 1:
+            return autoRedeemRec.returnData.length < 10
+              ? "The auto redeem reverted. Not sure why."
+              : `Your auto redeem reverted. The revert reason is: ${toUtf8String(
+                  `0x${autoRedeemRec.returnData.substr(10)}`
+                )}`;
+          case 2:
+            return "auto redeem hit congestion in the chain";
+          case 8:
+            return "auto redeem _TxResultCode_exceededTxGasLimit";
+          case 10:
+            return "auto redeem TxResultCode_belowMinimumTxGas";
+          case 11:
+            return "auto redeem TxResultCode_gasPriceTooLow";
+          case 12:
+            return "auto redeem TxResultCode_noGasForAutoRedeem";
+          default:
+            break;
+        }
+      } catch (e) {
+        return "No autoredeem tx found.";
+      }
+      return undefined;
+    };
+
+    const failReason = await getFailReason();
+    console.log(failReason);
+
+    return {
+      l1BlockExplorerUrl: l1BlockExplorerUrl,
+      l2BlockExplorerUrl: l2BlockExplorerUrl,
+      l1Tx: txHash,
+      l2Tx: userTxnHash,
+      autoRedeem: autoRedeemHash,
+      ticket: retryableTicketHash,
+      failReason: failReason,
+    };
+  } else if (chainId.toNumber() === 42161 || chainId.toNumber() === 412611) {
+  } else {
+    throw new Error("Network not identified");
+  }
+  throw new Error(
+    "Hit unimplemented code path. Please provide L1 tx hash for now."
+  );
+};
+
 function App() {
-  const [input, setInput] = React.useState("");
+  const [input, setInput] = React.useState<string>("");
   const [loading, setLoading] = React.useState(false);
   // this is set as an object with user txs
-  const [userTxs, setUserTxs] = React.useState<undefined | RetryableTxs>(undefined);
+  const [userTxs, setUserTxs] = React.useState<undefined | RetryableTxs>(
+    undefined
+  );
 
   const handleChange = (event: any) => {
     setInput(event.target.value);
-  }
+  };
 
   const handleSubmit = (event: any) => {
-    setLoading(true)
+    setLoading(true);
     event.preventDefault();
 
-    if(input.length !== 66) {
-      alert("Invalid tx hash")
-      setLoading(false)
+    if (!input) return;
+
+    if (input.length !== 66) {
+      alert("Invalid tx hash");
+      setLoading(false);
       return;
     }
 
     retryableSearch(input)
-      .then(() => setLoading(false))
-      .catch((err) => {
-        console.log(err)
-        alert(err.toString());
-        setLoading(false)
+      .then((res) => {
+        console.log(res);
+        setUserTxs(res);
+        setLoading(false);
       })
-  }
+      .catch((err) => {
+        console.log(err);
+        alert(err.toString());
+        setLoading(false);
+      });
+  };
 
-  const retryableSearch = async (l1TxHash: string) => {
-    const providerOptions = {};
-    const web3Modal = new Web3Modal({
-      // network: "mainnet", // optional
-      // cacheProvider: true, // optional
-      providerOptions // required
-    });
-    const instance = await web3Modal.connect();
-    const provider = new providers.Web3Provider(instance);
-    const signer = provider.getSigner();
-    // TODO: what if a user ignores the metamask popup?
-
-    let l1Provider: providers.JsonRpcProvider;
-    let l2Provider: providers.JsonRpcProvider;
-    let l1BlockExplorerUrl: string;
-    let l2BlockExplorerUrl: string;
-    
-    const chainId = await signer.getChainId()
-    if(chainId === 42161) {
-      console.log("connected to correct L2 mainnet network")
-      l1Provider = new providers.JsonRpcProvider("https://mainnet.infura.io/v3/8838d00c028a46449be87e666387c71a")
-      l2Provider = signer.provider
-      l1BlockExplorerUrl = "https://etherscan.io/tx/"
-      l2BlockExplorerUrl = "https://arbiscan.io/tx/"
-    } else if(chainId === 421611) {
-      console.log("connected to correct L2 rinkeby network")
-      l1Provider = new providers.JsonRpcProvider("https://rinkeby.infura.io/v3/8838d00c028a46449be87e666387c71a")
-      l2Provider = signer.provider
-      l1BlockExplorerUrl = "https://rinkeby.etherscan.io/tx/"
-      l2BlockExplorerUrl = "https://rinkeby-explorer.arbitrum.io/tx/"
-    } else if(chainId === 1) {
-      // TODO: use addCustomNetwork from metamask
-      throw new Error("instead change your metamask to connect to arb1")
-    } else if(chainId === 4) {
-      // TODO: use addCustomNetwork from metamask
-      throw new Error("instead change your metamask to connect to arb rinkeby")
-    } else {
-      throw new Error(`Chain id ${chainId} not recognised`)
-    }
-
-    // TODO: if user on rinkeby, try looking for L1 tx hash on mainnet
-    // TODO: use metamask instead of random wallet
-    const wallet = Wallet.createRandom()
-    const bridge = await Bridge.init(wallet.connect(l1Provider), wallet.connect(l2Provider))
-    
-    console.log("looking for l1 tx hash")
-    const l1Receipt = await bridge.getL1Transaction(l1TxHash).catch(err => {
-      throw new Error("can't get L1 receipt. are you connected to the correct network?")
-    })
-    console.log("getting seq num")
-    const _seqNums = await bridge.getInboxSeqNumFromContractTransaction(l1Receipt)
-
-    if (!_seqNums) throw new Error('no seq nums')
-    const seqNum = _seqNums[0]
-
-    const autoRedeemHash = await bridge.calculateRetryableAutoRedeemTxnHash(
-      seqNum
-    )
-    const redeemTxnHash = await bridge.calculateL2RetryableTransactionHash(seqNum)
-    const retryableTicketHash = await bridge.calculateL2TransactionHash(seqNum)
-
-
-    setUserTxs({
-      "l1BlockExplorerUrl": l1BlockExplorerUrl,
-      "l2BlockExplorerUrl": l2BlockExplorerUrl,
-      "l1Tx": l1TxHash,
-      "l2Tx": redeemTxnHash,
-      "autoRedeem": autoRedeemHash,
-      "ticket": retryableTicketHash
-    })
-
-    // TODO: get receipts and infer what failed
-
-    // const autoRedeemRec = await l2Provider.getTransactionReceipt(autoRedeemHash)
-    // const redeemTxnRec = await l2Provider.getTransactionReceipt(redeemTxnHash)
-    // const retryableTicketRec = await l2Provider.getTransactionReceipt(
-    //   retryableTicketHash
-    // )
-  }
+  if (loading) return <p>Loading...</p>;
 
   return (
-    <div className="App">
-      <header className="App-header">
-        <p>Arbitrum Retryables Panel</p>
-        <img src={logo} className="App-logo" alt="logo" />
-        <p>
-          Paste your L1 tx hash below and find out whats up with your L1 to L2 tx
-        </p>
-      { !loading &&
+    <div>
+      <div>
         <form onSubmit={handleSubmit}>
-          <label>
-            <input value={input} onChange={handleChange} />
-          </label>
-          <input type="submit" value="Submit" />
+          <div className="form-container">
+            <input
+              autoFocus
+              placeholder="Tx hash"
+              value={input}
+              onChange={handleChange}
+              className="input-style"
+            />
+            <input type="submit" value="Submit" />
+          </div>
         </form>
-      }
-      { loading &&
-        <p>Loading...</p>
-      }
-      { userTxs &&
+        <h6>
+          Paste your L1 tx hash above and find out whats up with your L1 to L2
+          retryable.
+        </h6>
+      </div>
 
-        <p>
-          Got retryable txs. <br />
-          <a href={userTxs["l1BlockExplorerUrl"] + userTxs["l1Tx"]} rel="noreferrer" target="_blank">
-          L1 tx
-          </a> <br />
-          <a href={userTxs["l2BlockExplorerUrl"] + userTxs["ticket"]} rel="noreferrer" target="_blank">
-          Retryable Ticket
-          </a> <br />
-          <a href={userTxs["l2BlockExplorerUrl"] + userTxs["autoRedeem"]} rel="noreferrer" target="_blank">
-          Auto Redeem
-          </a> <br />
-          <a href={userTxs["l2BlockExplorerUrl"] + userTxs["l2Tx"]} rel="noreferrer" target="_blank">
-          L2 tx
-          </a> <br />
-        </p>
-      }
-
-      </header>
+      {userTxs && (
+        <>
+          {userTxs.failReason && (
+            <>
+              <h2>Your transaction failed, because:</h2>
+              <p>{userTxs.failReason}</p>
+            </>
+          )}
+          <h2>Useful links:</h2>
+          <p>
+            <a
+              href={userTxs["l1BlockExplorerUrl"] + userTxs["l1Tx"]}
+              rel="noreferrer"
+              target="_blank"
+            >
+              L1 tx
+            </a>
+            <br />
+            <a
+              href={userTxs["l2BlockExplorerUrl"] + userTxs["ticket"]}
+              rel="noreferrer"
+              target="_blank"
+            >
+              Retryable Ticket
+            </a>
+            <br />
+            <a
+              href={userTxs["l2BlockExplorerUrl"] + userTxs["autoRedeem"]}
+              rel="noreferrer"
+              target="_blank"
+            >
+              Auto Redeem
+            </a>
+            <br />
+            <a
+              href={userTxs["l2BlockExplorerUrl"] + userTxs["l2Tx"]}
+              rel="noreferrer"
+              target="_blank"
+            >
+              L2 tx
+            </a>
+            <br />
+          </p>
+        </>
+      )}
     </div>
   );
 }
