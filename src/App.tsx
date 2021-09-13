@@ -169,33 +169,6 @@ const retryableSearch = async (txHash: string): Promise<RetryableTxs> => {
       const l2Provider = providers[l2ChainId.toString() as SUPPORTED_NETWORKS];
 
       try {
-        const userTxnRec = await getArbTransactionReceipt(
-          l2Provider,
-          userTxnHash
-        );
-
-        // TODO: does the user tx ever actually have useful info?
-
-        switch (BigNumber.from(userTxnRec.returnCode).toNumber()) {
-          case 0:
-            return "Your transaction went through. Maybe the explorer is lagging behind."
-          case 1:
-            return userTxnRec.returnData.length < 10
-              ? "The L2 user tx reverted. Not sure why."
-              : `Your user txn reverted. The revert reason is: ${toUtf8String(
-                  `0x${userTxnRec.returnData.substr(10)}`
-                )}`;
-          default:
-            break;
-        }
-        if (userTxnRec.returnCode === "0x1") return;
-      } catch (e) {
-        return "No user transaction found. You should attempt to redeem it.";
-        // TODO: show redeem button to trigger user tx
-        // TODO: should we look for attempted redeems that reverted?
-      }
-
-      try {
         const retryableTicketRec = await getArbTransactionReceipt(
           l2Provider,
           retryableTicketHash
@@ -234,8 +207,37 @@ const retryableSearch = async (txHash: string): Promise<RetryableTxs> => {
             break;
         }
       } catch (e) {
+        // TODO: what if the tx was redeemed later
         return "No autoredeem tx found.";
       }
+
+      try {
+        const userTxnRec = await getArbTransactionReceipt(
+          l2Provider,
+          userTxnHash
+        );
+
+        // TODO: does the user tx ever actually have useful info?
+
+        switch (BigNumber.from(userTxnRec.returnCode).toNumber()) {
+          case 0:
+            return "Your transaction went through. Maybe the explorer is lagging behind."
+          case 1:
+            return userTxnRec.returnData.length < 10
+              ? "The L2 user tx reverted. Not sure why."
+              : `Your user txn reverted. The revert reason is: ${toUtf8String(
+                  `0x${userTxnRec.returnData.substr(10)}`
+                )}`;
+          default:
+            break;
+        }
+        if (userTxnRec.returnCode === "0x1") return;
+      } catch (e) {
+        return "No user transaction found. You should attempt to redeem it.";
+        // TODO: show redeem button to trigger user tx
+        // TODO: should we look for attempted redeems that reverted?
+      }
+
       return undefined;
     };
 
