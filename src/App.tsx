@@ -92,10 +92,10 @@ type SUPPORTED_NETWORKS = "1" | "42161" | "4" | "421611";
 const retryableSearch = async (txHash: string): Promise<RetryableTxs> => {
   const providers: { [key in SUPPORTED_NETWORKS]: JsonRpcProvider } = {
     "1": new JsonRpcProvider(
-      "https://mainnet.infura.io/v3/8838d00c028a46449be87e666387c71a"
+      "https://mainnet.infura.io/v3/" + process.env.REACT_APP_INFURA_KEY
     ),
     "4": new JsonRpcProvider(
-      "https://rinkeby.infura.io/v3/8838d00c028a46449be87e666387c71a"
+      "https://rinkeby.infura.io/v3/" + process.env.REACT_APP_INFURA_KEY
     ),
     "42161": new JsonRpcProvider("https://arb1.arbitrum.io/rpc"),
     "421611": new JsonRpcProvider("https://rinkeby.arbitrum.io/rpc"),
