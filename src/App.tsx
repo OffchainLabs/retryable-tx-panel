@@ -133,7 +133,7 @@ const retryableSearch = async (txHash: string): Promise<RetryableTxs> => {
     ? "https://rinkeby.etherscan.io/tx/"
     : "https://etherscan.io/tx/";
   const l2BlockExplorerUrl = isTestnet
-    ? "https://rinkeby-explorer.arbitrum.io/tx/"
+    ? "https://testnet.arbiscan.io/tx/"
     : "https://arbiscan.io/tx/";
 
   if (chainId.toNumber() === 1 || chainId.toNumber() === 4) {
