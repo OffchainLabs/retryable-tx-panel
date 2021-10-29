@@ -326,7 +326,7 @@ function App() {
         <>
           {userTxs.failReason && (
             <>
-              <h2>Your transaction failed, because:</h2>
+              <h2>Your transaction status:</h2>
               <p>{userTxs.failReason}</p>
             </>
           )}
