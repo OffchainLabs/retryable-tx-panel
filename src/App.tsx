@@ -4,9 +4,10 @@ import { BridgeHelper } from "arb-ts";
 import { JsonRpcProvider } from "@ethersproject/providers";
 import { BigNumber } from "@ethersproject/bignumber";
 import { toUtf8String } from "ethers/lib/utils";
+import Redeem from './Redeem'
 // import Web3Modal from "web3modal";
 
-interface RetryableTxs {
+export interface RetryableTxs {
   l1BlockExplorerUrl: string;
   l2BlockExplorerUrl: string;
   l1Tx?: string;
@@ -14,6 +15,7 @@ interface RetryableTxs {
   autoRedeem?: string;
   ticket?: string;
   failReason?: string;
+  l2ChainId: number
 }
 interface ArbTransactionReceipt {
   to: string;
@@ -87,6 +89,9 @@ const getArbTransactionReceipt = async (
 //   TODO: what if a user ignores the metamask popup?
 // }
 
+export const shouldAttemptRedeemText =
+  "No user transaction found. You should attempt to redeem it.";
+
 type SUPPORTED_NETWORKS = "1" | "42161" | "4" | "421611";
 
 const retryableSearch = async (txHash: string): Promise<RetryableTxs> => {
@@ -153,9 +158,8 @@ const retryableSearch = async (txHash: string): Promise<RetryableTxs> => {
 
     if (!_seqNums) throw new Error("no seq nums");
     const seqNum = _seqNums[0];
-
-    const autoRedeemHash =
-      await BridgeHelper.calculateRetryableAutoRedeemTxnHash(seqNum, l2ChainId);
+    // TODO: support many seqNums
+    const autoRedeemHash = await BridgeHelper.calculateRetryableAutoRedeemTxnHash(seqNum, l2ChainId);
     const userTxnHash = await BridgeHelper.calculateL2RetryableTransactionHash(
       seqNum,
       l2ChainId
@@ -221,7 +225,7 @@ const retryableSearch = async (txHash: string): Promise<RetryableTxs> => {
 
         switch (BigNumber.from(userTxnRec.returnCode).toNumber()) {
           case 0:
-            return "Your transaction went through. Maybe the explorer is lagging behind."
+            return "Your transaction succeeded 👍";
           case 1:
             return userTxnRec.returnData.length < 10
               ? "The L2 user tx reverted. Not sure why."
@@ -233,7 +237,7 @@ const retryableSearch = async (txHash: string): Promise<RetryableTxs> => {
         }
         if (userTxnRec.returnCode === "0x1") return;
       } catch (e) {
-        return "No user transaction found. You should attempt to redeem it.";
+        return shouldAttemptRedeemText;
         // TODO: show redeem button to trigger user tx
         // TODO: should we look for attempted redeems that reverted?
       }
@@ -252,8 +256,9 @@ const retryableSearch = async (txHash: string): Promise<RetryableTxs> => {
       autoRedeem: autoRedeemHash,
       ticket: retryableTicketHash,
       failReason: failReason,
+      l2ChainId: l2ChainId.toNumber()
     };
-  } else if (chainId.toNumber() === 42161 || chainId.toNumber() === 412611) {
+  } else if (chainId.toNumber() === 42161 || chainId.toNumber() === 421611) {
   } else {
     throw new Error("Network not identified");
   }
@@ -328,6 +333,9 @@ function App() {
             <>
               <h2>Your transaction status:</h2>
               <p>{userTxs.failReason}</p>
+              <Redeem
+              userTxs={userTxs}
+              />
             </>
           )}
           <h2>Useful links:</h2>
