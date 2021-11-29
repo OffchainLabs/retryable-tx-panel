@@ -5,7 +5,18 @@ import { JsonRpcProvider } from "@ethersproject/providers";
 import { BigNumber } from "@ethersproject/bignumber";
 import { toUtf8String } from "ethers/lib/utils";
 import Redeem from './Redeem'
-// import Web3Modal from "web3modal";
+
+export enum Status {
+  CREATION_FAILURE,
+  NOT_FOUND,
+  REEXECUTABLE,
+  SUCCEEDED
+}
+
+export interface Result {
+  status: Status,
+  text: string
+}
 
 export interface RetryableTxs {
   l1BlockExplorerUrl: string;
@@ -14,7 +25,7 @@ export interface RetryableTxs {
   l2Tx?: string;
   autoRedeem?: string;
   ticket?: string;
-  failReason?: string;
+  result: Result;
   l2ChainId: number
 }
 interface ArbTransactionReceipt {
@@ -88,10 +99,6 @@ const getArbTransactionReceipt = async (
 //   const signer = provider.getSigner();
 //   TODO: what if a user ignores the metamask popup?
 // }
-
-export const shouldAttemptRedeemText =
-  "No user transaction found. You should attempt to redeem it.";
-
 type SUPPORTED_NETWORKS = "1" | "42161" | "4" | "421611";
 
 const retryableSearch = async (txHash: string): Promise<RetryableTxs> => {
@@ -169,7 +176,7 @@ const retryableSearch = async (txHash: string): Promise<RetryableTxs> => {
       l2ChainId
     );
 
-    const getFailReason = async () => {
+    const getResult = async (): Promise<Result> => {
       const l2Provider = providers[l2ChainId.toString() as SUPPORTED_NETWORKS];
 
       try {
@@ -179,9 +186,16 @@ const retryableSearch = async (txHash: string): Promise<RetryableTxs> => {
         );
 
         if (retryableTicketRec.status === "0x0")
-          return "Retryable ticket creation reverted. maxSubmissionCost is too low?";
+          return {
+            status: Status.CREATION_FAILURE,
+            text: "Retryable ticket creation reverted. maxSubmissionCost is too low?"
+          }
       } catch (e) {
-        return "Has your transaction been included in the L2 yet?";
+        return {
+          status: Status.NOT_FOUND,
+          text: "Has your transaction been included in the L2 yet?"
+
+        }
       }
 
       try {
@@ -192,27 +206,50 @@ const retryableSearch = async (txHash: string): Promise<RetryableTxs> => {
 
         switch (BigNumber.from(autoRedeemRec.returnCode).toNumber()) {
           case 1:
-            return autoRedeemRec.returnData.length < 10
+            return {
+              status: Status.REEXECUTABLE,
+              text: autoRedeemRec.returnData.length < 10
               ? "The auto redeem reverted. Not sure why."
               : `Your auto redeem reverted. The revert reason is: ${toUtf8String(
                   `0x${autoRedeemRec.returnData.substr(10)}`
-                )}`;
+                )}`
+            }
+            
           case 2:
-            return "auto redeem hit congestion in the chain";
+            return {
+              text: "auto redeem hit congestion in the chain",
+              status: Status.REEXECUTABLE
+            }
           case 8:
-            return "auto redeem _TxResultCode_exceededTxGasLimit";
+            return {
+              text: "auto redeem _TxResultCode_exceededTxGasLimit",
+              status: Status.REEXECUTABLE
+            }
           case 10:
-            return "auto redeem TxResultCode_belowMinimumTxGas";
+            return {
+              text: "auto redeem TxResultCode_belowMinimumTxGas",
+              status: Status.REEXECUTABLE
+            }
           case 11:
-            return "auto redeem TxResultCode_gasPriceTooLow";
+            return {
+              text: "auto redeem TxResultCode_gasPriceTooLow",
+              status: Status.REEXECUTABLE
+            }
           case 12:
-            return "auto redeem TxResultCode_noGasForAutoRedeem";
+            return {
+              text:  "auto redeem TxResultCode_noGasForAutoRedeem",
+              status: Status.REEXECUTABLE
+            }
           default:
             break;
         }
       } catch (e) {
         // TODO: what if the tx was redeemed later
-        return "No autoredeem tx found.";
+        // ;
+        return {
+          text:  "No autoredeem tx found.",
+          status: Status.NOT_FOUND
+        }
       }
 
       try {
@@ -225,28 +262,37 @@ const retryableSearch = async (txHash: string): Promise<RetryableTxs> => {
 
         switch (BigNumber.from(userTxnRec.returnCode).toNumber()) {
           case 0:
-            return "Your transaction succeeded 👍";
+            return {
+              status: Status.SUCCEEDED,
+              text: "Your transaction succeeded 👍"
+            }
           case 1:
-            return userTxnRec.returnData.length < 10
+            return{
+              status: Status.REEXECUTABLE,
+              text: userTxnRec.returnData.length < 10
               ? "The L2 user tx reverted. Not sure why."
               : `Your user txn reverted. The revert reason is: ${toUtf8String(
                   `0x${userTxnRec.returnData.substr(10)}`
-                )}`;
+                )}`
+            } ;
           default:
             break;
         }
-        if (userTxnRec.returnCode === "0x1") return;
+        return {
+          text:  "The L2 user tx reverted. Not sure why.",
+          status: Status.REEXECUTABLE
+        }
       } catch (e) {
-        return shouldAttemptRedeemText;
-        // TODO: show redeem button to trigger user tx
-        // TODO: should we look for attempted redeems that reverted?
+        return {
+          status: Status.REEXECUTABLE,
+          text:  "No user transaction found. You should attempt to redeem it."
+        }
+     
       }
 
-      return undefined;
     };
 
-    const failReason = await getFailReason();
-    console.log(failReason);
+    const result = await getResult();
 
     return {
       l1BlockExplorerUrl: l1BlockExplorerUrl,
@@ -255,7 +301,7 @@ const retryableSearch = async (txHash: string): Promise<RetryableTxs> => {
       l2Tx: userTxnHash,
       autoRedeem: autoRedeemHash,
       ticket: retryableTicketHash,
-      failReason: failReason,
+      result: result,
       l2ChainId: l2ChainId.toNumber()
     };
   } else if (chainId.toNumber() === 42161 || chainId.toNumber() === 421611) {
@@ -329,10 +375,10 @@ function App() {
 
       {userTxs && (
         <>
-          {userTxs.failReason && (
+          {userTxs.result && (
             <>
               <h2>Your transaction status:</h2>
-              <p>{userTxs.failReason}</p>
+              <p>{userTxs.result.text}</p>
               <Redeem
               userTxs={userTxs}
               />

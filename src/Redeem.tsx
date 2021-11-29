@@ -1,6 +1,6 @@
 import React, { useState, useEffect, useMemo } from "react";
 import { useWallet } from "@gimmixorg/use-wallet";
-import { RetryableTxs, shouldAttemptRedeemText } from "./App";
+import { RetryableTxs, Status } from "./App";
 import ethers from "ethers";
 import { ArbRetryableTx__factory } from "arb-ts";
 const chainIDToName = (chainID: number) => {
@@ -67,7 +67,7 @@ function Redeem({ userTxs }: { userTxs: RetryableTxs }) {
   console.warn("acc", account);
   console.warn("signer", signer);
 
-  const show = userTxs.failReason === shouldAttemptRedeemText;
+  const show = userTxs.result.status === Status.REEXECUTABLE;
   if (!show) return null;
   return (
     <div>
