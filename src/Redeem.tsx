@@ -18,24 +18,40 @@ const chainIDToName = (chainID: number) => {
   }
 };
 
-const redeem = async (
-  signer: ethers.providers.JsonRpcSigner,
-  userTxnHash: string
-) => {
-  const arbRetryableTx = ArbRetryableTx__factory.connect(
-    "0x000000000000000000000000000000000000006E",
-    signer
-  );
-  const res = await arbRetryableTx.redeem(userTxnHash);
-  await res.wait();
-  alert(`Successfuly redeemed! ${userTxnHash}`);
-};
-
 function Redeem({ userTxs }: { userTxs: RetryableTxs }) {
   const { account, connect, disconnect, provider } = useWallet();
   const [connectedNetworkId, setConnectedNetworkID] = useState<number | null>(
     null
   );
+  const [errorMessage, setErrorMessage] = useState<string | null>(null);
+
+  const redeem = async (
+    signer: ethers.providers.JsonRpcSigner,
+    userTxnHash: string
+  ) => {
+    const arbRetryableTx = ArbRetryableTx__factory.connect(
+      "0x000000000000000000000000000000000000006E",
+      signer
+    );
+    try {
+      const res = await arbRetryableTx.redeem(userTxnHash);
+      await res.wait();
+      alert(`Successfuly redeemed! ${userTxnHash}`);
+    } catch(e: any) {
+      if(e && e.message) {
+        let errorMsg = ""
+        errorMsg += e.message.toString()
+
+        if(e.data && e.data.message) {
+          errorMsg += " \n " + e.data.message.toString()
+        }
+        
+        setErrorMessage(errorMsg)
+      } else {
+        console.error(e)
+      }
+    }
+  };
 
   const signer = useMemo(() => {
     if (!provider) {
@@ -77,6 +93,7 @@ function Redeem({ userTxs }: { userTxs: RetryableTxs }) {
         <button onClick={() => connect()}>Connect Wallet To Redeem</button>
       )}
       <div>{redeemButton}</div>
+      {errorMessage && errorMessage}
     </div>
   );
 }

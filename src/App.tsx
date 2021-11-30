@@ -101,6 +101,8 @@ const getArbTransactionReceipt = async (
 // }
 type SUPPORTED_NETWORKS = "1" | "42161" | "4" | "421611";
 
+if(!process.env.REACT_APP_INFURA_KEY) throw new Error("No REACT_APP_INFURA_KEY set")
+
 const retryableSearch = async (txHash: string): Promise<RetryableTxs> => {
   const providers: { [key in SUPPORTED_NETWORKS]: JsonRpcProvider } = {
     "1": new JsonRpcProvider(
