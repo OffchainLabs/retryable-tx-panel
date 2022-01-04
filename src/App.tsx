@@ -249,8 +249,8 @@ const retryableSearch = async (txHash: string): Promise<RetryableTxs> => {
         // TODO: what if the tx was redeemed later
         // ;
         return {
-          text:  "No autoredeem tx found.",
-          status: Status.NOT_FOUND
+          text:  "The transaction was not automatically redeemed.",
+          status: Status.REEXECUTABLE
         }
       }
 
