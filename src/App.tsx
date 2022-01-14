@@ -1,10 +1,94 @@
 import "./App.css";
 import React from "react";
-import { BridgeHelper } from "arb-ts";
-import { JsonRpcProvider } from "@ethersproject/providers";
+// import { BridgeHelper } from "arb-ts";
+import {
+  L1ToL2MessageReader,
+  L1TransactionReceipt,
+  L1ToL2MessageStatus
+} from "arb-ts/dist/lib/message/L1ToL2Message";
+import { getRawArbTransactionReceipt } from "arb-ts/dist/lib/utils/lib";
+
+import {
+  L1Network,
+  getL2Network,
+  getL1Network
+} from "arb-ts/dist/lib/utils/networks";
+import { JsonRpcProvider, Provider } from "@ethersproject/providers";
 import { BigNumber } from "@ethersproject/bignumber";
 import { toUtf8String } from "ethers/lib/utils";
-import Redeem from './Redeem'
+import Redeem from "./Redeem";
+
+export enum L1ReceiptState {
+  EMPTY,
+  LOADING,
+  INVALID_INPUT_LENGTH,
+  NOT_FOUND,
+  FAILED,
+  NO_L1_L2_MESSAGES,
+  MESSAGES_FOUND
+}
+
+export enum AlertLevel {
+  RED,
+  YELLOW,
+  GREEN,
+  NONE
+}
+
+const receiptStateToDisplayableResult = (
+  l1ReceiptState: L1ReceiptState
+): {
+  text: string;
+  alertLevel: AlertLevel;
+} => {
+  switch (l1ReceiptState) {
+    case L1ReceiptState.EMPTY:
+      return {
+        text: "",
+        alertLevel: AlertLevel.NONE
+      };
+    case L1ReceiptState.LOADING:
+      return {
+        text: "Loading...",
+        alertLevel: AlertLevel.NONE
+      };
+    case L1ReceiptState.INVALID_INPUT_LENGTH:
+      return {
+        text: "Error: invalid transction hash",
+        alertLevel: AlertLevel.RED
+      };
+    case L1ReceiptState.NOT_FOUND:
+      return {
+        text: "L1 transaction not found",
+        alertLevel: AlertLevel.YELLOW
+      };
+    case L1ReceiptState.FAILED:
+      return {
+        text: "Error: L1 transaction reverted",
+        alertLevel: AlertLevel.RED
+      };
+    case L1ReceiptState.NO_L1_L2_MESSAGES:
+      return {
+        text: "No L1-to-L2 messages created by provided L1 transaction",
+        alertLevel: AlertLevel.YELLOW
+      };
+    case L1ReceiptState.MESSAGES_FOUND:
+      return {
+        text: "L1 to L2 messages found",
+        alertLevel: AlertLevel.GREEN
+      };
+  }
+};
+
+export interface L1ToL2MessageStatusDisplay {
+  text: string;
+  alertLevel: AlertLevel;
+  showRedeemButton: boolean;
+  retryableCreationId: string;
+  autoRedeemId: string;
+  l2TxHash: string;
+  explorerUrl: string;
+}
 
 export enum Status {
   CREATION_FAILURE,
@@ -14,8 +98,8 @@ export enum Status {
 }
 
 export interface Result {
-  status: Status,
-  text: string
+  status: Status;
+  text: string;
 }
 
 export interface RetryableTxs {
@@ -26,334 +110,241 @@ export interface RetryableTxs {
   autoRedeem?: string;
   ticket?: string;
   result: Result;
-  l2ChainId: number
-}
-interface ArbTransactionReceipt {
-  to: string;
-  from: string;
-  contractAddress: string;
-  transactionIndex: string;
-  root?: string;
-  gasUsed: string;
-  logsBloom: string;
-  blockHash: string;
-  transactionHash: string;
-  logs: Array<any>;
-  blockNumber: string;
-  confirmations: string;
-  cumulativeGasUsed: string;
-  byzantium: boolean;
-  status?: string;
-
-  returnData: string;
-  returnCode: string;
-
-  feeStats: {
-    prices: {
-      l1Transaction: string;
-      l1Calldata: string;
-      l2Storage: string;
-      l2Computation: string;
-    };
-    unitsUsed: {
-      l1Transaction: string;
-      l1Calldata: string;
-      l2Storage: string;
-      l2Computation: string;
-    };
-    paid: {
-      l1Transaction: string;
-      l1Calldata: string;
-      l2Storage: string;
-      l2Computation: string;
-    };
-  };
+  l2ChainId: number;
 }
 
-const getArbTransactionReceipt = async (
-  l2Provider: JsonRpcProvider,
-  txHash: string
-) => {
-  if (txHash.length !== 66) throw new Error("Invalid tx hash length");
-  return l2Provider
-    .send("eth_getTransactionReceipt", [txHash])
-    .then((res: ArbTransactionReceipt) => {
-      if (!res) throw new Error("No tx receipt received");
-      if (!res.returnCode)
-        throw new Error(
-          "Tx receipt doesn't have returnCode field. prob a l1 provider"
-        );
-      return res;
-    });
+if (!process.env.REACT_APP_INFURA_KEY)
+  throw new Error("No REACT_APP_INFURA_KEY set");
+
+const supportedL1Networks = {
+  "1": `https://mainnet.infura.io/v3/${process.env.REACT_APP_INFURA_KEY}`,
+  "4": `https://rinkeby.infura.io/v3/${process.env.REACT_APP_INFURA_KEY}`
 };
 
-// const connectMetamask = async () => {
-//   const providerOptions = {};
-//   const web3Modal = new Web3Modal({
-//     // network: "mainnet", // optional
-//     // cacheProvider: true, // optional
-//     providerOptions, // required
-//   });
-//   const instance = await web3Modal.connect();
-//   const provider = new providers.Web3Provider(instance);
-//   const signer = provider.getSigner();
-//   TODO: what if a user ignores the metamask popup?
-// }
-type SUPPORTED_NETWORKS = "1" | "42161" | "4" | "421611";
+const getL1TxnReceipt = async (txnHash: string) => {
+  for (let [chainID, rpcURL] of Object.entries(supportedL1Networks)) {
+    const l1Network = await getL1Network(chainID);
+    const l1Provider = await new JsonRpcProvider(rpcURL);
 
-if(!process.env.REACT_APP_INFURA_KEY) throw new Error("No REACT_APP_INFURA_KEY set")
-
-const retryableSearch = async (txHash: string): Promise<RetryableTxs> => {
-  const providers: { [key in SUPPORTED_NETWORKS]: JsonRpcProvider } = {
-    "1": new JsonRpcProvider(
-      "https://mainnet.infura.io/v3/" + process.env.REACT_APP_INFURA_KEY
-    ),
-    "4": new JsonRpcProvider(
-      "https://rinkeby.infura.io/v3/" + process.env.REACT_APP_INFURA_KEY
-    ),
-    "42161": new JsonRpcProvider("https://arb1.arbitrum.io/rpc"),
-    "421611": new JsonRpcProvider("https://rinkeby.arbitrum.io/rpc"),
-  };
-
-  const receipts = await Promise.all(
-    Object.keys(providers).map((key) => {
-      const provider = providers[key as SUPPORTED_NETWORKS];
-      const receipt = provider.send("eth_getTransactionReceipt", [txHash]);
-      return receipt
-        .then((receiptFields) =>
-          !receiptFields
-            ? undefined
-            : {
-                ...receiptFields,
-                network: key as SUPPORTED_NETWORKS,
-              }
-        )
-        .catch((err) => {
-          console.log(err);
-          return undefined;
-        });
-    })
-  );
-
-  const receipt = receipts.filter((rec) => rec);
-  if (receipt.length !== 1) {
-    console.log(receipt);
-    throw new Error("Something went down with receipts");
+    const rec = await l1Provider.getTransactionReceipt(txnHash);
+    if (rec) {
+      return {
+        l1TxnReceipt: new L1TransactionReceipt(rec),
+        l1Network,
+        l1Provider
+      };
+    }
   }
+};
 
-  const chainId = BigNumber.from(receipt[0].network);
-  const isTestnet = chainId.toNumber() === 4 || chainId.toNumber() === 421611;
-  const l1BlockExplorerUrl = isTestnet
-    ? "https://rinkeby.etherscan.io/tx/"
-    : "https://etherscan.io/tx/";
-  const l2BlockExplorerUrl = isTestnet
-    ? "https://testnet.arbiscan.io/tx/"
-    : "https://arbiscan.io/tx/";
+const getL1ToL2Messages = async (
+  l1TxnReceipt: L1TransactionReceipt,
+  l1Network: L1Network
+) => {
+  let allL1ToL2Messages: L1ToL2MessageReader[] = [];
 
-  if (chainId.toNumber() === 1 || chainId.toNumber() === 4) {
-    console.log("looking for l1 tx hash");
-    const l1Receipt = receipt[0];
-    console.log("getting seq num");
-    const _seqNums = await BridgeHelper.getInboxSeqNumFromContractTransaction(
-      l1Receipt,
-      // TODO: add L1 inbox to arb-ts networks object
-      isTestnet
-        ? "0x578BAde599406A8fE3d24Fd7f7211c0911F5B29e"
-        : "0x4dbd4fc535ac27206064b68ffcf827b0a60bab3f"
-    );
-    const l2ChainId = isTestnet
-      ? BigNumber.from(421611)
-      : BigNumber.from(42161);
+  for (let l2ChainID of l1Network.partnerChainIDs) {
+    // TODO: error handlle
+    const l2Network = await getL2Network(l2ChainID);
+    const l2Provider = new JsonRpcProvider(l2Network.rpcURL);
+    const l1ToL2Messages = await l1TxnReceipt.getL1ToL2Messages(l2Provider);
+    allL1ToL2Messages = allL1ToL2Messages.concat(l1ToL2Messages);
+  }
+  return allL1ToL2Messages;
+};
 
-    if (!_seqNums) throw new Error("no seq nums");
-    const seqNum = _seqNums[0];
-    // TODO: support many seqNums
-    const autoRedeemHash = await BridgeHelper.calculateRetryableAutoRedeemTxnHash(seqNum, l2ChainId);
-    const userTxnHash = await BridgeHelper.calculateL2RetryableTransactionHash(
-      seqNum,
-      l2ChainId
-    );
-    const retryableTicketHash = await BridgeHelper.calculateL2TransactionHash(
-      seqNum,
-      l2ChainId
-    );
+const l1ToL2MessageToStatusDisplay = async (
+  l1ToL2Message: L1ToL2MessageReader,
+  looksLikeEthDeposit: boolean
+): Promise<L1ToL2MessageStatusDisplay> => {
+  const { retryableCreationId, autoRedeemId, l2TxHash } = l1ToL2Message;
+  const messageStatus = await l1ToL2Message.status();
+  const { explorerUrl } = await getL2Network(l1ToL2Message.l2Provider);
+  switch (messageStatus) {
+    case L1ToL2MessageStatus.CREATION_FAILED:
+      return {
+        text:
+          "L2 message creation reverted; perhaps provided maxSubmissionCost was too low?",
+        alertLevel: AlertLevel.RED,
+        showRedeemButton: false,
+        retryableCreationId,
+        autoRedeemId,
+        l2TxHash,
+        explorerUrl
+      };
+    case L1ToL2MessageStatus.EXPIRED: {
+      return {
+        text: "Retryable ticket expired.",
+        alertLevel: AlertLevel.RED,
+        showRedeemButton: false,
+        retryableCreationId,
+        autoRedeemId,
+        l2TxHash,
+        explorerUrl
+      };
+    }
+    case L1ToL2MessageStatus.NOT_YET_CREATED: {
+      return {
+        text:
+          "L1 to L2 message initiated from L1, but not yet created — check again in a few minutes!",
+        alertLevel: AlertLevel.YELLOW,
+        showRedeemButton: false,
+        retryableCreationId,
+        autoRedeemId,
+        l2TxHash,
+        explorerUrl
+      };
+    }
 
-    const getResult = async (): Promise<Result> => {
-      const l2Provider = providers[l2ChainId.toString() as SUPPORTED_NETWORKS];
+    case L1ToL2MessageStatus.REDEEMED: {
+      const autoRedeemReceipt = await l1ToL2Message.getAutoRedeemReceipt();
 
-      try {
-        const retryableTicketRec = await getArbTransactionReceipt(
-          l2Provider,
-          retryableTicketHash
-        );
-
-        if (retryableTicketRec.status === "0x0")
-          return {
-            status: Status.CREATION_FAILURE,
-            text: "Retryable ticket creation reverted. maxSubmissionCost is too low?"
-          }
-      } catch (e) {
+      const text =
+        autoRedeemReceipt && autoRedeemReceipt.status === 1
+          ? "Success! 🎉 Your retryable was auto-executed."
+          : "Success! 🎉 Your retryable ticket has been executed directly on L2.";
+      return {
+        text: text,
+        alertLevel: AlertLevel.GREEN,
+        showRedeemButton: false,
+        retryableCreationId,
+        autoRedeemId,
+        l2TxHash,
+        explorerUrl
+      };
+    }
+    case L1ToL2MessageStatus.NOT_YET_REDEEMED: {
+      if (looksLikeEthDeposit) {
         return {
-          status: Status.NOT_FOUND,
-          text: "Has your transaction been included in the L2 yet?"
-
-        }
+          text: "Success! 🎉 Your Eth deposit has completed",
+          alertLevel: AlertLevel.GREEN,
+          showRedeemButton: false,
+          retryableCreationId,
+          autoRedeemId,
+          l2TxHash,
+          explorerUrl
+        };
       }
 
-      try {
-        const autoRedeemRec = await getArbTransactionReceipt(
-          l2Provider,
-          autoRedeemHash
-        );
+      const l2Provider = l1ToL2Message.l2Provider as JsonRpcProvider;
+      const autoRedeemRec = await getRawArbTransactionReceipt(
+        l2Provider,
+        l1ToL2Message.autoRedeemId
+      );
 
+      // sanity check; should never occur
+      if (autoRedeemRec && autoRedeemRec.status === "0x1") {
+        return {
+          text:
+            "WARNING: auto-redeem succeeded, but transaction not executed..??? Contact support",
+          alertLevel: AlertLevel.RED,
+          showRedeemButton: false,
+          retryableCreationId,
+          autoRedeemId,
+          l2TxHash,
+          explorerUrl
+        };
+      }
+
+      const text = (() => {
+        if (!autoRedeemRec) {
+          return "Auto-redeem not attempted; you can redeem it now:";
+        }
         switch (BigNumber.from(autoRedeemRec.returnCode).toNumber()) {
           case 1:
-            return {
-              status: Status.REEXECUTABLE,
-              text: autoRedeemRec.returnData.length < 10
-              ? "The auto redeem reverted. Not sure why."
-              : `Your auto redeem reverted. The revert reason is: ${toUtf8String(
-                  `0x${autoRedeemRec.returnData.substr(10)}`
-                )}`
-            }
-            
+            return `Your auto redeem reverted. The revert reason is: ${toUtf8String(
+              `0x${autoRedeemRec.returnData.substr(10)}. You can redeem it now:`
+            )}`;
+
           case 2:
-            return {
-              text: "auto redeem hit congestion in the chain",
-              status: Status.REEXECUTABLE
-            }
+            return "Auto redeem failed; hit congestion in the chain; you can redeem it now:";
           case 8:
-            return {
-              text: "auto redeem _TxResultCode_exceededTxGasLimit",
-              status: Status.REEXECUTABLE
-            }
+            return "auto redeem _TxResultCode_exceededTxGasLimit; you can redeem it now:";
           case 10:
-            return {
-              text: "auto redeem TxResultCode_belowMinimumTxGas",
-              status: Status.REEXECUTABLE
-            }
+            return "auto redeem TxResultCode_belowMinimumTxGas; you can redeem it now:";
           case 11:
-            return {
-              text: "auto redeem TxResultCode_gasPriceTooLow",
-              status: Status.REEXECUTABLE
-            }
+            return "auto redeem TxResultCode_gasPriceTooLow; you can redeem it now:";
           case 12:
-            return {
-              text:  "auto redeem TxResultCode_noGasForAutoRedeem",
-              status: Status.REEXECUTABLE
-            }
+            return "auto redeem TxResultCode_noGasForAutoRedeem; you can redeem it now:";
           default:
-            break;
+            return "auto redeem reverted; you can redeem it now:";
         }
-      } catch (e) {
-        // TODO: what if the tx was redeemed later
-        // ;
-        return {
-          text:  "The transaction was not automatically redeemed.",
-          status: Status.REEXECUTABLE
-        }
-      }
+      })();
+      return {
+        text,
+        alertLevel: AlertLevel.YELLOW,
+        showRedeemButton: true,
+        retryableCreationId,
+        autoRedeemId,
+        l2TxHash,
+        explorerUrl
+      };
+    }
 
-      try {
-        const userTxnRec = await getArbTransactionReceipt(
-          l2Provider,
-          userTxnHash
-        );
-
-        // TODO: does the user tx ever actually have useful info?
-
-        switch (BigNumber.from(userTxnRec.returnCode).toNumber()) {
-          case 0:
-            return {
-              status: Status.SUCCEEDED,
-              text: "Your transaction succeeded 👍"
-            }
-          case 1:
-            return{
-              status: Status.REEXECUTABLE,
-              text: userTxnRec.returnData.length < 10
-              ? "The L2 user tx reverted. Not sure why."
-              : `Your user txn reverted. The revert reason is: ${toUtf8String(
-                  `0x${userTxnRec.returnData.substr(10)}`
-                )}`
-            } ;
-          default:
-            break;
-        }
-        return {
-          text:  "The L2 user tx reverted. Not sure why.",
-          status: Status.REEXECUTABLE
-        }
-      } catch (e) {
-        return {
-          status: Status.REEXECUTABLE,
-          text:  "No user transaction found. You should attempt to redeem it."
-        }
-     
-      }
-
-    };
-
-    const result = await getResult();
-
-    return {
-      l1BlockExplorerUrl: l1BlockExplorerUrl,
-      l2BlockExplorerUrl: l2BlockExplorerUrl,
-      l1Tx: txHash,
-      l2Tx: userTxnHash,
-      autoRedeem: autoRedeemHash,
-      ticket: retryableTicketHash,
-      result: result,
-      l2ChainId: l2ChainId.toNumber()
-    };
-  } else if (chainId.toNumber() === 42161 || chainId.toNumber() === 421611) {
-  } else {
-    throw new Error("Network not identified");
+    default:
+      throw new Error("Uncaught L1ToL2MessageStatus type in switch statemmtn");
   }
-  throw new Error(
-    "Hit unimplemented code path. Please provide L1 tx hash for now."
-  );
 };
 
 function App() {
   const [input, setInput] = React.useState<string>("");
-  const [loading, setLoading] = React.useState(false);
-  // this is set as an object with user txs
-  const [userTxs, setUserTxs] = React.useState<undefined | RetryableTxs>(
-    undefined
+  const [l1TxnHashState, setL1TxnHashState] = React.useState<L1ReceiptState>(
+    L1ReceiptState.EMPTY
   );
+  const [l1ToL2MessagesDisplays, setl1ToL2MessagesDisplays] = React.useState<
+    L1ToL2MessageStatusDisplay[]
+  >([]);
+
+  const retryablesSearch = async (txHash: string) => {
+    setl1ToL2MessagesDisplays([]);
+    setL1TxnHashState(L1ReceiptState.LOADING);
+
+    if (txHash.length !== 66) {
+      return setL1TxnHashState(L1ReceiptState.INVALID_INPUT_LENGTH);
+    }
+    const receiptRes = await getL1TxnReceipt(txHash);
+    if (receiptRes === undefined) {
+      return setL1TxnHashState(L1ReceiptState.NOT_FOUND);
+    }
+    const { l1Network, l1TxnReceipt, l1Provider } = receiptRes;
+    if (l1TxnReceipt.status === 0) {
+      return setL1TxnHashState(L1ReceiptState.FAILED);
+    }
+
+    const l1ToL2Messages = await getL1ToL2Messages(l1TxnReceipt, l1Network);
+    if (l1ToL2Messages.length === 0) {
+      return setL1TxnHashState(L1ReceiptState.NO_L1_L2_MESSAGES);
+    }
+
+    setL1TxnHashState(L1ReceiptState.MESSAGES_FOUND);
+
+    const looksLikeEthDeposit = await l1TxnReceipt.looksLikeEthDeposit(
+      l1Provider
+    );
+
+    const l1ToL2MessageStatuses: L1ToL2MessageStatusDisplay[] = [];
+    for (let l1ToL2Message of l1ToL2Messages) {
+      const l1ToL2MessageStatus = await l1ToL2MessageToStatusDisplay(
+        l1ToL2Message,
+        looksLikeEthDeposit
+      );
+      l1ToL2MessageStatuses.push(l1ToL2MessageStatus);
+    }
+    setl1ToL2MessagesDisplays(l1ToL2MessageStatuses);
+  };
 
   const handleChange = (event: any) => {
     setInput(event.target.value);
   };
-
   const handleSubmit = (event: any) => {
-    setLoading(true);
     event.preventDefault();
-
-    if (!input) return;
-
-    if (input.length !== 66) {
-      alert("Invalid tx hash");
-      setLoading(false);
-      return;
-    }
-
-    retryableSearch(input)
-      .then((res) => {
-        console.log(res);
-        setUserTxs(res);
-        setLoading(false);
-      })
-      .catch((err) => {
-        console.log(err);
-        alert(err.toString());
-        setLoading(false);
-      });
+    retryablesSearch(input);
   };
 
-  if (loading) return <p>Loading...</p>;
-
+  const {
+    text: l1TxnResultText,
+    alertLevel: l1TxnResultLevel
+  } = receiptStateToDisplayableResult(l1TxnHashState);
   return (
     <div>
       <div>
@@ -375,54 +366,71 @@ function App() {
         </h6>
       </div>
 
-      {userTxs && (
-        <>
-          {userTxs.result && (
-            <>
-              <h2>Your transaction status:</h2>
-              <p>{userTxs.result.text}</p>
-              <Redeem
-              userTxs={userTxs}
-              />
-            </>
-          )}
-          <h2>Useful links:</h2>
-          <p>
-            <a
-              href={userTxs["l1BlockExplorerUrl"] + userTxs["l1Tx"]}
-              rel="noreferrer"
-              target="_blank"
-            >
-              L1 tx
-            </a>
-            <br />
-            <a
-              href={userTxs["l2BlockExplorerUrl"] + userTxs["ticket"]}
-              rel="noreferrer"
-              target="_blank"
-            >
-              Retryable Ticket
-            </a>
-            <br />
-            <a
-              href={userTxs["l2BlockExplorerUrl"] + userTxs["autoRedeem"]}
-              rel="noreferrer"
-              target="_blank"
-            >
-              Auto Redeem
-            </a>
-            <br />
-            <a
-              href={userTxs["l2BlockExplorerUrl"] + userTxs["l2Tx"]}
-              rel="noreferrer"
-              target="_blank"
-            >
-              L2 tx
-            </a>
-            <br />
-          </p>
-        </>
-      )}
+      <div> {l1TxnResultText} </div>
+      <br />
+      <div>
+        {" "}
+        {l1TxnHashState === L1ReceiptState.MESSAGES_FOUND &&
+        l1ToL2MessagesDisplays.length === 0
+          ? "loading messages..."
+          : null}{" "}
+      </div>
+
+      {l1ToL2MessagesDisplays.map((l1ToL2MessagesDisplay, i) => {
+        return (
+          <>
+            {
+              <>
+                <h2>Your transaction status:</h2>
+                <p>{l1ToL2MessagesDisplay.text}</p>
+                {/* <Redeem
+                userTxs={userTxs}
+                /> */}
+              </>
+            }
+            <h2>Txn links:</h2>
+            <p>
+              <br />
+              <a
+                href={
+                  l1ToL2MessagesDisplay.explorerUrl +
+                  "/tx/" +
+                  l1ToL2MessagesDisplay.retryableCreationId
+                }
+                rel="noreferrer"
+                target="_blank"
+              >
+                Retryable Ticket
+              </a>
+              <br />
+              <a
+                href={
+                  l1ToL2MessagesDisplay.explorerUrl +
+                  "/tx/" +
+                  l1ToL2MessagesDisplay.autoRedeemId
+                }
+                rel="noreferrer"
+                target="_blank"
+              >
+                Auto Redeem
+              </a>
+              <br />
+              <a
+                href={
+                  l1ToL2MessagesDisplay.explorerUrl +
+                  "/tx/" +
+                  l1ToL2MessagesDisplay.l2TxHash
+                }
+                rel="noreferrer"
+                target="_blank"
+              >
+                L2 tx
+              </a>
+              <br />
+            </p>
+          </>
+        );
+      })}
     </div>
   );
 }
