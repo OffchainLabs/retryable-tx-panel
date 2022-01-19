@@ -1,6 +1,6 @@
 import "./App.css";
-import React from "react";
-// import { BridgeHelper } from "arb-ts";
+import React, { useState, useMemo, useEffect } from "react";
+import { useWallet } from "@gimmixorg/use-wallet";
 import {
   L1ToL2MessageReader,
   L1TransactionReceipt,
@@ -10,6 +10,7 @@ import { getRawArbTransactionReceipt } from "arb-ts/dist/lib/utils/lib";
 
 import {
   L1Network,
+  L2Network,
   getL2Network,
   getL1Network
 } from "arb-ts/dist/lib/utils/networks";
@@ -33,6 +34,10 @@ export enum AlertLevel {
   YELLOW,
   GREEN,
   NONE
+}
+
+interface L1ToL2MessageReaderWithNetwork extends L1ToL2MessageReader {
+  l2Network: L2Network;
 }
 
 const receiptStateToDisplayableResult = (
@@ -84,10 +89,9 @@ export interface L1ToL2MessageStatusDisplay {
   text: string;
   alertLevel: AlertLevel;
   showRedeemButton: boolean;
-  retryableCreationId: string;
-  autoRedeemId: string;
-  l2TxHash: string;
   explorerUrl: string;
+  l2Network: L2Network;
+  l1ToL2Message: L1ToL2MessageReader;
 }
 
 export enum Status {
@@ -140,26 +144,42 @@ const getL1TxnReceipt = async (txnHash: string) => {
 const getL1ToL2Messages = async (
   l1TxnReceipt: L1TransactionReceipt,
   l1Network: L1Network
-) => {
-  let allL1ToL2Messages: L1ToL2MessageReader[] = [];
+): Promise<L1ToL2MessageReaderWithNetwork[]> => {
+  let allL1ToL2Messages: L1ToL2MessageReaderWithNetwork[] = [];
 
   for (let l2ChainID of l1Network.partnerChainIDs) {
     // TODO: error handlle
     const l2Network = await getL2Network(l2ChainID);
     const l2Provider = new JsonRpcProvider(l2Network.rpcURL);
-    const l1ToL2Messages = await l1TxnReceipt.getL1ToL2Messages(l2Provider);
-    allL1ToL2Messages = allL1ToL2Messages.concat(l1ToL2Messages);
+    const l1ToL2MessagesWithNetwork: L1ToL2MessageReaderWithNetwork[] = (
+      await l1TxnReceipt.getL1ToL2Messages(l2Provider)
+    ).map(l1ToL2Message => {
+      return Object.assign(l1ToL2Message, { l2Network });
+    });
+    allL1ToL2Messages = allL1ToL2Messages.concat(l1ToL2MessagesWithNetwork);
   }
   return allL1ToL2Messages;
 };
 
 const l1ToL2MessageToStatusDisplay = async (
-  l1ToL2Message: L1ToL2MessageReader,
+  l1ToL2Message: L1ToL2MessageReaderWithNetwork,
   looksLikeEthDeposit: boolean
 ): Promise<L1ToL2MessageStatusDisplay> => {
-  const { retryableCreationId, autoRedeemId, l2TxHash } = l1ToL2Message;
+  const {
+    retryableCreationId,
+    autoRedeemId,
+    l2TxHash,
+    l2Network
+  } = l1ToL2Message;
   const messageStatus = await l1ToL2Message.status();
   const { explorerUrl } = await getL2Network(l1ToL2Message.l2Provider);
+
+  // naming is hard
+  const stuffTheyAllHave = {
+    explorerUrl,
+    l2Network,
+    l1ToL2Message
+  };
   switch (messageStatus) {
     case L1ToL2MessageStatus.CREATION_FAILED:
       return {
@@ -167,20 +187,14 @@ const l1ToL2MessageToStatusDisplay = async (
           "L2 message creation reverted; perhaps provided maxSubmissionCost was too low?",
         alertLevel: AlertLevel.RED,
         showRedeemButton: false,
-        retryableCreationId,
-        autoRedeemId,
-        l2TxHash,
-        explorerUrl
+        ...stuffTheyAllHave
       };
     case L1ToL2MessageStatus.EXPIRED: {
       return {
         text: "Retryable ticket expired.",
         alertLevel: AlertLevel.RED,
         showRedeemButton: false,
-        retryableCreationId,
-        autoRedeemId,
-        l2TxHash,
-        explorerUrl
+        ...stuffTheyAllHave
       };
     }
     case L1ToL2MessageStatus.NOT_YET_CREATED: {
@@ -189,10 +203,7 @@ const l1ToL2MessageToStatusDisplay = async (
           "L1 to L2 message initiated from L1, but not yet created — check again in a few minutes!",
         alertLevel: AlertLevel.YELLOW,
         showRedeemButton: false,
-        retryableCreationId,
-        autoRedeemId,
-        l2TxHash,
-        explorerUrl
+        ...stuffTheyAllHave
       };
     }
 
@@ -207,10 +218,7 @@ const l1ToL2MessageToStatusDisplay = async (
         text: text,
         alertLevel: AlertLevel.GREEN,
         showRedeemButton: false,
-        retryableCreationId,
-        autoRedeemId,
-        l2TxHash,
-        explorerUrl
+        ...stuffTheyAllHave
       };
     }
     case L1ToL2MessageStatus.NOT_YET_REDEEMED: {
@@ -219,10 +227,7 @@ const l1ToL2MessageToStatusDisplay = async (
           text: "Success! 🎉 Your Eth deposit has completed",
           alertLevel: AlertLevel.GREEN,
           showRedeemButton: false,
-          retryableCreationId,
-          autoRedeemId,
-          l2TxHash,
-          explorerUrl
+          ...stuffTheyAllHave
         };
       }
 
@@ -239,10 +244,7 @@ const l1ToL2MessageToStatusDisplay = async (
             "WARNING: auto-redeem succeeded, but transaction not executed..??? Contact support",
           alertLevel: AlertLevel.RED,
           showRedeemButton: false,
-          retryableCreationId,
-          autoRedeemId,
-          l2TxHash,
-          explorerUrl
+          ...stuffTheyAllHave
         };
       }
 
@@ -274,10 +276,7 @@ const l1ToL2MessageToStatusDisplay = async (
         text,
         alertLevel: AlertLevel.YELLOW,
         showRedeemButton: true,
-        retryableCreationId,
-        autoRedeemId,
-        l2TxHash,
-        explorerUrl
+        ...stuffTheyAllHave
       };
     }
 
@@ -287,6 +286,29 @@ const l1ToL2MessageToStatusDisplay = async (
 };
 
 function App() {
+  const { account, connect, disconnect, provider } = useWallet();
+  const [connectedNetworkId, setConnectedNetworkID] = useState<string | null>(
+    null
+  );
+
+  const signer = useMemo(() => {
+    if (!provider) {
+      return null;
+    } else {
+      return provider.getSigner();
+    }
+  }, [provider]);
+
+  useEffect(() => {
+    if (!signer) {
+      setConnectedNetworkID(null);
+    } else {
+      signer
+        .getChainId()
+        .then(chainID => setConnectedNetworkID(chainID.toString()));
+    }
+  }, [signer, provider]);
+
   const [input, setInput] = React.useState<string>("");
   const [l1TxnHashState, setL1TxnHashState] = React.useState<L1ReceiptState>(
     L1ReceiptState.EMPTY
@@ -375,17 +397,28 @@ function App() {
           ? "loading messages..."
           : null}{" "}
       </div>
+      {l1ToL2MessagesDisplays.some(msg => msg.showRedeemButton) ? (
+        signer ? (
+          <button onClick={() => disconnect()}>Disconnect Wallet</button>
+        ) : (
+          <button onClick={() => connect()}>Connect Wallet</button>
+        )
+      ) : null}
 
-      {l1ToL2MessagesDisplays.map((l1ToL2MessagesDisplay, i) => {
+      {l1ToL2MessagesDisplays.map((l1ToL2MessageDisplay, i) => {
         return (
-          <>
+          <div key={l1ToL2MessageDisplay.l1ToL2Message.retryableCreationId}>
             {
               <>
                 <h2>Your transaction status:</h2>
-                <p>{l1ToL2MessagesDisplay.text}</p>
-                {/* <Redeem
-                userTxs={userTxs}
-                /> */}
+                <p>{l1ToL2MessageDisplay.text}</p>
+                {l1ToL2MessageDisplay.showRedeemButton ? (
+                  <Redeem
+                    l1ToL2Message={l1ToL2MessageDisplay}
+                    signer={signer}
+                    connectedNetworkId={connectedNetworkId}
+                  />
+                ) : null}
               </>
             }
             <h2>Txn links:</h2>
@@ -393,9 +426,9 @@ function App() {
               <br />
               <a
                 href={
-                  l1ToL2MessagesDisplay.explorerUrl +
+                  l1ToL2MessageDisplay.explorerUrl +
                   "/tx/" +
-                  l1ToL2MessagesDisplay.retryableCreationId
+                  l1ToL2MessageDisplay.l1ToL2Message.retryableCreationId
                 }
                 rel="noreferrer"
                 target="_blank"
@@ -405,9 +438,9 @@ function App() {
               <br />
               <a
                 href={
-                  l1ToL2MessagesDisplay.explorerUrl +
+                  l1ToL2MessageDisplay.explorerUrl +
                   "/tx/" +
-                  l1ToL2MessagesDisplay.autoRedeemId
+                  l1ToL2MessageDisplay.l1ToL2Message.autoRedeemId
                 }
                 rel="noreferrer"
                 target="_blank"
@@ -417,9 +450,9 @@ function App() {
               <br />
               <a
                 href={
-                  l1ToL2MessagesDisplay.explorerUrl +
+                  l1ToL2MessageDisplay.explorerUrl +
                   "/tx/" +
-                  l1ToL2MessagesDisplay.l2TxHash
+                  l1ToL2MessageDisplay.l1ToL2Message.l2TxHash
                 }
                 rel="noreferrer"
                 target="_blank"
@@ -428,7 +461,7 @@ function App() {
               </a>
               <br />
             </p>
-          </>
+          </div>
         );
       })}
     </div>
