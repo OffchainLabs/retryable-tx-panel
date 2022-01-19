@@ -14,7 +14,7 @@ import {
   getL2Network,
   getL1Network
 } from "arb-ts/dist/lib/utils/networks";
-import { JsonRpcProvider, Provider } from "@ethersproject/providers";
+import { JsonRpcProvider } from "@ethersproject/providers";
 import { BigNumber } from "@ethersproject/bignumber";
 import { toUtf8String } from "ethers/lib/utils";
 import Redeem from "./Redeem";
@@ -166,9 +166,6 @@ const l1ToL2MessageToStatusDisplay = async (
   looksLikeEthDeposit: boolean
 ): Promise<L1ToL2MessageStatusDisplay> => {
   const {
-    retryableCreationId,
-    autoRedeemId,
-    l2TxHash,
     l2Network
   } = l1ToL2Message;
   const messageStatus = await l1ToL2Message.status();
@@ -286,7 +283,7 @@ const l1ToL2MessageToStatusDisplay = async (
 };
 
 function App() {
-  const { account, connect, disconnect, provider } = useWallet();
+  const { connect, disconnect, provider } = useWallet();
   const [connectedNetworkId, setConnectedNetworkID] = useState<string | null>(
     null
   );
@@ -365,7 +362,6 @@ function App() {
 
   const {
     text: l1TxnResultText,
-    alertLevel: l1TxnResultLevel
   } = receiptStateToDisplayableResult(l1TxnHashState);
   return (
     <div>

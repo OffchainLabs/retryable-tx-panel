@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useMemo } from "react";
+import React, { useMemo } from "react";
 import { L1ToL2MessageStatusDisplay } from "./App";
 import { JsonRpcSigner } from "@ethersproject/providers";
 import { L1ToL2MessageWriter } from "arb-ts";
