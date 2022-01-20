@@ -165,9 +165,7 @@ const l1ToL2MessageToStatusDisplay = async (
   l1ToL2Message: L1ToL2MessageReaderWithNetwork,
   looksLikeEthDeposit: boolean
 ): Promise<L1ToL2MessageStatusDisplay> => {
-  const {
-    l2Network
-  } = l1ToL2Message;
+  const { l2Network } = l1ToL2Message;
   const messageStatus = await l1ToL2Message.status();
   const { explorerUrl } = await getL2Network(l1ToL2Message.l2Provider);
 
@@ -244,7 +242,6 @@ const l1ToL2MessageToStatusDisplay = async (
           ...stuffTheyAllHave
         };
       }
-
       const text = (() => {
         if (!autoRedeemRec) {
           return "Auto-redeem not attempted; you can redeem it now:";
@@ -252,9 +249,8 @@ const l1ToL2MessageToStatusDisplay = async (
         switch (BigNumber.from(autoRedeemRec.returnCode).toNumber()) {
           case 1:
             return `Your auto redeem reverted. The revert reason is: ${toUtf8String(
-              `0x${autoRedeemRec.returnData.substr(10)}. You can redeem it now:`
-            )}`;
-
+              `0x${autoRedeemRec.returnData.substr(10)}`
+            )}. You can redeem it now.`;
           case 2:
             return "Auto redeem failed; hit congestion in the chain; you can redeem it now:";
           case 8:
@@ -360,9 +356,9 @@ function App() {
     retryablesSearch(input);
   };
 
-  const {
-    text: l1TxnResultText,
-  } = receiptStateToDisplayableResult(l1TxnHashState);
+  const { text: l1TxnResultText } = receiptStateToDisplayableResult(
+    l1TxnHashState
+  );
   return (
     <div>
       <div>
