@@ -4,16 +4,14 @@ import { useWallet } from "@gimmixorg/use-wallet";
 import {
   L1ToL2MessageReader,
   L1TransactionReceipt,
-  L1ToL2MessageStatus
-} from "arb-ts/dist/lib/message/L1ToL2Message";
-import { getRawArbTransactionReceipt } from "arb-ts/dist/lib/utils/lib";
-
-import {
+  L1ToL2MessageStatus,
+  getRawArbTransactionReceipt,
   L1Network,
   L2Network,
   getL2Network,
   getL1Network
-} from "arb-ts/dist/lib/utils/networks";
+} from "arb-ts";
+
 import { JsonRpcProvider } from "@ethersproject/providers";
 import { BigNumber } from "@ethersproject/bignumber";
 import { toUtf8String } from "ethers/lib/utils";
@@ -121,13 +119,13 @@ if (!process.env.REACT_APP_INFURA_KEY)
   throw new Error("No REACT_APP_INFURA_KEY set");
 
 const supportedL1Networks = {
-  "1": `https://mainnet.infura.io/v3/${process.env.REACT_APP_INFURA_KEY}`,
-  "4": `https://rinkeby.infura.io/v3/${process.env.REACT_APP_INFURA_KEY}`
+  1: `https://mainnet.infura.io/v3/${process.env.REACT_APP_INFURA_KEY}`,
+  4: `https://rinkeby.infura.io/v3/${process.env.REACT_APP_INFURA_KEY}`
 };
 
 const getL1TxnReceipt = async (txnHash: string) => {
   for (let [chainID, rpcURL] of Object.entries(supportedL1Networks)) {
-    const l1Network = await getL1Network(chainID);
+    const l1Network = await getL1Network(chainID as unknown as number);
     const l1Provider = await new JsonRpcProvider(rpcURL);
 
     const rec = await l1Provider.getTransactionReceipt(txnHash);
@@ -233,7 +231,7 @@ const l1ToL2MessageToStatusDisplay = async (
       );
 
       // sanity check; should never occur
-      if (autoRedeemRec && autoRedeemRec.status === "0x1") {
+      if (autoRedeemRec && autoRedeemRec.status === 1) {
         return {
           text:
             "WARNING: auto-redeem succeeded, but transaction not executed..??? Contact support",
@@ -249,7 +247,7 @@ const l1ToL2MessageToStatusDisplay = async (
         switch (BigNumber.from(autoRedeemRec.returnCode).toNumber()) {
           case 1:
             return `Your auto redeem reverted. The revert reason is: ${toUtf8String(
-              `0x${autoRedeemRec.returnData.substr(10)}`
+              `0x${autoRedeemRec.returnData?.substr(10)}`
             )}. You can redeem it now.`;
           case 2:
             return "Auto redeem failed; hit congestion in the chain; you can redeem it now:";
@@ -280,7 +278,7 @@ const l1ToL2MessageToStatusDisplay = async (
 
 function App() {
   const { connect, disconnect, provider } = useWallet();
-  const [connectedNetworkId, setConnectedNetworkID] = useState<string | null>(
+  const [connectedNetworkId, setConnectedNetworkID] = useState<number | null>(
     null
   );
 
@@ -298,7 +296,7 @@ function App() {
     } else {
       signer
         .getChainId()
-        .then(chainID => setConnectedNetworkID(chainID.toString()));
+        .then(chainID => setConnectedNetworkID(chainID));
     }
   }, [signer, provider]);
 
