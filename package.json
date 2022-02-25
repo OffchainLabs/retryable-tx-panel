@@ -4,13 +4,13 @@
   "license": "Apache-2.0",
   "private": true,
   "dependencies": {
+    "@ethersproject/address": "^5.0.8",
+    "@ethersproject/bignumber": "^5.1.1",
+    "@ethersproject/bytes": "^5.0.8",
     "@gimmixorg/use-wallet": "^0.0.30",
     "@testing-library/jest-dom": "^5.11.4",
     "@testing-library/react": "^11.1.0",
     "@testing-library/user-event": "^12.1.10",
-    "@ethersproject/address": "^5.0.8",
-    "@ethersproject/bignumber": "^5.1.1",
-    "@ethersproject/bytes": "^5.0.8",
     "@types/jest": "^27.0.1",
     "@types/node": "^16.7.13",
     "@types/react": "^17.0.20",
@@ -28,7 +28,8 @@
     "start": "react-scripts start",
     "build": "react-scripts build",
     "test": "react-scripts test",
-    "eject": "react-scripts eject"
+    "eject": "react-scripts eject",
+    "bundlesize": "react-scripts build --stats && webpack-bundle-analyzer ./build/bundle-stats.json"
   },
   "eslintConfig": {
     "extends": [
@@ -47,5 +48,8 @@
       "last 1 firefox version",
       "last 1 safari version"
     ]
+  },
+  "devDependencies": {
+    "webpack-bundle-analyzer": "^4.5.0"
   }
 }
