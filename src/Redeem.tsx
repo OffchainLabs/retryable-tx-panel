@@ -1,7 +1,7 @@
 import React, { useMemo } from "react";
 import { L1ToL2MessageStatusDisplay } from "./App";
 import { JsonRpcSigner } from "@ethersproject/providers";
-import { L1ToL2MessageWriter } from "arb-ts";
+import { L1ToL2MessageWriter } from "@arbitrum/sdk";
 
 function Redeem({
   l1ToL2Message,
@@ -14,13 +14,13 @@ function Redeem({
 }) {
   const redeemButton = useMemo(() => {
     if (!signer) return "connect signer to redeem";
-    if (connectedNetworkId !== l1ToL2Message.l2Network.chainID) {
+    if (connectedNetworkId !== l1ToL2Message.l2Network.chainID.toString()) {
       return `To redeem, connect to chain ${l1ToL2Message.l2Network.chainID} (${l1ToL2Message.l2Network.name})`;
     }
     return (
       <button
         onClick={async () => {
-          // NOTE: we could but a "reader to writer" method in arb-ts
+          // NOTE: we could but a "reader to writer" method in @arbitrum/sdk
           const l1ToL2MessageWriter = new L1ToL2MessageWriter(
             signer,
             l1ToL2Message.l1ToL2Message.retryableCreationId,

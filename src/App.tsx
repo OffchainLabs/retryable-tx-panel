@@ -1,19 +1,17 @@
 import "./App.css";
-import React, { useState, useMemo, useEffect } from "react";
+import React, { useState, useMemo, useEffect, Provider } from "react";
 import { useWallet } from "@gimmixorg/use-wallet";
-import {
-  L1ToL2MessageReader,
-  L1TransactionReceipt,
-  L1ToL2MessageStatus
-} from "arb-ts/dist/lib/message/L1ToL2Message";
-import { getRawArbTransactionReceipt } from "arb-ts/dist/lib/utils/lib";
-
 import {
   L1Network,
   L2Network,
   getL2Network,
-  getL1Network
-} from "arb-ts/dist/lib/utils/networks";
+  getL1Network,
+  L1ToL2MessageReader,
+  L1TransactionReceipt,
+  L1ToL2MessageStatus,
+  getRawArbTransactionReceipt
+} from "@arbitrum/sdk";
+import { l2Networks } from "@arbitrum/sdk/dist/lib/dataEntities/networks"
 import { JsonRpcProvider } from "@ethersproject/providers";
 import { BigNumber } from "@ethersproject/bignumber";
 import { toUtf8String } from "ethers/lib/utils";
@@ -120,14 +118,15 @@ export interface RetryableTxs {
 if (!process.env.REACT_APP_INFURA_KEY)
   throw new Error("No REACT_APP_INFURA_KEY set");
 
-const supportedL1Networks = {
+const supportedL1Networks =  {
   "1": `https://mainnet.infura.io/v3/${process.env.REACT_APP_INFURA_KEY}`,
   "4": `https://rinkeby.infura.io/v3/${process.env.REACT_APP_INFURA_KEY}`
 };
 
+
 const getL1TxnReceipt = async (txnHash: string) => {
   for (let [chainID, rpcURL] of Object.entries(supportedL1Networks)) {
-    const l1Network = await getL1Network(chainID);
+    const l1Network = await getL1Network(+chainID);
     const l1Provider = await new JsonRpcProvider(rpcURL);
 
     const rec = await l1Provider.getTransactionReceipt(txnHash);
@@ -140,6 +139,22 @@ const getL1TxnReceipt = async (txnHash: string) => {
     }
   }
 };
+
+const isArbInboxEthDeposit = async(
+  l1Provider: JsonRpcProvider,
+  l1TxHash: string
+): Promise<boolean> => {
+  const chainID = (await l1Provider.getNetwork()).chainId
+  const inboxAddresses = Object.keys(l2Networks).filter((l2ChainID)=>{
+    return l2Networks[l2ChainID].partnerChainID === chainID
+  }).map((l2ChainID)=>{
+    return l2Networks[l2ChainID].ethBridge.inbox
+  })
+  const txRes = await l1Provider.getTransaction(l1TxHash)
+  // Function signature for depositEth
+  const depositEth_FUNCTION_SIG = '0x0f4d14e9'
+  return txRes.data.startsWith(depositEth_FUNCTION_SIG) && typeof txRes.to === 'string' && inboxAddresses.includes(txRes.to)
+}
 
 const getL1ToL2Messages = async (
   l1TxnReceipt: L1TransactionReceipt,
@@ -163,10 +178,10 @@ const getL1ToL2Messages = async (
 
 const l1ToL2MessageToStatusDisplay = async (
   l1ToL2Message: L1ToL2MessageReaderWithNetwork,
-  looksLikeEthDeposit: boolean
+  isDefinitelyEthDeposit: boolean
 ): Promise<L1ToL2MessageStatusDisplay> => {
   const { l2Network } = l1ToL2Message;
-  const messageStatus = await l1ToL2Message.status();
+  const messageStatus = await l1ToL2Message.waitForStatus()
   const { explorerUrl } = await getL2Network(l1ToL2Message.l2Provider);
 
   // naming is hard
@@ -175,7 +190,7 @@ const l1ToL2MessageToStatusDisplay = async (
     l2Network,
     l1ToL2Message
   };
-  switch (messageStatus) {
+  switch (messageStatus.status) {
     case L1ToL2MessageStatus.CREATION_FAILED:
       return {
         text:
@@ -216,8 +231,8 @@ const l1ToL2MessageToStatusDisplay = async (
         ...stuffTheyAllHave
       };
     }
-    case L1ToL2MessageStatus.NOT_YET_REDEEMED: {
-      if (looksLikeEthDeposit) {
+    case L1ToL2MessageStatus.FUNDS_DEPOSITED_ON_L2: {
+      if (isDefinitelyEthDeposit) {
         return {
           text: "Success! 🎉 Your Eth deposit has completed",
           alertLevel: AlertLevel.GREEN,
@@ -233,7 +248,7 @@ const l1ToL2MessageToStatusDisplay = async (
       );
 
       // sanity check; should never occur
-      if (autoRedeemRec && autoRedeemRec.status === "0x1") {
+      if (autoRedeemRec && autoRedeemRec.status === 1) {
         return {
           text:
             "WARNING: auto-redeem succeeded, but transaction not executed..??? Contact support",
@@ -249,7 +264,7 @@ const l1ToL2MessageToStatusDisplay = async (
         switch (BigNumber.from(autoRedeemRec.returnCode).toNumber()) {
           case 1:
             return `Your auto redeem reverted. The revert reason is: ${toUtf8String(
-              `0x${autoRedeemRec.returnData.substr(10)}`
+              `0x${autoRedeemRec.returnData}`
             )}. You can redeem it now.`;
           case 2:
             return "Auto redeem failed; hit congestion in the chain; you can redeem it now:";
@@ -333,15 +348,13 @@ function App() {
 
     setL1TxnHashState(L1ReceiptState.MESSAGES_FOUND);
 
-    const looksLikeEthDeposit = await l1TxnReceipt.looksLikeEthDeposit(
-      l1Provider
-    );
+    const isDefinitelyEthDeposit = await isArbInboxEthDeposit(l1Provider,txHash)
 
     const l1ToL2MessageStatuses: L1ToL2MessageStatusDisplay[] = [];
     for (let l1ToL2Message of l1ToL2Messages) {
       const l1ToL2MessageStatus = await l1ToL2MessageToStatusDisplay(
         l1ToL2Message,
-        looksLikeEthDeposit
+        isDefinitelyEthDeposit
       );
       l1ToL2MessageStatuses.push(l1ToL2MessageStatus);
     }
