@@ -1,5 +1,5 @@
 import "./App.css";
-import React, { useState, useMemo, useEffect, Provider } from "react";
+import React, { useState, useMemo, useEffect } from "react";
 import { useWallet } from "@gimmixorg/use-wallet";
 import {
   L1Network,
