@@ -10,7 +10,7 @@ function Redeem({
 }: {
   l1ToL2Message: L1ToL2MessageStatusDisplay;
   signer: JsonRpcSigner | null;
-  connectedNetworkId: number | null;
+  connectedNetworkId: string | null;
 }) {
   const redeemButton = useMemo(() => {
     if (!signer) return "connect signer to redeem";
