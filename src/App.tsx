@@ -11,10 +11,11 @@ import {
   L1ToL2MessageStatus,
   getRawArbTransactionReceipt
 } from "@arbitrum/sdk";
-import { l2Networks } from "@arbitrum/sdk/dist/lib/dataEntities/networks"
 import { JsonRpcProvider } from "@ethersproject/providers";
 import { BigNumber } from "@ethersproject/bignumber";
-import { toUtf8String } from "ethers/lib/utils";
+import { toUtf8String, hexDataSlice } from "ethers/lib/utils";
+import {  constants } from "ethers";
+
 import Redeem from "./Redeem";
 
 export enum L1ReceiptState {
@@ -38,6 +39,11 @@ interface L1ToL2MessageReaderWithNetwork extends L1ToL2MessageReader {
   l2Network: L2Network;
 }
 
+const isEthDeposit = async (l1ToL2Message:L1ToL2MessageReader ): Promise<boolean>=>{
+  const txData = (await l1ToL2Message.l2Provider.getTransaction(l1ToL2Message.retryableCreationId)).data
+  // check that calldataSize param is zero (8th 32-byte param, offset by 4 bytes for message ID):
+  return hexDataSlice(txData,  4 + 8*32, 4 + 9*32) === constants.HashZero
+}
 const receiptStateToDisplayableResult = (
   l1ReceiptState: L1ReceiptState
 ): {
@@ -140,22 +146,6 @@ const getL1TxnReceipt = async (txnHash: string) => {
   }
 };
 
-const isArbInboxEthDeposit = async(
-  l1Provider: JsonRpcProvider,
-  l1TxHash: string
-): Promise<boolean> => {
-  const chainID = (await l1Provider.getNetwork()).chainId
-  const inboxAddresses = Object.keys(l2Networks).filter((l2ChainID)=>{
-    return l2Networks[l2ChainID].partnerChainID === chainID
-  }).map((l2ChainID)=>{
-    return l2Networks[l2ChainID].ethBridge.inbox
-  })
-  const txRes = await l1Provider.getTransaction(l1TxHash)
-  // Function signature for depositEth
-  const depositEth_FUNCTION_SIG = '0x0f4d14e9'
-  return txRes.data.startsWith(depositEth_FUNCTION_SIG) && typeof txRes.to === 'string' && inboxAddresses.includes(txRes.to)
-}
-
 const getL1ToL2Messages = async (
   l1TxnReceipt: L1TransactionReceipt,
   l1Network: L1Network
@@ -178,7 +168,6 @@ const getL1ToL2Messages = async (
 
 const l1ToL2MessageToStatusDisplay = async (
   l1ToL2Message: L1ToL2MessageReaderWithNetwork,
-  isDefinitelyEthDeposit: boolean
 ): Promise<L1ToL2MessageStatusDisplay> => {
   const { l2Network } = l1ToL2Message;
   const messageStatus = await l1ToL2Message.waitForStatus()
@@ -232,7 +221,8 @@ const l1ToL2MessageToStatusDisplay = async (
       };
     }
     case L1ToL2MessageStatus.FUNDS_DEPOSITED_ON_L2: {
-      if (isDefinitelyEthDeposit) {
+      const messageIsEthDeposit = await isEthDeposit(l1ToL2Message)
+      if (messageIsEthDeposit) {
         return {
           text: "Success! 🎉 Your Eth deposit has completed",
           alertLevel: AlertLevel.GREEN,
@@ -336,7 +326,7 @@ function App() {
     if (receiptRes === undefined) {
       return setL1TxnHashState(L1ReceiptState.NOT_FOUND);
     }
-    const { l1Network, l1TxnReceipt, l1Provider } = receiptRes;
+    const { l1Network, l1TxnReceipt } = receiptRes;
     if (l1TxnReceipt.status === 0) {
       return setL1TxnHashState(L1ReceiptState.FAILED);
     }
@@ -348,13 +338,11 @@ function App() {
 
     setL1TxnHashState(L1ReceiptState.MESSAGES_FOUND);
 
-    const isDefinitelyEthDeposit = await isArbInboxEthDeposit(l1Provider,txHash)
 
     const l1ToL2MessageStatuses: L1ToL2MessageStatusDisplay[] = [];
     for (let l1ToL2Message of l1ToL2Messages) {
       const l1ToL2MessageStatus = await l1ToL2MessageToStatusDisplay(
         l1ToL2Message,
-        isDefinitelyEthDeposit
       );
       l1ToL2MessageStatuses.push(l1ToL2MessageStatus);
     }
