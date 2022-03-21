@@ -125,7 +125,7 @@ const supportedL1Networks = {
 
 const getL1TxnReceipt = async (txnHash: string) => {
   for (let [chainID, rpcURL] of Object.entries(supportedL1Networks)) {
-    const l1Network = await getL1Network(chainID as unknown as number);
+    const l1Network = await getL1Network(+chainID);
     const l1Provider = await new JsonRpcProvider(rpcURL);
 
     const rec = await l1Provider.getTransactionReceipt(txnHash);
