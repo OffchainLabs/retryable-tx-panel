@@ -118,15 +118,15 @@ export interface RetryableTxs {
 if (!process.env.REACT_APP_INFURA_KEY)
   throw new Error("No REACT_APP_INFURA_KEY set");
 
-const supportedL1Networks =  {
-  "1": `https://mainnet.infura.io/v3/${process.env.REACT_APP_INFURA_KEY}`,
-  "4": `https://rinkeby.infura.io/v3/${process.env.REACT_APP_INFURA_KEY}`
+const supportedL1Networks = {
+  1: `https://mainnet.infura.io/v3/${process.env.REACT_APP_INFURA_KEY}`,
+  4: `https://rinkeby.infura.io/v3/${process.env.REACT_APP_INFURA_KEY}`
 };
 
 
 const getL1TxnReceipt = async (txnHash: string) => {
   for (let [chainID, rpcURL] of Object.entries(supportedL1Networks)) {
-    const l1Network = await getL1Network(+chainID);
+    const l1Network = await getL1Network(chainID as unknown as number);
     const l1Provider = await new JsonRpcProvider(rpcURL);
 
     const rec = await l1Provider.getTransactionReceipt(txnHash);
@@ -264,7 +264,7 @@ const l1ToL2MessageToStatusDisplay = async (
         switch (BigNumber.from(autoRedeemRec.returnCode).toNumber()) {
           case 1:
             return `Your auto redeem reverted. The revert reason is: ${toUtf8String(
-              `0x${autoRedeemRec.returnData}`
+              `0x${autoRedeemRec.returnData?.substr(10)}`
             )}. You can redeem it now.`;
           case 2:
             return "Auto redeem failed; hit congestion in the chain; you can redeem it now:";
@@ -295,7 +295,7 @@ const l1ToL2MessageToStatusDisplay = async (
 
 function App() {
   const { connect, disconnect, provider } = useWallet();
-  const [connectedNetworkId, setConnectedNetworkID] = useState<string | null>(
+  const [connectedNetworkId, setConnectedNetworkID] = useState<number | null>(
     null
   );
 
@@ -313,7 +313,7 @@ function App() {
     } else {
       signer
         .getChainId()
-        .then(chainID => setConnectedNetworkID(chainID.toString()));
+        .then(chainID => setConnectedNetworkID(chainID));
     }
   }, [signer, provider]);
 

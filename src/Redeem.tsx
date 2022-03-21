@@ -10,11 +10,11 @@ function Redeem({
 }: {
   l1ToL2Message: L1ToL2MessageStatusDisplay;
   signer: JsonRpcSigner | null;
-  connectedNetworkId: string | null;
+  connectedNetworkId: number | null;
 }) {
   const redeemButton = useMemo(() => {
     if (!signer) return "connect signer to redeem";
-    if (connectedNetworkId !== l1ToL2Message.l2Network.chainID.toString()) {
+    if (connectedNetworkId !== l1ToL2Message.l2Network.chainID) {
       return `To redeem, connect to chain ${l1ToL2Message.l2Network.chainID} (${l1ToL2Message.l2Network.name})`;
     }
     return (
