@@ -13,8 +13,7 @@ import {
 } from "@arbitrum/sdk";
 import { JsonRpcProvider } from "@ethersproject/providers";
 import { BigNumber } from "@ethersproject/bignumber";
-import { toUtf8String, hexDataSlice } from "ethers/lib/utils";
-import {  constants } from "ethers";
+import { toUtf8String } from "ethers/lib/utils";
 
 import Redeem from "./Redeem";
 
@@ -39,11 +38,20 @@ interface L1ToL2MessageReaderWithNetwork extends L1ToL2MessageReader {
   l2Network: L2Network;
 }
 
-const isEthDeposit = async (l1ToL2Message:L1ToL2MessageReader ): Promise<boolean>=>{
-  const txData = (await l1ToL2Message.l2Provider.getTransaction(l1ToL2Message.retryableCreationId)).data
-  // check that calldataSize param is zero (8th 32-byte param, offset by 4 bytes for message ID):
-  return hexDataSlice(txData,  4 + 8*32, 4 + 9*32) === constants.HashZero
-}
+const looksLikeCallToInboxethDeposit = async (
+  l1ToL2Message: L1ToL2MessageReader
+): Promise<boolean> => {
+  const txData = await l1ToL2Message.getInputs();
+
+  return (
+    txData.l2CallValue.isZero() &&
+    txData.maxGas.isZero() &&
+    txData.gasPriceBid.isZero() &&
+    txData.callDataLength.isZero() &&
+    txData.destinationAddress === txData.excessFeeRefundAddress &&
+    txData.excessFeeRefundAddress === txData.callValueRefundAddress
+  );
+};
 const receiptStateToDisplayableResult = (
   l1ReceiptState: L1ReceiptState
 ): {
@@ -221,8 +229,8 @@ const l1ToL2MessageToStatusDisplay = async (
       };
     }
     case L1ToL2MessageStatus.FUNDS_DEPOSITED_ON_L2: {
-      const messageIsEthDeposit = await isEthDeposit(l1ToL2Message)
-      if (messageIsEthDeposit) {
+      const looksLikeEthDeposit = await looksLikeCallToInboxethDeposit(l1ToL2Message)
+      if (looksLikeEthDeposit) {
         return {
           text: "Success! 🎉 Your Eth deposit has completed",
           alertLevel: AlertLevel.GREEN,
