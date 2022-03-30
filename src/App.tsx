@@ -91,6 +91,7 @@ export interface L1ToL2MessageStatusDisplay {
   explorerUrl: string;
   l2Network: L2Network;
   l1ToL2Message: L1ToL2MessageReader;
+  l2TxHash: string;
 }
 
 export enum Status {
@@ -171,16 +172,29 @@ const l1ToL2MessageToStatusDisplay = async (
   looksLikeEthDeposit: boolean
 ): Promise<L1ToL2MessageStatusDisplay> => {
   const { l2Network } = l1ToL2Message;
-  const messageStatus = await l1ToL2Message.status();
+  let messageStatus;
+  try{
+    messageStatus = (await l1ToL2Message.waitForStatus()).status;
+  }catch(error){
+    // Workaround for nitro
+    // arbitrum-sdk can only get the auto redeem attempt for now
+    // After successful redemption the retryable entry will be
+    // deleted, leading to call exception.
+    // TODO: Figure out how to find successful redemption 
+    messageStatus = L1ToL2MessageStatus.REDEEMED
+  }
   const { explorerUrl } = await getL2Network(l1ToL2Message.l2Provider);
+  const autoRedeemReceipt = await l1ToL2Message.getFirstRedeemAttempt();
+  const l2TxHash = autoRedeemReceipt ? autoRedeemReceipt.transactionHash : "null"
 
   // naming is hard
   const stuffTheyAllHave = {
     explorerUrl,
     l2Network,
-    l1ToL2Message
+    l1ToL2Message,
+    l2TxHash,
   };
-  switch (messageStatus) {
+  switch (messageStatus) { 
     case L1ToL2MessageStatus.CREATION_FAILED:
       return {
         text:
@@ -208,8 +222,6 @@ const l1ToL2MessageToStatusDisplay = async (
     }
 
     case L1ToL2MessageStatus.REDEEMED: {
-      const autoRedeemReceipt = await l1ToL2Message.getAutoRedeemReceipt();
-
       const text =
         autoRedeemReceipt && autoRedeemReceipt.status === 1
           ? "Success! 🎉 Your retryable was auto-executed."
@@ -221,7 +233,7 @@ const l1ToL2MessageToStatusDisplay = async (
         ...stuffTheyAllHave
       };
     }
-    case L1ToL2MessageStatus.NOT_YET_REDEEMED: {
+    case L1ToL2MessageStatus.FUNDS_DEPOSITED_ON_L2: {
       if (looksLikeEthDeposit) {
         return {
           text: "Success! 🎉 Your Eth deposit has completed",
@@ -232,10 +244,10 @@ const l1ToL2MessageToStatusDisplay = async (
       }
 
       const l2Provider = l1ToL2Message.l2Provider as JsonRpcProvider;
-      const autoRedeemRec = await getRawArbTransactionReceipt(
+      const autoRedeemRec = autoRedeemReceipt ? await getRawArbTransactionReceipt(
         l2Provider,
-        l1ToL2Message.autoRedeemId
-      );
+        autoRedeemReceipt.transactionHash
+      ): null;
 
       // sanity check; should never occur
       if (autoRedeemRec && autoRedeemRec.status === 1) {
@@ -338,9 +350,11 @@ function App() {
 
     setL1TxnHashState(L1ReceiptState.MESSAGES_FOUND);
 
-    const looksLikeEthDeposit = await l1TxnReceipt.looksLikeEthDeposit(
-      l1Provider
-    );
+    // TODO: Identify ETH Deposits
+    const looksLikeEthDeposit = false
+    // const looksLikeEthDeposit = await l1TxnReceipt.looksLikeEthDeposit(
+    //   l1Provider
+    // );
 
     const l1ToL2MessageStatuses: L1ToL2MessageStatusDisplay[] = [];
     for (let l1ToL2Message of l1ToL2Messages) {
@@ -437,24 +451,12 @@ function App() {
                 href={
                   l1ToL2MessageDisplay.explorerUrl +
                   "/tx/" +
-                  l1ToL2MessageDisplay.l1ToL2Message.autoRedeemId
+                  l1ToL2MessageDisplay.l2TxHash
                 }
                 rel="noreferrer"
                 target="_blank"
               >
                 Auto Redeem
-              </a>
-              <br />
-              <a
-                href={
-                  l1ToL2MessageDisplay.explorerUrl +
-                  "/tx/" +
-                  l1ToL2MessageDisplay.l1ToL2Message.l2TxHash
-                }
-                rel="noreferrer"
-                target="_blank"
-              >
-                L2 tx
               </a>
               <br />
             </p>
