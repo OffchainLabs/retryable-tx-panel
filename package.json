@@ -4,6 +4,7 @@
   "license": "Apache-2.0",
   "private": true,
   "dependencies": {
+    "@arbitrum/sdk": "^1.0.1",
     "@ethersproject/address": "^5.0.8",
     "@ethersproject/bignumber": "^5.1.1",
     "@ethersproject/bytes": "^5.0.8",
@@ -15,7 +16,6 @@
     "@types/node": "^16.7.13",
     "@types/react": "^17.0.20",
     "@types/react-dom": "^17.0.9",
-    "arb-ts": "2.0.0-beta.11",
     "ethers": "^5.1.0",
     "react": "^17.0.2",
     "react-dom": "^17.0.2",

@@ -2,19 +2,19 @@ import "./App.css";
 import React, { useState, useMemo, useEffect } from "react";
 import { useWallet } from "@gimmixorg/use-wallet";
 import {
-  L1ToL2MessageReader,
-  L1TransactionReceipt,
-  L1ToL2MessageStatus,
-  getRawArbTransactionReceipt,
   L1Network,
   L2Network,
   getL2Network,
-  getL1Network
-} from "arb-ts";
-
+  getL1Network,
+  L1ToL2MessageReader,
+  L1TransactionReceipt,
+  L1ToL2MessageStatus,
+  getRawArbTransactionReceipt
+} from "@arbitrum/sdk";
 import { JsonRpcProvider } from "@ethersproject/providers";
 import { BigNumber } from "@ethersproject/bignumber";
 import { toUtf8String } from "ethers/lib/utils";
+
 import Redeem from "./Redeem";
 
 export enum L1ReceiptState {
@@ -38,6 +38,20 @@ interface L1ToL2MessageReaderWithNetwork extends L1ToL2MessageReader {
   l2Network: L2Network;
 }
 
+const looksLikeCallToInboxethDeposit = async (
+  l1ToL2Message: L1ToL2MessageReader
+): Promise<boolean> => {
+  const txData = await l1ToL2Message.getInputs();
+
+  return (
+    txData.l2CallValue.isZero() &&
+    txData.maxGas.isZero() &&
+    txData.gasPriceBid.isZero() &&
+    txData.callDataLength.isZero() &&
+    txData.destinationAddress === txData.excessFeeRefundAddress &&
+    txData.excessFeeRefundAddress === txData.callValueRefundAddress
+  );
+};
 const receiptStateToDisplayableResult = (
   l1ReceiptState: L1ReceiptState
 ): {
@@ -123,6 +137,7 @@ const supportedL1Networks = {
   4: `https://rinkeby.infura.io/v3/${process.env.REACT_APP_INFURA_KEY}`
 };
 
+
 const getL1TxnReceipt = async (txnHash: string) => {
   for (let [chainID, rpcURL] of Object.entries(supportedL1Networks)) {
     const l1Network = await getL1Network(+chainID);
@@ -161,10 +176,9 @@ const getL1ToL2Messages = async (
 
 const l1ToL2MessageToStatusDisplay = async (
   l1ToL2Message: L1ToL2MessageReaderWithNetwork,
-  looksLikeEthDeposit: boolean
 ): Promise<L1ToL2MessageStatusDisplay> => {
   const { l2Network } = l1ToL2Message;
-  const messageStatus = await l1ToL2Message.status();
+  const messageStatus = await l1ToL2Message.waitForStatus()
   const { explorerUrl } = await getL2Network(l1ToL2Message.l2Provider);
 
   // naming is hard
@@ -173,7 +187,7 @@ const l1ToL2MessageToStatusDisplay = async (
     l2Network,
     l1ToL2Message
   };
-  switch (messageStatus) {
+  switch (messageStatus.status) {
     case L1ToL2MessageStatus.CREATION_FAILED:
       return {
         text:
@@ -214,7 +228,8 @@ const l1ToL2MessageToStatusDisplay = async (
         ...stuffTheyAllHave
       };
     }
-    case L1ToL2MessageStatus.NOT_YET_REDEEMED: {
+    case L1ToL2MessageStatus.FUNDS_DEPOSITED_ON_L2: {
+      const looksLikeEthDeposit = await looksLikeCallToInboxethDeposit(l1ToL2Message)
       if (looksLikeEthDeposit) {
         return {
           text: "Success! 🎉 Your Eth deposit has completed",
@@ -319,7 +334,7 @@ function App() {
     if (receiptRes === undefined) {
       return setL1TxnHashState(L1ReceiptState.NOT_FOUND);
     }
-    const { l1Network, l1TxnReceipt, l1Provider } = receiptRes;
+    const { l1Network, l1TxnReceipt } = receiptRes;
     if (l1TxnReceipt.status === 0) {
       return setL1TxnHashState(L1ReceiptState.FAILED);
     }
@@ -331,15 +346,11 @@ function App() {
 
     setL1TxnHashState(L1ReceiptState.MESSAGES_FOUND);
 
-    const looksLikeEthDeposit = await l1TxnReceipt.looksLikeEthDeposit(
-      l1Provider
-    );
 
     const l1ToL2MessageStatuses: L1ToL2MessageStatusDisplay[] = [];
     for (let l1ToL2Message of l1ToL2Messages) {
       const l1ToL2MessageStatus = await l1ToL2MessageToStatusDisplay(
         l1ToL2Message,
-        looksLikeEthDeposit
       );
       l1ToL2MessageStatuses.push(l1ToL2MessageStatus);
     }
