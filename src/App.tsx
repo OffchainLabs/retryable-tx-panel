@@ -10,7 +10,7 @@ import {
   L2Network,
   getL2Network,
   getL1Network
-} from "arb-ts";
+} from "@arbitrum/sdk"
 
 import { JsonRpcProvider } from "@ethersproject/providers";
 import { BigNumber } from "@ethersproject/bignumber";

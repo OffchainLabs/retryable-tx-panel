@@ -1,7 +1,7 @@
 import React, { useMemo } from "react";
 import { L1ToL2MessageStatusDisplay } from "./App";
 import { JsonRpcSigner } from "@ethersproject/providers";
-import { L1ToL2MessageWriter } from "arb-ts";
+import { L1ToL2MessageWriter } from "@arbitrum/sdk";
 
 function Redeem({
   l1ToL2Message,
