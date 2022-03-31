@@ -338,7 +338,7 @@ function App() {
     if (receiptRes === undefined) {
       return setL1TxnHashState(L1ReceiptState.NOT_FOUND);
     }
-    const { l1Network, l1TxnReceipt, l1Provider } = receiptRes;
+    const { l1Network, l1TxnReceipt } = receiptRes;
     if (l1TxnReceipt.status === 0) {
       return setL1TxnHashState(L1ReceiptState.FAILED);
     }
