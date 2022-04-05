@@ -171,7 +171,8 @@ const l1ToL2MessageToStatusDisplay = async (
   const { l2Network } = l1ToL2Message;
   const messageStatus = await l1ToL2Message.waitForStatus();
   const { explorerUrl } = await getL2Network(l1ToL2Message.l2Provider);
-  const l2TxReceipt = messageStatus.status === L1ToL2MessageStatus.REDEEMED ? messageStatus.l2TxReceipt : await l1ToL2Message.getFirstRedeemAttempt()
+  const autoRedeemRec = await l1ToL2Message.getAutoRedeemAttempt()
+  const l2TxReceipt = messageStatus.status === L1ToL2MessageStatus.REDEEMED ? messageStatus.l2TxReceipt : autoRedeemRec
   const l2TxHash = l2TxReceipt ? l2TxReceipt.transactionHash : "null"
 
   // naming is hard
@@ -210,7 +211,7 @@ const l1ToL2MessageToStatusDisplay = async (
 
     case L1ToL2MessageStatus.REDEEMED: {
       const text =
-        l2TxReceipt && l2TxReceipt.status === 1
+        l2TxReceipt && l2TxReceipt.status === 1 && l2TxReceipt.transactionHash === autoRedeemRec?.transactionHash
           ? "Success! 🎉 Your retryable was auto-executed."
           : "Success! 🎉 Your retryable ticket has been executed directly on L2.";
       return {
@@ -230,17 +231,11 @@ const l1ToL2MessageToStatusDisplay = async (
         };
       }
 
-      const autoRedeemRec = await l1ToL2Message.getAutoRedeemAttempt()
-      const redeemAttemptRec = await l1ToL2Message.getFirstRedeemAttempt()
-
       const text = (() => {
-        if (!redeemAttemptRec) {
-          return "Redeem not attempted; you can redeem it now:";
-        }
         if (autoRedeemRec) {
           return "Auto-redeem reverted; you can redeem it now:";
         }
-        return "Redeem reverted; you can redeem it now:";
+        return "Auto-redeem reverted due to gas parameters; you can redeem it now:";
       })();
       return {
         text,
