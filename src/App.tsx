@@ -5,7 +5,6 @@ import {
   L1ToL2MessageReader,
   L1TransactionReceipt,
   L1ToL2MessageStatus,
-  getRawArbTransactionReceipt,
   L1Network,
   L2Network,
   getL2Network,
@@ -14,8 +13,6 @@ import {
 } from "@arbitrum/sdk"
 
 import { JsonRpcProvider } from "@ethersproject/providers";
-import { BigNumber } from "@ethersproject/bignumber";
-import { toUtf8String } from "ethers/lib/utils";
 import Redeem from "./Redeem";
 
 export enum L1ReceiptState {
@@ -128,7 +125,7 @@ const supportedL1Networks = {
 
 addCustomNetwork({
   customL1Network: {"blockTime":10,"chainID":1337,"explorerUrl":"","isCustom":true,"name":"EthLocal","partnerChainIDs":[421612],"rpcURL":"http://localhost:8545"},
-  customL2Network: {"chainID":421612,"confirmPeriodBlocks":20,"ethBridge":{"bridge":"0x9b284e41921fb974a26f9abe66e54f56e406b730","inbox":"0x30fc4c5f7973ed68e9c858fcbc4a30ea7fc72967","outboxes":{"0xCC17370c3ae15C598f6575Fa0105f3A70b626A68":0},"rollup":"0xac08e3b85b23b87835640c4799ac160a36655c2c","sequencerInbox":"0xbb665b5f0e66accb90f37ebc2d6b84b9c9ab8702"},"explorerUrl":"http://localhost:4000","isArbitrum":true,"isCustom":true,"name":"ArbLocal","partnerChainID":1337,"rpcURL":"http://localhost:7545","tokenBridge":{"l1CustomGateway":"0xDe67138B609Fbca38FcC2673Bbc5E33d26C5B584","l1ERC20Gateway":"0x0Bdb0992B3872DF911260BfB60D72607eb22d5d4","l1GatewayRouter":"0x4535771b8D5C43100f126EdACfEc7eb60d391312","l1MultiCall":"0x36BeF5fD671f2aA8686023dE4797A7dae3082D5F","l1ProxyAdmin":"0xF7818cd5f5Dc379965fD1C66b36C0C4D788E7cDB","l1Weth":"0x24067223381F042fF36fb87818196dB4D2C56E9B","l1WethGateway":"0xBa3d12E370a4b592AAF0CA1EF09971D196c27aAd","l2CustomGateway":"0xF0B003F9247f2DC0e874710eD55e55f8C63B14a3","l2ERC20Gateway":"0x78a6dC8D17027992230c112432E42EC3d6838d74","l2GatewayRouter":"0x7b650845242a96595f3a9766D4e8e5ab0887936A","l2Multicall":"0x9b890cA9dE3D317b165afA7DFb8C65f2e4c95C20","l2ProxyAdmin":"0x7F85fB7f42A0c0D40431cc0f7DFDf88be6495e67","l2Weth":"0x36BeF5fD671f2aA8686023dE4797A7dae3082D5F","l2WethGateway":"0x2E76efCC2518CB801E5340d5f140B1c1911b4F4B"}},
+  customL2Network: {"chainID":421612,"confirmPeriodBlocks":20,"ethBridge":{"bridge":"0x9b284e41921fb974a26f9abe66e54f56e406b730","inbox":"0x30fc4c5f7973ed68e9c858fcbc4a30ea7fc72967","outboxes":{"0xCC17370c3ae15C598f6575Fa0105f3A70b626A68":0},"rollup":"0xac08e3b85b23b87835640c4799ac160a36655c2c","sequencerInbox":"0xbb665b5f0e66accb90f37ebc2d6b84b9c9ab8702"},"explorerUrl":"http://localhost:4000","isArbitrum":true,"isCustom":true,"name":"ArbLocal","partnerChainID":1337,"rpcURL":"http://localhost:7545","tokenBridge":{"l1CustomGateway":"0xDe67138B609Fbca38FcC2673Bbc5E33d26C5B584","l1ERC20Gateway":"0x0Bdb0992B3872DF911260BfB60D72607eb22d5d4","l1GatewayRouter":"0x4535771b8D5C43100f126EdACfEc7eb60d391312","l1MultiCall":"0x36BeF5fD671f2aA8686023dE4797A7dae3082D5F","l1ProxyAdmin":"0xF7818cd5f5Dc379965fD1C66b36C0C4D788E7cDB","l1Weth":"0x24067223381F042fF36fb87818196dB4D2C56E9B","l1WethGateway":"0xBa3d12E370a4b592AAF0CA1EF09971D196c27aAd","l2CustomGateway":"0xF0B003F9247f2DC0e874710eD55e55f8C63B14a3","l2ERC20Gateway":"0x78a6dC8D17027992230c112432E42EC3d6838d74","l2GatewayRouter":"0x7b650845242a96595f3a9766D4e8e5ab0887936A","l2Multicall":"0x9b890cA9dE3D317b165afA7DFb8C65f2e4c95C20","l2ProxyAdmin":"0x7F85fB7f42A0c0D40431cc0f7DFDf88be6495e67","l2Weth":"0x36BeF5fD671f2aA8686023dE4797A7dae3082D5F","l2WethGateway":"0x2E76efCC2518CB801E5340d5f140B1c1911b4F4B"}, "retryableLifetimeSeconds": 604800},
 })
 
 const getL1TxnReceipt = async (txnHash: string) => {
@@ -172,10 +169,10 @@ const l1ToL2MessageToStatusDisplay = async (
   looksLikeEthDeposit: boolean
 ): Promise<L1ToL2MessageStatusDisplay> => {
   const { l2Network } = l1ToL2Message;
-  const messageStatus = (await l1ToL2Message.waitForStatus()).status;
+  const messageStatus = await l1ToL2Message.waitForStatus();
   const { explorerUrl } = await getL2Network(l1ToL2Message.l2Provider);
-  const autoRedeemReceipt = await l1ToL2Message.getFirstRedeemAttempt();
-  const l2TxHash = autoRedeemReceipt ? autoRedeemReceipt.transactionHash : "null"
+  const l2TxReceipt = messageStatus.status === L1ToL2MessageStatus.REDEEMED ? messageStatus.l2TxReceipt : await l1ToL2Message.getFirstRedeemAttempt()
+  const l2TxHash = l2TxReceipt ? l2TxReceipt.transactionHash : "null"
 
   // naming is hard
   const stuffTheyAllHave = {
@@ -184,7 +181,7 @@ const l1ToL2MessageToStatusDisplay = async (
     l1ToL2Message,
     l2TxHash,
   };
-  switch (messageStatus) { 
+  switch (messageStatus.status) { 
     case L1ToL2MessageStatus.CREATION_FAILED:
       return {
         text:
@@ -213,7 +210,7 @@ const l1ToL2MessageToStatusDisplay = async (
 
     case L1ToL2MessageStatus.REDEEMED: {
       const text =
-        autoRedeemReceipt && autoRedeemReceipt.status === 1
+        l2TxReceipt && l2TxReceipt.status === 1
           ? "Success! 🎉 Your retryable was auto-executed."
           : "Success! 🎉 Your retryable ticket has been executed directly on L2.";
       return {
@@ -233,44 +230,17 @@ const l1ToL2MessageToStatusDisplay = async (
         };
       }
 
-      const l2Provider = l1ToL2Message.l2Provider as JsonRpcProvider;
-      const autoRedeemRec = autoRedeemReceipt ? await getRawArbTransactionReceipt(
-        l2Provider,
-        autoRedeemReceipt.transactionHash
-      ): null;
+      const autoRedeemRec = await l1ToL2Message.getAutoRedeemAttempt()
+      const redeemAttemptRec = await l1ToL2Message.getFirstRedeemAttempt()
 
-      // sanity check; should never occur
-      if (autoRedeemRec && autoRedeemRec.status === 1) {
-        return {
-          text:
-            "WARNING: auto-redeem succeeded, but transaction not executed..??? Contact support",
-          alertLevel: AlertLevel.RED,
-          showRedeemButton: false,
-          ...stuffTheyAllHave
-        };
-      }
       const text = (() => {
-        if (!autoRedeemRec) {
-          return "Auto-redeem not attempted; you can redeem it now:";
+        if (!redeemAttemptRec) {
+          return "Redeem not attempted; you can redeem it now:";
         }
-        switch (BigNumber.from(autoRedeemRec.returnCode).toNumber()) {
-          case 1:
-            return `Your auto redeem reverted. The revert reason is: ${toUtf8String(
-              `0x${autoRedeemRec.returnData?.substr(10)}`
-            )}. You can redeem it now.`;
-          case 2:
-            return "Auto redeem failed; hit congestion in the chain; you can redeem it now:";
-          case 8:
-            return "auto redeem _TxResultCode_exceededTxGasLimit; you can redeem it now:";
-          case 10:
-            return "auto redeem TxResultCode_belowMinimumTxGas; you can redeem it now:";
-          case 11:
-            return "auto redeem TxResultCode_gasPriceTooLow; you can redeem it now:";
-          case 12:
-            return "auto redeem TxResultCode_noGasForAutoRedeem; you can redeem it now:";
-          default:
-            return "auto redeem reverted; you can redeem it now:";
+        if (autoRedeemRec) {
+          return "Auto-redeem reverted; you can redeem it now:";
         }
+        return "Redeem reverted; you can redeem it now:";
       })();
       return {
         text,
@@ -446,7 +416,7 @@ function App() {
                 rel="noreferrer"
                 target="_blank"
               >
-                Auto Redeem
+                L2 Tx
               </a>
               <br />
             </p>
