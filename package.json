@@ -30,7 +30,7 @@
     "test": "react-scripts test",
     "eject": "react-scripts eject",
     "bundlesize": "react-scripts build --stats && webpack-bundle-analyzer ./build/bundle-stats.json",
-    "postinstall": "cd node_modules/@arbitrum/sdk && yarn install && yarn build"
+    "postinstall": "cd node_modules/@arbitrum/sdk && yarn install --production && yarn build"
   },
   "eslintConfig": {
     "extends": [
