@@ -172,17 +172,7 @@ const l1ToL2MessageToStatusDisplay = async (
   looksLikeEthDeposit: boolean
 ): Promise<L1ToL2MessageStatusDisplay> => {
   const { l2Network } = l1ToL2Message;
-  let messageStatus;
-  try{
-    messageStatus = (await l1ToL2Message.waitForStatus()).status;
-  }catch(error){
-    // Workaround for nitro
-    // arbitrum-sdk can only get the auto redeem attempt for now
-    // After successful redemption the retryable entry will be
-    // deleted, leading to call exception.
-    // TODO: Figure out how to find successful redemption 
-    messageStatus = L1ToL2MessageStatus.REDEEMED
-  }
+  const messageStatus = (await l1ToL2Message.waitForStatus()).status;
   const { explorerUrl } = await getL2Network(l1ToL2Message.l2Provider);
   const autoRedeemReceipt = await l1ToL2Message.getFirstRedeemAttempt();
   const l2TxHash = autoRedeemReceipt ? autoRedeemReceipt.transactionHash : "null"
