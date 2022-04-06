@@ -114,19 +114,64 @@ export interface RetryableTxs {
   l2ChainId: number;
 }
 
-// if (!process.env.REACT_APP_INFURA_KEY)
-//   throw new Error("No REACT_APP_INFURA_KEY set");
+if (!process.env.REACT_APP_INFURA_KEY)
+  throw new Error("No REACT_APP_INFURA_KEY set");
 
 const supportedL1Networks = {
-  // 1: `https://mainnet.infura.io/v3/${process.env.REACT_APP_INFURA_KEY}`,
-  // 4: `https://rinkeby.infura.io/v3/${process.env.REACT_APP_INFURA_KEY}`,
+  1: `https://mainnet.infura.io/v3/${process.env.REACT_APP_INFURA_KEY}`,
+  4: `https://rinkeby.infura.io/v3/${process.env.REACT_APP_INFURA_KEY}`,
+  5: `https://goerli.infura.io/v3/${process.env.REACT_APP_INFURA_KEY}`,
   1337: `http://localhost:8545`
 };
 
 addCustomNetwork({
-  customL1Network: {"blockTime":10,"chainID":1337,"explorerUrl":"","isCustom":true,"name":"EthLocal","partnerChainIDs":[421612],"rpcURL":"http://localhost:8545"},
-  customL2Network: {"chainID":421612,"confirmPeriodBlocks":20,"ethBridge":{"bridge":"0x9b284e41921fb974a26f9abe66e54f56e406b730","inbox":"0x30fc4c5f7973ed68e9c858fcbc4a30ea7fc72967","outboxes":{"0xCC17370c3ae15C598f6575Fa0105f3A70b626A68":0},"rollup":"0xac08e3b85b23b87835640c4799ac160a36655c2c","sequencerInbox":"0xbb665b5f0e66accb90f37ebc2d6b84b9c9ab8702"},"explorerUrl":"http://localhost:4000","isArbitrum":true,"isCustom":true,"name":"ArbLocal","partnerChainID":1337,"rpcURL":"http://localhost:7545","tokenBridge":{"l1CustomGateway":"0xDe67138B609Fbca38FcC2673Bbc5E33d26C5B584","l1ERC20Gateway":"0x0Bdb0992B3872DF911260BfB60D72607eb22d5d4","l1GatewayRouter":"0x4535771b8D5C43100f126EdACfEc7eb60d391312","l1MultiCall":"0x36BeF5fD671f2aA8686023dE4797A7dae3082D5F","l1ProxyAdmin":"0xF7818cd5f5Dc379965fD1C66b36C0C4D788E7cDB","l1Weth":"0x24067223381F042fF36fb87818196dB4D2C56E9B","l1WethGateway":"0xBa3d12E370a4b592AAF0CA1EF09971D196c27aAd","l2CustomGateway":"0xF0B003F9247f2DC0e874710eD55e55f8C63B14a3","l2ERC20Gateway":"0x78a6dC8D17027992230c112432E42EC3d6838d74","l2GatewayRouter":"0x7b650845242a96595f3a9766D4e8e5ab0887936A","l2Multicall":"0x9b890cA9dE3D317b165afA7DFb8C65f2e4c95C20","l2ProxyAdmin":"0x7F85fB7f42A0c0D40431cc0f7DFDf88be6495e67","l2Weth":"0x36BeF5fD671f2aA8686023dE4797A7dae3082D5F","l2WethGateway":"0x2E76efCC2518CB801E5340d5f140B1c1911b4F4B"}, "retryableLifetimeSeconds": 604800},
-})
+  customL1Network: {
+    "blockTime": 15,
+    "chainID": 5,
+    "explorerUrl": "https://goerli.etherscan.io/",
+    "isCustom": true,
+    "name": "Goerli",
+    "partnerChainIDs": [
+      421612
+    ],
+    "rpcURL": "https://goerli.infura.io/v3/"
+  },
+  customL2Network: {
+    "chainID": 421612,
+    "confirmPeriodBlocks": 960,
+    "ethBridge": {
+      "bridge": "0x9903a892da86c1e04522d63b08e5514a921e81df",
+      "inbox": "0x1fdbbcc914e84af593884bf8e8dd6877c29035a2",
+      "outboxes": {
+        "0xFDF2B11347dA17326BAF30bbcd3F4b09c4719584": 0
+      },
+      "rollup": "0x767CfF8D8de386d7cbe91DbD39675132ba2f5967",
+      "sequencerInbox": "0xb32f4257e05c56c53d46bbec9e85770eb52425d6"
+    },
+    "explorerUrl": "https://nitro-devnet-explorer.arbitrum.io/",
+    "isArbitrum": true,
+    "isCustom": true,
+    "name": "ArbLocal",
+    "partnerChainID": 5,
+    "rpcURL": "https://nitro-devnet.arbitrum.io/rpc",
+    "tokenBridge": {
+      "l1CustomGateway": "0x23D4e0D7Cb7AE7CF745E82262B17eb46535Ae819",
+      "l1ERC20Gateway": "0x6336C4e811b2f7D17d45b6241Fd47F2E11621Ffb",
+      "l1GatewayRouter": "0x8BDFa67ace22cE2BFb2fFebe72f0c91CDA694d4b",
+      "l1MultiCall": "0x90863B80f274b6D2227b01f2c1de4fdCb04896E2",
+      "l1ProxyAdmin": "0x678cC9702ebF79d741E4f815937475311A58404a",
+      "l1Weth": "0xb4fbf271143f4fbf7b91a5ded31805e42b2208d6",
+      "l1WethGateway": "0x64bfF696bE6a087A81936b9a2489624015381be4",
+      "l2CustomGateway": "0x7AC493f26EF26904E52fE46C8DaEE247b9A556B8",
+      "l2ERC20Gateway": "0xf298434ffE691400b932f4b14B436f451F4CED76",
+      "l2GatewayRouter": "0xC502Ded1EE1d616B43F7f20Ebde83Be1A275ca3c",
+      "l2Multicall": "0x1068dbfcc13f3a22fcAe684943AFA43cc66fA689",
+      "l2ProxyAdmin": "0x1F2715AaC7EeFb75ebCc478f3D9a361fa47A95DD",
+      "l2Weth": "0x96CfA560e7332DebA750e330fb6f59E2269f40Dd",
+      "l2WethGateway": "0xf10c7CAA33A3360f60053Bc1081980f62567505F"
+    },
+    "retryableLifetimeSeconds": 608400
+  }})
 
 const getL1TxnReceipt = async (txnHash: string) => {
   for (let [chainID, rpcURL] of Object.entries(supportedL1Networks)) {
