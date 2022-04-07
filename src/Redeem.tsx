@@ -2,6 +2,7 @@ import React, { useMemo } from "react";
 import { L1ToL2MessageStatusDisplay } from "./App";
 import { JsonRpcSigner } from "@ethersproject/providers";
 import { L1ToL2MessageWriter } from "@arbitrum/sdk";
+import { BigNumber } from "ethers";
 
 function Redeem({
   l1ToL2Message,
@@ -23,8 +24,11 @@ function Redeem({
           // NOTE: we could but a "reader to writer" method in arb-ts
           const l1ToL2MessageWriter = new L1ToL2MessageWriter(
             signer,
-            l1ToL2Message.l1ToL2Message.retryableCreationId,
-            l1ToL2Message.l1ToL2Message.messageNumber
+            BigNumber.from(l1ToL2Message.l2Network.chainID),
+            l1ToL2Message.l1ToL2Message.sender,
+            l1ToL2Message.l1ToL2Message.messageNumber,
+            l1ToL2Message.l1ToL2Message.l1BaseFee,
+            l1ToL2Message.l1ToL2Message.messageData
           );
           try {
             const res = await l1ToL2MessageWriter.redeem();
