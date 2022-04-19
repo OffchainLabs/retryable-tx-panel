@@ -24,6 +24,7 @@ import {
   EthDepositMessage,
 } from "@arbitrum/sdk/dist/lib/message/L1ToL2Message";
 import { getL2ToL1Messages, L2ToL1MessageData } from "./lib";
+import L2ToL1MsgsDisplay from "./L2ToL1MsgsDisplay";
 
 export enum L1ReceiptState {
   EMPTY,
@@ -560,6 +561,12 @@ function App() {
           <button onClick={() => connect()}>Connect Wallet</button>
         )
       ) : null}
+
+      <L2ToL1MsgsDisplay
+        signer={signer}
+        l2ToL1Messages={l2ToL1MessagesToShow}
+        connectedNetworkId={connectedNetworkId}
+      />
 
       {messagesDisplays.map((messageDisplay, i) => {
         return (
