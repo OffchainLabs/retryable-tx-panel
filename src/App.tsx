@@ -4,6 +4,7 @@ import { useWallet } from "@gimmixorg/use-wallet";
 import {
   L1TransactionReceipt,
   L1ToL2MessageStatus,
+  L2ToL1MessageStatus,
   L1Network,
   L2Network,
   getL1Network,
@@ -20,8 +21,9 @@ import {
 import Redeem from "./Redeem";
 import {
   L1ToL2MessageWaitResult,
-  EthDepositMessage
+  EthDepositMessage,
 } from "@arbitrum/sdk/dist/lib/message/L1ToL2Message";
+import { getL2ToL1Messages, L2ToL1MessageData } from "./lib";
 
 export enum L1ReceiptState {
   EMPTY,
@@ -30,14 +32,14 @@ export enum L1ReceiptState {
   NOT_FOUND,
   FAILED,
   NO_L1_L2_MESSAGES,
-  MESSAGES_FOUND
+  MESSAGES_FOUND,
 }
 
 export enum AlertLevel {
   RED,
   YELLOW,
   GREEN,
-  NONE
+  NONE,
 }
 
 interface L1ToL2MessageReaderWithNetwork extends L1ToL2MessageReader {
@@ -79,37 +81,37 @@ const receiptStateToDisplayableResult = (
     case L1ReceiptState.EMPTY:
       return {
         text: "",
-        alertLevel: AlertLevel.NONE
+        alertLevel: AlertLevel.NONE,
       };
     case L1ReceiptState.LOADING:
       return {
         text: "Loading...",
-        alertLevel: AlertLevel.NONE
+        alertLevel: AlertLevel.NONE,
       };
     case L1ReceiptState.INVALID_INPUT_LENGTH:
       return {
         text: "Error: invalid transaction hash",
-        alertLevel: AlertLevel.RED
+        alertLevel: AlertLevel.RED,
       };
     case L1ReceiptState.NOT_FOUND:
       return {
         text: "L1 transaction not found",
-        alertLevel: AlertLevel.YELLOW
+        alertLevel: AlertLevel.YELLOW,
       };
     case L1ReceiptState.FAILED:
       return {
         text: "Error: L1 transaction reverted",
-        alertLevel: AlertLevel.RED
+        alertLevel: AlertLevel.RED,
       };
     case L1ReceiptState.NO_L1_L2_MESSAGES:
       return {
         text: "No L1-to-L2 messages created by provided L1 transaction",
-        alertLevel: AlertLevel.YELLOW
+        alertLevel: AlertLevel.YELLOW,
       };
     case L1ReceiptState.MESSAGES_FOUND:
       return {
         text: "L1 to L2 messages found",
-        alertLevel: AlertLevel.GREEN
+        alertLevel: AlertLevel.GREEN,
       };
   }
 };
@@ -138,7 +140,7 @@ export enum Status {
   CREATION_FAILURE,
   NOT_FOUND,
   REEXECUTABLE,
-  SUCCEEDED
+  SUCCEEDED,
 }
 
 export interface Result {
@@ -166,9 +168,9 @@ export interface ReceiptRes {
 if (!process.env.REACT_APP_INFURA_KEY)
   throw new Error("No REACT_APP_INFURA_KEY set");
 
-const supportedL1Networks = {
+export const supportedL1Networks = {
   1: `https://mainnet.infura.io/v3/${process.env.REACT_APP_INFURA_KEY}`,
-  5: `https://goerli.infura.io/v3/${process.env.REACT_APP_INFURA_KEY}`
+  5: `https://goerli.infura.io/v3/${process.env.REACT_APP_INFURA_KEY}`,
 };
 
 const getL1TxnReceipt = async (
@@ -183,7 +185,7 @@ const getL1TxnReceipt = async (
       return {
         l1TxnReceipt: new L1TransactionReceipt(rec),
         l1Network,
-        l1Provider
+        l1Provider,
       };
     }
   }
@@ -240,7 +242,7 @@ const getL1ToL2MessagesAndDepositMessages = async (
   }
   const allMesaages: L1ToL2MessagesAndDepositMessages = {
     retryables: allL1ToL2Messages,
-    deposits: allDepositMessages
+    deposits: allDepositMessages,
   };
   return allMesaages;
 };
@@ -266,14 +268,14 @@ const depositMessageStatusDisplay = async (
       text: "Success! 🎉 Your Eth deposit has completed",
       alertLevel: AlertLevel.GREEN,
       showRedeemButton: false,
-      ...stuffTheyAllHave
+      ...stuffTheyAllHave,
     };
   } else {
     return {
       text: "Something failed in this tracker, you can try to check your account on l2",
       alertLevel: AlertLevel.RED,
       showRedeemButton: false,
-      ...stuffTheyAllHave
+      ...stuffTheyAllHave,
     };
   }
 };
@@ -303,7 +305,7 @@ const l1ToL2MessageToStatusDisplay = async (
     explorerUrl,
     l2Network,
     l1ToL2Message,
-    l2TxHash
+    l2TxHash,
   };
   switch (messageStatus.status) {
     case L1ToL2MessageStatus.CREATION_FAILED:
@@ -311,7 +313,7 @@ const l1ToL2MessageToStatusDisplay = async (
         text: "L2 message creation reverted; perhaps provided maxSubmissionCost was too low?",
         alertLevel: AlertLevel.RED,
         showRedeemButton: false,
-        ...stuffTheyAllHave
+        ...stuffTheyAllHave,
       };
     case L1ToL2MessageStatus.EXPIRED: {
       const looksLikeEthDeposit = await looksLikeCallToInboxethDeposit(
@@ -329,7 +331,7 @@ const l1ToL2MessageToStatusDisplay = async (
         text: "Retryable ticket expired.",
         alertLevel: AlertLevel.RED,
         showRedeemButton: false,
-        ...stuffTheyAllHave
+        ...stuffTheyAllHave,
       };
     }
     case L1ToL2MessageStatus.NOT_YET_CREATED: {
@@ -337,7 +339,7 @@ const l1ToL2MessageToStatusDisplay = async (
         text: "L1 to L2 message initiated from L1, but not yet created — check again in a few minutes!",
         alertLevel: AlertLevel.YELLOW,
         showRedeemButton: false,
-        ...stuffTheyAllHave
+        ...stuffTheyAllHave,
       };
     }
 
@@ -347,7 +349,7 @@ const l1ToL2MessageToStatusDisplay = async (
         text: text,
         alertLevel: AlertLevel.GREEN,
         showRedeemButton: false,
-        ...stuffTheyAllHave
+        ...stuffTheyAllHave,
       };
     }
     case L1ToL2MessageStatus.FUNDS_DEPOSITED_ON_L2: {
@@ -359,7 +361,7 @@ const l1ToL2MessageToStatusDisplay = async (
           text: "Success! 🎉 Your Eth deposit has completed",
           alertLevel: AlertLevel.GREEN,
           showRedeemButton: false,
-          ...stuffTheyAllHave
+          ...stuffTheyAllHave,
         };
       }
       const text = (() => {
@@ -370,7 +372,7 @@ const l1ToL2MessageToStatusDisplay = async (
         text,
         alertLevel: AlertLevel.YELLOW,
         showRedeemButton: true,
-        ...stuffTheyAllHave
+        ...stuffTheyAllHave,
       };
     }
 
@@ -411,6 +413,10 @@ function App() {
     MessageStatusDisplay[]
   >([]);
 
+  const [l2ToL1MessagesToShow, setL2ToL1MessagesToShow] = React.useState<
+    L2ToL1MessageData[]
+  >([]);
+
   const getRetryableIdOrDepositHash = (message: MessageStatusDisplay) => {
     if (message.l1ToL2Message !== undefined) {
       return message.l1ToL2Message.retryableCreationId;
@@ -421,6 +427,7 @@ function App() {
   const retryablesSearch = async (txHash: string) => {
     setl1TxnReceipt(undefined);
     setMessagesDisplays([]);
+    setL2ToL1MessagesToShow([]);
     setL1TxnHashState(L1ReceiptState.LOADING);
 
     if (txHash.length !== 66) {
@@ -434,6 +441,13 @@ function App() {
     setl1TxnReceipt(receiptRes);
 
     if (receiptRes === undefined) {
+      const res = await getL2ToL1Messages(txHash);
+      // TODO: handle terminal states
+      if (res.l2ToL1Messages.length > 0) {
+        setL1TxnHashState(L1ReceiptState.MESSAGES_FOUND);
+        return setL2ToL1MessagesToShow(res.l2ToL1Messages);
+      }
+
       return setL1TxnHashState(L1ReceiptState.NOT_FOUND);
     }
     const { l1Network, l1TxnReceipt } = receiptRes;
@@ -536,7 +550,10 @@ function App() {
           ? "loading messages..."
           : null}{" "}
       </div>
-      {messagesDisplays.some((msg) => msg.showRedeemButton) ? (
+      {messagesDisplays.some((msg) => msg.showRedeemButton) ||
+      l2ToL1MessagesToShow.some(
+        (msg) => msg.status === L2ToL1MessageStatus.CONFIRMED
+      ) ? (
         signer ? (
           <button onClick={() => disconnect()}>Disconnect Wallet</button>
         ) : (
