@@ -9,13 +9,15 @@ import {
   L1ToL2MessageReader,
   L1TransactionReceipt,
   L1ToL2MessageStatus,
-  getRawArbTransactionReceipt
+  getRawArbTransactionReceipt,
+  L2ToL1MessageStatus
 } from "@arbitrum/sdk";
 import { JsonRpcProvider } from "@ethersproject/providers";
 import { BigNumber } from "@ethersproject/bignumber";
 import { toUtf8String } from "ethers/lib/utils";
 
 import Redeem from "./Redeem";
+import { getL2ToL1Messages, L2ToL1MessageData } from './lib'
 
 export enum L1ReceiptState {
   EMPTY,
@@ -132,7 +134,7 @@ export interface RetryableTxs {
 if (!process.env.REACT_APP_INFURA_KEY)
   throw new Error("No REACT_APP_INFURA_KEY set");
 
-const supportedL1Networks = {
+export const supportedL1Networks = {
   1: `https://mainnet.infura.io/v3/${process.env.REACT_APP_INFURA_KEY}`,
   4: `https://rinkeby.infura.io/v3/${process.env.REACT_APP_INFURA_KEY}`
 };
@@ -323,8 +325,12 @@ function App() {
     L1ToL2MessageStatusDisplay[]
   >([]);
 
+  const [l2ToL1MessagesToShow, setL2ToL1MessagesToShow] = React.useState<
+    L2ToL1MessageData[]
+  >([]);    
   const retryablesSearch = async (txHash: string) => {
     setl1ToL2MessagesDisplays([]);
+    setL2ToL1MessagesToShow([]);
     setL1TxnHashState(L1ReceiptState.LOADING);
 
     if (txHash.length !== 66) {
@@ -332,6 +338,13 @@ function App() {
     }
     const receiptRes = await getL1TxnReceipt(txHash);
     if (receiptRes === undefined) {
+      const res = await getL2ToL1Messages(txHash)
+      // TODO: handle terminal states
+      if(res.l2ToL1Messages.length > 0){
+        setL1TxnHashState(L1ReceiptState.MESSAGES_FOUND);
+        return setL2ToL1MessagesToShow(res.l2ToL1Messages)
+      }
+      
       return setL1TxnHashState(L1ReceiptState.NOT_FOUND);
     }
     const { l1Network, l1TxnReceipt } = receiptRes;
@@ -398,7 +411,7 @@ function App() {
           ? "loading messages..."
           : null}{" "}
       </div>
-      {l1ToL2MessagesDisplays.some(msg => msg.showRedeemButton) ? (
+      {l1ToL2MessagesDisplays.some(msg => msg.showRedeemButton)  || l2ToL1MessagesToShow.some(msg => msg.status === L2ToL1MessageStatus.CONFIRMED) ? (
         signer ? (
           <button onClick={() => disconnect()}>Disconnect Wallet</button>
         ) : (
