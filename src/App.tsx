@@ -9,22 +9,27 @@ import {
   L1ToL2MessageReader,
   L1TransactionReceipt,
   L1ToL2MessageStatus,
-  getRawArbTransactionReceipt
+  getRawArbTransactionReceipt,
+  L2ToL1MessageStatus
 } from "@arbitrum/sdk";
 import { JsonRpcProvider } from "@ethersproject/providers";
 import { BigNumber } from "@ethersproject/bignumber";
 import { toUtf8String } from "ethers/lib/utils";
 
 import Redeem from "./Redeem";
+import { getL2ToL1Messages, L2ToL1MessageData, L2TxnStatus } from './lib'
+import  L2ToL1MsgsDisplay from './L2ToL1MsgsDisplay'
 
-export enum L1ReceiptState {
+export enum ReceiptState {
   EMPTY,
   LOADING,
   INVALID_INPUT_LENGTH,
   NOT_FOUND,
-  FAILED,
+  L1_FAILED,
+  L2_FAILED,
   NO_L1_L2_MESSAGES,
-  MESSAGES_FOUND
+  MESSAGES_FOUND,
+  NO_L2_L1_MESSAGES
 }
 
 export enum AlertLevel {
@@ -53,47 +58,59 @@ const looksLikeCallToInboxethDeposit = async (
   );
 };
 const receiptStateToDisplayableResult = (
-  l1ReceiptState: L1ReceiptState
+  l1ReceiptState: ReceiptState
 ): {
   text: string;
   alertLevel: AlertLevel;
 } => {
   switch (l1ReceiptState) {
-    case L1ReceiptState.EMPTY:
+    case ReceiptState.EMPTY:
       return {
         text: "",
         alertLevel: AlertLevel.NONE
       };
-    case L1ReceiptState.LOADING:
+    case ReceiptState.LOADING:
       return {
         text: "Loading...",
         alertLevel: AlertLevel.NONE
       };
-    case L1ReceiptState.INVALID_INPUT_LENGTH:
+    case ReceiptState.INVALID_INPUT_LENGTH:
       return {
         text: "Error: invalid transction hash",
         alertLevel: AlertLevel.RED
       };
-    case L1ReceiptState.NOT_FOUND:
+    case ReceiptState.NOT_FOUND:
       return {
         text: "L1 transaction not found",
         alertLevel: AlertLevel.YELLOW
       };
-    case L1ReceiptState.FAILED:
+    case ReceiptState.L1_FAILED:
       return {
         text: "Error: L1 transaction reverted",
         alertLevel: AlertLevel.RED
       };
-    case L1ReceiptState.NO_L1_L2_MESSAGES:
+    case ReceiptState.L2_FAILED:
+      return {
+        text: "Error: L2 transaction reverted",
+        alertLevel: AlertLevel.RED
+      };
+    case ReceiptState.NO_L1_L2_MESSAGES:
       return {
         text: "No L1-to-L2 messages created by provided L1 transaction",
         alertLevel: AlertLevel.YELLOW
       };
-    case L1ReceiptState.MESSAGES_FOUND:
+    case ReceiptState.MESSAGES_FOUND:
       return {
-        text: "L1 to L2 messages found",
+        text: "Cross chain messages found",
         alertLevel: AlertLevel.GREEN
       };
+    case ReceiptState.NO_L2_L1_MESSAGES:{
+      return {
+        text: "No L1-to-L2 messages created by provided L1 transaction",
+        alertLevel: AlertLevel.YELLOW
+
+      }
+    }
   }
 };
 
@@ -132,7 +149,7 @@ export interface RetryableTxs {
 if (!process.env.REACT_APP_INFURA_KEY)
   throw new Error("No REACT_APP_INFURA_KEY set");
 
-const supportedL1Networks = {
+export const supportedL1Networks = {
   1: `https://mainnet.infura.io/v3/${process.env.REACT_APP_INFURA_KEY}`,
   4: `https://rinkeby.infura.io/v3/${process.env.REACT_APP_INFURA_KEY}`
 };
@@ -316,35 +333,53 @@ function App() {
   }, [signer, provider]);
 
   const [input, setInput] = React.useState<string>("");
-  const [l1TxnHashState, setL1TxnHashState] = React.useState<L1ReceiptState>(
-    L1ReceiptState.EMPTY
+  const [txHashState, setTxnHashState] = React.useState<ReceiptState>(
+    ReceiptState.EMPTY
   );
   const [l1ToL2MessagesDisplays, setl1ToL2MessagesDisplays] = React.useState<
     L1ToL2MessageStatusDisplay[]
   >([]);
 
+  const [l2ToL1MessagesToShow, setL2ToL1MessagesToShow] = React.useState<
+    L2ToL1MessageData[]
+  >([]);    
   const retryablesSearch = async (txHash: string) => {
     setl1ToL2MessagesDisplays([]);
-    setL1TxnHashState(L1ReceiptState.LOADING);
+    setL2ToL1MessagesToShow([]);
+    setTxnHashState(ReceiptState.LOADING);
 
     if (txHash.length !== 66) {
-      return setL1TxnHashState(L1ReceiptState.INVALID_INPUT_LENGTH);
+      return setTxnHashState(ReceiptState.INVALID_INPUT_LENGTH);
     }
     const receiptRes = await getL1TxnReceipt(txHash);
     if (receiptRes === undefined) {
-      return setL1TxnHashState(L1ReceiptState.NOT_FOUND);
+      const res = await getL2ToL1Messages(txHash)
+      // TODO: handle terminal states
+      if(res.l2ToL1Messages.length > 0){
+        setTxnHashState(ReceiptState.MESSAGES_FOUND);
+        return setL2ToL1MessagesToShow(res.l2ToL1Messages)
+      }
+
+      if (res.l2TxnStatus === L2TxnStatus.SUCCESS){
+        return setTxnHashState(ReceiptState.NO_L2_L1_MESSAGES)
+      }
+      if (res.l2TxnStatus === L2TxnStatus.FAILURE){
+        return setTxnHashState(ReceiptState.L2_FAILED)
+      }
+      
+      return setTxnHashState(ReceiptState.NOT_FOUND);
     }
     const { l1Network, l1TxnReceipt } = receiptRes;
     if (l1TxnReceipt.status === 0) {
-      return setL1TxnHashState(L1ReceiptState.FAILED);
+      return setTxnHashState(ReceiptState.L1_FAILED);
     }
 
     const l1ToL2Messages = await getL1ToL2Messages(l1TxnReceipt, l1Network);
     if (l1ToL2Messages.length === 0) {
-      return setL1TxnHashState(L1ReceiptState.NO_L1_L2_MESSAGES);
+      return setTxnHashState(ReceiptState.NO_L1_L2_MESSAGES);
     }
 
-    setL1TxnHashState(L1ReceiptState.MESSAGES_FOUND);
+    setTxnHashState(ReceiptState.MESSAGES_FOUND);
 
 
     const l1ToL2MessageStatuses: L1ToL2MessageStatusDisplay[] = [];
@@ -366,7 +401,7 @@ function App() {
   };
 
   const { text: l1TxnResultText } = receiptStateToDisplayableResult(
-    l1TxnHashState
+    txHashState
   );
   return (
     <div>
@@ -384,8 +419,7 @@ function App() {
           </div>
         </form>
         <h6>
-          Paste your L1 tx hash above and find out whats up with your L1 to L2
-          retryable.
+          Paste your tx hash above and find out whats up with your cross chain message.
         </h6>
       </div>
 
@@ -393,18 +427,24 @@ function App() {
       <br />
       <div>
         {" "}
-        {l1TxnHashState === L1ReceiptState.MESSAGES_FOUND &&
-        l1ToL2MessagesDisplays.length === 0
+        {txHashState === ReceiptState.MESSAGES_FOUND &&
+        l1ToL2MessagesDisplays.length === 0 && l2ToL1MessagesToShow.length === 0
           ? "loading messages..."
           : null}{" "}
       </div>
-      {l1ToL2MessagesDisplays.some(msg => msg.showRedeemButton) ? (
+      {l1ToL2MessagesDisplays.some(msg => msg.showRedeemButton)  || l2ToL1MessagesToShow.some(msg => msg.status === L2ToL1MessageStatus.CONFIRMED) ? (
         signer ? (
           <button onClick={() => disconnect()}>Disconnect Wallet</button>
         ) : (
           <button onClick={() => connect()}>Connect Wallet</button>
         )
       ) : null}
+
+      <L2ToL1MsgsDisplay
+        signer={signer}
+        l2ToL1Messages={l2ToL1MessagesToShow}
+        connectedNetworkId={connectedNetworkId}
+      />
 
       {l1ToL2MessagesDisplays.map((l1ToL2MessageDisplay, i) => {
         return (
