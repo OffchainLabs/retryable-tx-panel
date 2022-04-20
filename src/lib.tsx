@@ -16,7 +16,7 @@ const supportedL2Networks = {
   42161: `https://arb1.arbitrum.io/rpc`
 };
 
-enum L2TxnStatus {
+export enum L2TxnStatus {
   SUCCESS = "SUCCESS",
   FAILURE = "FAILURE",
   NOT_FOUND = "NOT_FOUND"
