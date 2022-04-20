@@ -30,6 +30,23 @@ export const getOutboxAddr = (network: L2Network, batchNumber: BigNumber) => {
   return res[0];
 };
 
+const etaDisplay = (etaSeconds: number) => {
+  const minutesLeft = Math.round(etaSeconds / 60);
+  const hoursLeft = Math.round(minutesLeft / 60);
+  const daysLeft = Math.round(hoursLeft / 24);
+
+  if (daysLeft > 0) {
+    return `~${daysLeft} day${daysLeft === 1 ? "" : "s"}`;
+  }
+
+  if (hoursLeft > 0) {
+    return `~${hoursLeft} hour${hoursLeft === 1 ? "" : "s"}`;
+  }
+
+  if (minutesLeft === 0) {
+    return "less than 1 hour";
+  }
+};
 function L2ToL1MsgsDisplay({
   signer,
   l2ToL1Messages,
@@ -46,11 +63,16 @@ function L2ToL1MsgsDisplay({
         return (
           <div>
             <p>L2 to L1 message not yet confirmed</p>
-            <p>
-              l1 block deadline{" "}
-              {l2ToL1Message.deadlineBlock &&
-                l2ToL1Message.deadlineBlock.toNumber()}
-            </p>
+
+            {l2ToL1Message.confirmationInfo ? (
+              <p>
+                {" ETA:"}
+                {etaDisplay(
+                  l2ToL1Message.confirmationInfo.etaSeconds
+                )} <br /> (L1 block deadline:{" "}
+                {l2ToL1Message.confirmationInfo.deadlineBlock.toNumber()})
+              </p>
+            ) : null}
           </div>
         );
       case L2ToL1MessageStatus.CONFIRMED:
