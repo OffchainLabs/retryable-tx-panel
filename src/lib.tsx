@@ -30,7 +30,10 @@ interface L2ToL1MessageSearchResult {
 export interface L2ToL1MessageData {
   status: L2ToL1MessageStatus;
   l2ToL1Message: L2ToL1Message;
-  deadlineBlock: BigNumber | null;
+  confirmationInfo: {
+    deadlineBlock: BigNumber,
+    etaSeconds: number
+  } | null,
   l1Network: L1Network;
   l2Network: L2Network;
   l2Provider: JsonRpcProvider
@@ -50,6 +53,7 @@ export const getL2ToL1Messages = async (
     const l1Provider = await new JsonRpcProvider(
       supportedL1Networks[l1ChainID]
     );
+    const currentL1Block = BigNumber.from(await l1Provider.getBlockNumber())
 
     const receipt = await l2Provider.getTransactionReceipt(txHash);
     if (receipt) {
@@ -75,12 +79,16 @@ export const getL2ToL1Messages = async (
           const deadlineBlock =
             status !== L2ToL1MessageStatus.CONFIRMED &&
             status !== L2ToL1MessageStatus.EXECUTED
-              ? null
-              : await l2ToL1Message.getFirstExecutableBlock(l2Provider);
+              ? await l2ToL1Message.getFirstExecutableBlock(l2Provider)
+              : null
+          
           l2MessagesData.push({
             status,
             l2ToL1Message,
-            deadlineBlock,
+            confirmationInfo: deadlineBlock ? {
+              deadlineBlock,
+              etaSeconds: deadlineBlock.sub(currentL1Block).mul(15).toNumber()
+            }: null,
             l1Network,
             l2Network,
             l2Provider
@@ -91,10 +99,12 @@ export const getL2ToL1Messages = async (
           const actualError =
             err && (err.message || (err.error && err.error.message));
           if (actualError.includes(expectedError)) {
+            console.warn('batch doesnt exist');
+            
             l2MessagesData.push({
               status: L2ToL1MessageStatus.NOT_FOUND,
               l2ToL1Message,
-              deadlineBlock: null,
+              confirmationInfo: null,
               l1Network,
               l2Network,
               l2Provider
