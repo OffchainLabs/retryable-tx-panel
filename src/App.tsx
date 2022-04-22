@@ -338,7 +338,7 @@ function App() {
     if (receiptRes === undefined) {
       return setL1TxnHashState(L1ReceiptState.NOT_FOUND);
     }
-    const { l1Network, l1TxnReceipt } = receiptRes;
+    const { l1Network, l1TxnReceipt, l1Provider } = receiptRes;
     if (l1TxnReceipt.status === 0) {
       return setL1TxnHashState(L1ReceiptState.FAILED);
     }
@@ -350,8 +350,8 @@ function App() {
 
     setL1TxnHashState(L1ReceiptState.MESSAGES_FOUND);
 
-    // TODO: Identify ETH Deposits
-    const looksLikeEthDeposit = false
+    const tx = await l1Provider.getTransaction(txHash)
+    const looksLikeEthDeposit = (tx.data.slice(0,10) === "0x0f4d14e9")
     // const looksLikeEthDeposit = await l1TxnReceipt.looksLikeEthDeposit(
     //   l1Provider
     // );
