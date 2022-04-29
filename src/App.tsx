@@ -259,6 +259,7 @@ const l1ToL2MessageToStatusDisplay = async (
         if (!autoRedeemRec) {
           return "Auto-redeem not attempted; you can redeem it now:";
         }
+        // https://github.com/OffchainLabs/arb-os/blob/develop/arb_os/constants.json
         switch (BigNumber.from(autoRedeemRec.returnCode).toNumber()) {
           case 1:
             return `Your auto redeem reverted. The revert reason is: ${toUtf8String(
@@ -266,14 +267,34 @@ const l1ToL2MessageToStatusDisplay = async (
             )}. You can redeem it now.`;
           case 2:
             return "Auto redeem failed; hit congestion in the chain; you can redeem it now:";
+          case 3:
+            return "auto redeem TxResultCode_insufficientGasFunds; you can redeem it now:";
+          case 4:
+            return "auto redeem TxResultCode_insufficientBalance; you can redeem it now:";
+          case 5:
+            return "auto redeem _TxResultCode_reserved_was_badSequenceNum; you can redeem it now:";
+          case 6:
+            return "auto redeem TxResultCode_formatError; you can redeem it now:";
+          case 7:
+            return "auto redeem TxResultCode_cannotDeployAtAddress; you can redeem it now:";
           case 8:
             return "auto redeem _TxResultCode_exceededTxGasLimit; you can redeem it now:";
+          case 9:
+            return "auto redeem TxResultCode_insufficientGasForBaseFee; you can redeem it now:";
           case 10:
             return "auto redeem TxResultCode_belowMinimumTxGas; you can redeem it now:";
           case 11:
             return "auto redeem TxResultCode_gasPriceTooLow; you can redeem it now:";
           case 12:
             return "auto redeem TxResultCode_noGasForAutoRedeem; you can redeem it now:";
+          case 13:
+            return "auto redeem TxResultCode_senderNotPermitted; you can redeem it now:";
+          case 14:
+            return "auto redeem TxResultCode_sequenceNumberTooLow; you can redeem it now:";
+          case 15:
+            return "auto redeem TxResultCode_sequenceNumberTooHigh; you can redeem it now:";
+          case 16:
+            return "auto redeem TxResultCode_executionRanOutOfGas; you can redeem it now:";
           default:
             return "auto redeem reverted; you can redeem it now:";
         }
