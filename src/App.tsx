@@ -373,6 +373,11 @@ function App() {
     retryablesSearch(input);
   };
 
+  if (input === "" && window.location.pathname.length === 67){
+    const txhash = window.location.pathname.substring(1,)
+    setInput(txhash)
+    retryablesSearch(txhash)
+  }
   const { text: l1TxnResultText } = receiptStateToDisplayableResult(
     l1TxnHashState
   );
