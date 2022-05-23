@@ -142,9 +142,7 @@ addCustomNetwork({
     "ethBridge": {
       "bridge": "0x9903a892da86c1e04522d63b08e5514a921e81df",
       "inbox": "0x1fdbbcc914e84af593884bf8e8dd6877c29035a2",
-      "outboxes": {
-        "0xFDF2B11347dA17326BAF30bbcd3F4b09c4719584": 0
-      },
+      "outbox": "0xFDF2B11347dA17326BAF30bbcd3F4b09c4719584",
       "rollup": "0x767CfF8D8de386d7cbe91DbD39675132ba2f5967",
       "sequencerInbox": "0xb32f4257e05c56c53d46bbec9e85770eb52425d6"
     },
