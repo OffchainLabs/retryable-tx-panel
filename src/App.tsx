@@ -332,6 +332,7 @@ function App() {
     if (txHash.length !== 66) {
       return setL1TxnHashState(L1ReceiptState.INVALID_INPUT_LENGTH);
     }
+    window.history.pushState("", "", `/${txHash}`);
     const receiptRes = await getL1TxnReceipt(txHash);
     if (receiptRes === undefined) {
       return setL1TxnHashState(L1ReceiptState.NOT_FOUND);
