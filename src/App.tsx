@@ -120,8 +120,7 @@ if (!process.env.REACT_APP_INFURA_KEY)
 const supportedL1Networks = {
   // 1: `https://mainnet.infura.io/v3/${process.env.REACT_APP_INFURA_KEY}`,
   // 4: `https://rinkeby.infura.io/v3/${process.env.REACT_APP_INFURA_KEY}`,
-  5: `https://goerli.infura.io/v3/${process.env.REACT_APP_INFURA_KEY}`,
-  1337: `http://localhost:8545`
+  5: `https://goerli.infura.io/v3/${process.env.REACT_APP_INFURA_KEY}`
 };
 
 addCustomNetwork({
