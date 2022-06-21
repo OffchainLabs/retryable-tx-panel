@@ -197,6 +197,16 @@ const l1ToL2MessageToStatusDisplay = async (
         ...stuffTheyAllHave
       };
     case L1ToL2MessageStatus.EXPIRED: {
+      const looksLikeEthDeposit = await looksLikeCallToInboxethDeposit(l1ToL2Message)
+      if (looksLikeEthDeposit) {
+        return {
+          text: "Success! 🎉 Your Eth deposit has completed",
+          alertLevel: AlertLevel.GREEN,
+          showRedeemButton: false,
+          ...stuffTheyAllHave
+        }
+      }
+
       return {
         text: "Retryable ticket expired.",
         alertLevel: AlertLevel.RED,
