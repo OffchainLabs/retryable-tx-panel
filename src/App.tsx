@@ -118,8 +118,8 @@ if (!process.env.REACT_APP_INFURA_KEY)
   throw new Error("No REACT_APP_INFURA_KEY set");
 
 const supportedL1Networks = {
-  // 1: `https://mainnet.infura.io/v3/${process.env.REACT_APP_INFURA_KEY}`,
-  // 4: `https://rinkeby.infura.io/v3/${process.env.REACT_APP_INFURA_KEY}`,
+  1: `https://mainnet.infura.io/v3/${process.env.REACT_APP_INFURA_KEY}`,
+  4: `https://rinkeby.infura.io/v3/${process.env.REACT_APP_INFURA_KEY}`,
   5: `https://goerli.infura.io/v3/${process.env.REACT_APP_INFURA_KEY}`
 };
 
