@@ -8,8 +8,9 @@ import {
   L2Network,
   IL1ToL2MessageReader,
 } from "@arbitrum/sdk"
+
 // import directly from nitro sdk since `getL1Network` in migration sdk
-// require a provider while the one in sdk can take a chainID
+// require a provider while the one in nitro sdk can take a chainID
 import {
   getL1Network,
   getL2Network
