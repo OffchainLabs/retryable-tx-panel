@@ -2,17 +2,21 @@ import "./App.css";
 import React, { useState, useMemo, useEffect } from "react";
 import { useWallet } from "@gimmixorg/use-wallet";
 import {
-  L1ToL2MessageReader,
   L1TransactionReceipt,
   L1ToL2MessageStatus,
   L1Network,
   L2Network,
-  getL2Network,
-  getL1Network,
+  IL1ToL2MessageReader,
 } from "@arbitrum/sdk"
+import {
+  getL1Network,
+  getL2Network
+} from "@arbitrum/sdk-nitro/dist/lib/dataEntities/networks"
 
 import { JsonRpcProvider } from "@ethersproject/providers";
+
 import Redeem from "./Redeem";
+import { L1ToL2MessageWaitResult } from "@arbitrum/sdk/dist/lib/message/L1ToL2Message";
 
 export enum L1ReceiptState {
   EMPTY,
@@ -31,10 +35,24 @@ export enum AlertLevel {
   NONE
 }
 
-interface L1ToL2MessageReaderWithNetwork extends L1ToL2MessageReader {
+interface L1ToL2MessageReaderWithNetwork extends IL1ToL2MessageReader {
   l2Network: L2Network;
 }
 
+const looksLikeCallToInboxethDeposit = async (
+  l1ToL2Message: IL1ToL2MessageReader
+): Promise<boolean> => {
+  const txData = await l1ToL2Message.getInputs();
+
+  return (
+    txData.l2CallValue.isZero() &&
+    txData.maxGas.isZero() &&
+    txData.gasPriceBid.isZero() &&
+    txData.callDataLength.isZero() &&
+    txData.destinationAddress === txData.excessFeeRefundAddress &&
+    txData.excessFeeRefundAddress === txData.callValueRefundAddress
+  );
+};
 const receiptStateToDisplayableResult = (
   l1ReceiptState: L1ReceiptState
 ): {
@@ -86,7 +104,7 @@ export interface L1ToL2MessageStatusDisplay {
   showRedeemButton: boolean;
   explorerUrl: string;
   l2Network: L2Network;
-  l1ToL2Message: L1ToL2MessageReader;
+  l1ToL2Message: IL1ToL2MessageReader;
   l2TxHash: string;
 }
 
@@ -122,6 +140,7 @@ const supportedL1Networks = {
   5: `https://goerli.infura.io/v3/${process.env.REACT_APP_INFURA_KEY}`
 };
 
+
 const getL1TxnReceipt = async (txnHash: string) => {
   for (let [chainID, rpcURL] of Object.entries(supportedL1Networks)) {
     const l1Network = await getL1Network(+chainID);
@@ -144,9 +163,21 @@ const getL1ToL2Messages = async (
 ): Promise<L1ToL2MessageReaderWithNetwork[]> => {
   let allL1ToL2Messages: L1ToL2MessageReaderWithNetwork[] = [];
 
-  for (let l2ChainID of l1Network.partnerChainIDs) {
-    // TODO: error handlle
+  // Workaround https://github.com/OffchainLabs/arbitrum-sdk/pull/137
+  for (let l2ChainID of Array.from(new Set(l1Network.partnerChainIDs))) {
+    // TODO: error handle
     const l2Network = await getL2Network(l2ChainID);
+
+    // Check if any l1ToL2 msg is sent to the inbox of this l2Network
+    const logFromL2Inbox = l1TxnReceipt.logs.filter(log=>{
+      return log.address.toLowerCase() === l2Network.ethBridge.inbox.toLowerCase()
+    })
+    if (logFromL2Inbox.length === 0) continue
+
+    // Workaround https://github.com/OffchainLabs/arbitrum-sdk/pull/138
+    if (!l2Network.rpcURL && l2ChainID===42170){
+      l2Network.rpcURL = "https://nova.arbitrum.io/rpc"
+    }
     const l2Provider = new JsonRpcProvider(l2Network.rpcURL);
     const l1ToL2MessagesWithNetwork: L1ToL2MessageReaderWithNetwork[] = (
       await l1TxnReceipt.getL1ToL2Messages(l2Provider)
@@ -160,14 +191,22 @@ const getL1ToL2Messages = async (
 
 const l1ToL2MessageToStatusDisplay = async (
   l1ToL2Message: L1ToL2MessageReaderWithNetwork,
-  looksLikeEthDeposit: boolean
 ): Promise<L1ToL2MessageStatusDisplay> => {
   const { l2Network } = l1ToL2Message;
-  const messageStatus = await l1ToL2Message.waitForStatus(undefined, 0);
-  const { explorerUrl } = await getL2Network(l1ToL2Message.l2Provider);
-  const autoRedeemRec = await l1ToL2Message.getAutoRedeemAttempt()
-  const l2TxReceipt = messageStatus.status === L1ToL2MessageStatus.REDEEMED ? messageStatus.l2TxReceipt : autoRedeemRec
-  const l2TxHash = l2TxReceipt ? l2TxReceipt.transactionHash : "null"
+  const { explorerUrl } = l2Network;
+
+  let messageStatus : L1ToL2MessageWaitResult
+  try {
+    messageStatus = await l1ToL2Message.waitForStatus(undefined, 1);
+  } catch (e) {
+    // catch timeout if not immediately found
+    messageStatus = {status: L1ToL2MessageStatus.NOT_YET_CREATED}
+  }
+  
+  let l2TxHash = "null"
+  if(messageStatus.status === L1ToL2MessageStatus.REDEEMED){
+    l2TxHash = messageStatus.l2TxReceipt.transactionHash
+  }
 
   // naming is hard
   const stuffTheyAllHave = {
@@ -186,6 +225,16 @@ const l1ToL2MessageToStatusDisplay = async (
         ...stuffTheyAllHave
       };
     case L1ToL2MessageStatus.EXPIRED: {
+      const looksLikeEthDeposit = await looksLikeCallToInboxethDeposit(l1ToL2Message)
+      if (looksLikeEthDeposit) {
+        return {
+          text: "Success! 🎉 Your Eth deposit has completed",
+          alertLevel: AlertLevel.GREEN,
+          showRedeemButton: false,
+          ...stuffTheyAllHave
+        }
+      }
+
       return {
         text: "Retryable ticket expired.",
         alertLevel: AlertLevel.RED,
@@ -204,10 +253,7 @@ const l1ToL2MessageToStatusDisplay = async (
     }
 
     case L1ToL2MessageStatus.REDEEMED: {
-      const text =
-        l2TxReceipt && l2TxReceipt.status === 1 && l2TxReceipt.transactionHash === autoRedeemRec?.transactionHash
-          ? "Success! 🎉 Your retryable was auto-executed."
-          : "Success! 🎉 Your retryable ticket has been executed directly on L2.";
+      const text = "Success! 🎉 Your retryable was executed.";
       return {
         text: text,
         alertLevel: AlertLevel.GREEN,
@@ -216,6 +262,7 @@ const l1ToL2MessageToStatusDisplay = async (
       };
     }
     case L1ToL2MessageStatus.FUNDS_DEPOSITED_ON_L2: {
+      const looksLikeEthDeposit = await looksLikeCallToInboxethDeposit(l1ToL2Message)
       if (looksLikeEthDeposit) {
         return {
           text: "Success! 🎉 Your Eth deposit has completed",
@@ -226,10 +273,7 @@ const l1ToL2MessageToStatusDisplay = async (
       }
 
       const text = (() => {
-        if (autoRedeemRec) {
-          return "Auto-redeem reverted; you can redeem it now:";
-        }
-        return "Auto-redeem reverted due to gas parameters; you can redeem it now:";
+        return "Auto-redeem reverted; you can redeem it now:";
       })();
       return {
         text,
@@ -288,7 +332,7 @@ function App() {
     if (receiptRes === undefined) {
       return setL1TxnHashState(L1ReceiptState.NOT_FOUND);
     }
-    const { l1Network, l1TxnReceipt, l1Provider } = receiptRes;
+    const { l1Network, l1TxnReceipt } = receiptRes;
     if (l1TxnReceipt.status === 0) {
       return setL1TxnHashState(L1ReceiptState.FAILED);
     }
@@ -300,17 +344,11 @@ function App() {
 
     setL1TxnHashState(L1ReceiptState.MESSAGES_FOUND);
 
-    const tx = await l1Provider.getTransaction(txHash)
-    const looksLikeEthDeposit = (tx.data.slice(0,10) === "0x0f4d14e9")
-    // const looksLikeEthDeposit = await l1TxnReceipt.looksLikeEthDeposit(
-    //   l1Provider
-    // );
 
     const l1ToL2MessageStatuses: L1ToL2MessageStatusDisplay[] = [];
     for (let l1ToL2Message of l1ToL2Messages) {
       const l1ToL2MessageStatus = await l1ToL2MessageToStatusDisplay(
         l1ToL2Message,
-        looksLikeEthDeposit
       );
       l1ToL2MessageStatuses.push(l1ToL2MessageStatus);
     }
@@ -376,7 +414,8 @@ function App() {
           <div key={l1ToL2MessageDisplay.l1ToL2Message.retryableCreationId}>
             {
               <>
-                <h2>Your transaction status:</h2>
+                <h2>-----{l1ToL2MessageDisplay.l2Network.name}-----</h2>
+                <h3>Your transaction status</h3>
                 <p>{l1ToL2MessageDisplay.text}</p>
                 {l1ToL2MessageDisplay.showRedeemButton ? (
                   <Redeem
@@ -387,9 +426,8 @@ function App() {
                 ) : null}
               </>
             }
-            <h2>Txn links:</h2>
+            <h3>Txn links</h3>
             <p>
-              <br />
               <a
                 href={
                   l1ToL2MessageDisplay.explorerUrl +

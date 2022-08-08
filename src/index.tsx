@@ -8,7 +8,7 @@ ReactDOM.render(
   <React.StrictMode>
     <div className="Header">
       <header className="Header-header">
-        <h2>Arbitrum Nitro Retryable Dashboard</h2>
+        <h2>Arbitrum Retryable Dashboard</h2>
         <img src={logo} className="Header-logo" alt="logo" />
         <App />
       </header>
