@@ -8,6 +8,8 @@ import {
   L2Network,
   IL1ToL2MessageReader,
 } from "@arbitrum/sdk"
+// import directly from nitro sdk since `getL1Network` in migration sdk
+// require a provider while the one in sdk can take a chainID
 import {
   getL1Network,
   getL2Network
@@ -215,7 +217,7 @@ const l1ToL2MessageToStatusDisplay = async (
     l1ToL2Message,
     l2TxHash,
   };
-  switch (messageStatus.status) { 
+  switch (messageStatus.status) {
     case L1ToL2MessageStatus.CREATION_FAILED:
       return {
         text:
@@ -273,7 +275,8 @@ const l1ToL2MessageToStatusDisplay = async (
       }
 
       const text = (() => {
-        return "Auto-redeem reverted; you can redeem it now:";
+        // we do not know why auto redeem failed in nitro
+        return "Auto-redeem failed; you can redeem it now:";
       })();
       return {
         text,
@@ -327,7 +330,10 @@ function App() {
     if (txHash.length !== 66) {
       return setL1TxnHashState(L1ReceiptState.INVALID_INPUT_LENGTH);
     }
+
+    // simple deep linking
     window.history.pushState("", "", `/${txHash}`);
+
     const receiptRes = await getL1TxnReceipt(txHash);
     if (receiptRes === undefined) {
       return setL1TxnHashState(L1ReceiptState.NOT_FOUND);
@@ -363,11 +369,13 @@ function App() {
     retryablesSearch(input);
   };
 
+  // simple deep linking
   if (input === "" && window.location.pathname.length === 67){
     const txhash = window.location.pathname.substring(1,)
     setInput(txhash)
     retryablesSearch(txhash)
   }
+
   const { text: l1TxnResultText } = receiptStateToDisplayableResult(
     l1TxnHashState
   );

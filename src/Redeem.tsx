@@ -20,11 +20,11 @@ function Redeem({
     return (
       <button
         onClick={async () => {
+          // NOTE: we could have a "reader to writer" method in migration sdk
+          //       but we don't have it and therefore the below mess
           const _l1ToL2Message = l1ToL2Message.l1ToL2Message as any
           const isNitro = _l1ToL2Message.nitroReader !== undefined
           const innerReader = isNitro ? _l1ToL2Message.nitroReader : _l1ToL2Message.classicReader
-          // NOTE: we could but a "reader to writer" method in @arbitrum/sdk
-          console.log(innerReader)
           const l1ToL2MessageWriter = new L1ToL2MessageWriter(
             signer,
             l1ToL2Message.l2Network.chainID,
