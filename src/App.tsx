@@ -9,7 +9,6 @@ import {
   L2Network,
   getL2Network,
   getL1Network,
-  addCustomNetwork
 } from "@arbitrum/sdk"
 
 import { JsonRpcProvider } from "@ethersproject/providers";
