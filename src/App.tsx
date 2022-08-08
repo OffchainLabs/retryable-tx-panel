@@ -123,53 +123,6 @@ const supportedL1Networks = {
   5: `https://goerli.infura.io/v3/${process.env.REACT_APP_INFURA_KEY}`
 };
 
-addCustomNetwork({
-  customL1Network: {
-    "blockTime": 15,
-    "chainID": 5,
-    "explorerUrl": "https://goerli.etherscan.io/",
-    "isCustom": true,
-    "name": "Goerli",
-    "partnerChainIDs": [
-      421613
-    ],
-    "rpcURL": `https://goerli.infura.io/v3/${process.env.REACT_APP_INFURA_KEY}`
-  },
-  customL2Network: {
-    "chainID": 421613,
-    "confirmPeriodBlocks": 960,
-    "ethBridge": {
-      "bridge": "0x9903a892da86c1e04522d63b08e5514a921e81df",
-      "inbox": "0x1fdbbcc914e84af593884bf8e8dd6877c29035a2",
-      "outbox": "0xFDF2B11347dA17326BAF30bbcd3F4b09c4719584",
-      "rollup": "0x767CfF8D8de386d7cbe91DbD39675132ba2f5967",
-      "sequencerInbox": "0xb32f4257e05c56c53d46bbec9e85770eb52425d6"
-    },
-    "explorerUrl": "https://goerli-rollup-explorer.arbitrum.io/",
-    "isArbitrum": true,
-    "isCustom": true,
-    "name": "ArbLocal",
-    "partnerChainID": 5,
-    "rpcURL": "https://goerli-rollup.arbitrum.io/rpc",
-    "tokenBridge": {
-      "l1CustomGateway": "0x9fDD1C4E4AA24EEc1d913FABea925594a20d43C7",
-      "l1ERC20Gateway": "0x715D99480b77A8d9D603638e593a539E21345FdF",
-      "l1GatewayRouter": "0x4c7708168395aEa569453Fc36862D2ffcDaC588c",
-      "l1MultiCall": "0xa0A8537a683B49ba4bbE23883d984d4684e0acdD",
-      "l1ProxyAdmin": "0x16101A84B00344221E2983190718bFAba30D9CeE",
-      "l1Weth": "0xB4FBF271143F4FBf7B91A5ded31805e42b2208d6",
-      "l1WethGateway": "0x6e244cD02BBB8a6dbd7F626f05B2ef82151Ab502",
-      "l2CustomGateway": "0x8b6990830cF135318f75182487A4D7698549C717",
-      "l2ERC20Gateway": "0x2eC7Bc552CE8E51f098325D2FcF0d3b9d3d2A9a2",
-      "l2GatewayRouter": "0xE5B9d8d42d656d1DcB8065A6c012FE3780246041",
-      "l2Multicall": "0x108B25170319f38DbED14cA9716C54E5D1FF4623",
-      "l2ProxyAdmin": "0xeC377B42712608B0356CC54Da81B2be1A4982bAb",
-      "l2Weth": "0xe39Ab88f8A4777030A534146A9Ca3B52bd5D43A3",
-      "l2WethGateway": "0xf9F2e89c8347BD96742Cc07095dee490e64301d6"
-    },
-    "retryableLifetimeSeconds": 608400
-}})
-
 const getL1TxnReceipt = async (txnHash: string) => {
   for (let [chainID, rpcURL] of Object.entries(supportedL1Networks)) {
     const l1Network = await getL1Network(+chainID);
