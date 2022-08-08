@@ -34,7 +34,6 @@ function Redeem({
             innerReader.messageData,
             isNitro ? undefined : innerReader.retryableCreationId
           );
-          console.log(l1ToL2MessageWriter)
           try {
             const res = await l1ToL2MessageWriter.redeem();
             const rec = await res.wait();
