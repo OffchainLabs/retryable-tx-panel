@@ -51,3 +51,13 @@ input[type="submit"] {
   border-radius: 4px;
   outline-color: rgb(84 105 212 / 0.5);
 }
+
+a { 
+  text-decoration: underline;
+  color: white; 
+  
+}
+a:visited { 
+  text-decoration: underline;
+  color: white; 
+}
