@@ -134,6 +134,12 @@ export interface RetryableTxs {
   l2ChainId: number;
 }
 
+export interface ReceiptRes {
+  l1TxnReceipt: L1TransactionReceipt,
+  l1Network: L1Network,
+  l1Provider: JsonRpcProvider
+}
+
 if (!process.env.REACT_APP_INFURA_KEY)
   throw new Error("No REACT_APP_INFURA_KEY set");
 
@@ -144,7 +150,7 @@ const supportedL1Networks = {
 };
 
 
-const getL1TxnReceipt = async (txnHash: string) => {
+const getL1TxnReceipt = async (txnHash: string): Promise<ReceiptRes | undefined> => {
   for (let [chainID, rpcURL] of Object.entries(supportedL1Networks)) {
     const l1Network = await getL1Network(+chainID);
     const l1Provider = await new JsonRpcProvider(rpcURL);
@@ -172,13 +178,13 @@ const getL1ToL2Messages = async (
     const l2Network = await getL2Network(l2ChainID);
 
     // Check if any l1ToL2 msg is sent to the inbox of this l2Network
-    const logFromL2Inbox = l1TxnReceipt.logs.filter(log=>{
+    const logFromL2Inbox = l1TxnReceipt.logs.filter(log => {
       return log.address.toLowerCase() === l2Network.ethBridge.inbox.toLowerCase()
     })
     if (logFromL2Inbox.length === 0) continue
 
     // Workaround https://github.com/OffchainLabs/arbitrum-sdk/pull/138
-    if (!l2Network.rpcURL && l2ChainID===42170){
+    if (!l2Network.rpcURL && l2ChainID === 42170) {
       l2Network.rpcURL = "https://nova.arbitrum.io/rpc"
     }
     const l2Provider = new JsonRpcProvider(l2Network.rpcURL);
@@ -198,16 +204,16 @@ const l1ToL2MessageToStatusDisplay = async (
   const { l2Network } = l1ToL2Message;
   const { explorerUrl } = l2Network;
 
-  let messageStatus : L1ToL2MessageWaitResult
+  let messageStatus: L1ToL2MessageWaitResult
   try {
     messageStatus = await l1ToL2Message.waitForStatus(undefined, 1);
   } catch (e) {
     // catch timeout if not immediately found
-    messageStatus = {status: L1ToL2MessageStatus.NOT_YET_CREATED}
+    messageStatus = { status: L1ToL2MessageStatus.NOT_YET_CREATED }
   }
-  
+
   let l2TxHash = "null"
-  if(messageStatus.status === L1ToL2MessageStatus.REDEEMED){
+  if (messageStatus.status === L1ToL2MessageStatus.REDEEMED) {
     l2TxHash = messageStatus.l2TxReceipt.transactionHash
   }
 
@@ -320,11 +326,13 @@ function App() {
   const [l1TxnHashState, setL1TxnHashState] = React.useState<L1ReceiptState>(
     L1ReceiptState.EMPTY
   );
+  const [l1TxnReceipt, setl1TxnReceipt] = React.useState<ReceiptRes>();
   const [l1ToL2MessagesDisplays, setl1ToL2MessagesDisplays] = React.useState<
     L1ToL2MessageStatusDisplay[]
   >([]);
 
   const retryablesSearch = async (txHash: string) => {
+    setl1TxnReceipt(undefined);
     setl1ToL2MessagesDisplays([]);
     setL1TxnHashState(L1ReceiptState.LOADING);
 
@@ -336,6 +344,8 @@ function App() {
     window.history.pushState("", "", `/${txHash}`);
 
     const receiptRes = await getL1TxnReceipt(txHash);
+    setl1TxnReceipt(receiptRes);
+
     if (receiptRes === undefined) {
       return setL1TxnHashState(L1ReceiptState.NOT_FOUND);
     }
@@ -371,7 +381,7 @@ function App() {
   };
 
   // simple deep linking
-  if (input === "" && window.location.pathname.length === 67){
+  if (input === "" && window.location.pathname.length === 67) {
     const txhash = window.location.pathname.substring(1,)
     setInput(txhash)
     retryablesSearch(txhash)
@@ -402,11 +412,18 @@ function App() {
       </div>
 
       <div> {l1TxnResultText} </div>
+      <div>
+        {l1TxnReceipt && (
+          <a href={l1TxnReceipt.l1Network.explorerUrl + '/tx/' + l1TxnReceipt.l1TxnReceipt.transactionHash} rel="noreferrer" target="_blank">
+            <h3>L1 Tx on {l1TxnReceipt.l1Network.name}</h3>
+          </a>
+        )}
+      </div>
       <br />
       <div>
         {" "}
         {l1TxnHashState === L1ReceiptState.MESSAGES_FOUND &&
-        l1ToL2MessagesDisplays.length === 0
+          l1ToL2MessagesDisplays.length === 0
           ? "loading messages..."
           : null}{" "}
       </div>
