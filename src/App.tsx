@@ -1,5 +1,5 @@
 import "./App.css";
-import React, { useState, useMemo, useEffect } from "react";
+import React, { useState, useMemo, useEffect, useRef } from "react";
 import { useWallet } from "@gimmixorg/use-wallet";
 import {
   L1TransactionReceipt,
@@ -303,6 +303,7 @@ function App() {
   const [connectedNetworkId, setConnectedNetworkID] = useState<number | null>(
     null
   );
+  const resultRef = useRef<null | HTMLDivElement>(null); 
 
   const signer = useMemo(() => {
     if (!provider) {
@@ -370,6 +371,8 @@ function App() {
       l1ToL2MessageStatuses.push(l1ToL2MessageStatus);
     }
     setl1ToL2MessagesDisplays(l1ToL2MessageStatuses);
+
+    if(resultRef.current) resultRef.current.scrollIntoView() // scroll to results
   };
 
   const handleChange = (event: any) => {
@@ -434,7 +437,7 @@ function App() {
 
       {l1ToL2MessagesDisplays.map((l1ToL2MessageDisplay, i) => {
         return (
-          <div key={l1ToL2MessageDisplay.l1ToL2Message.retryableCreationId}>
+          <div key={l1ToL2MessageDisplay.l1ToL2Message.retryableCreationId} ref={resultRef}>
             {
               <>
                 <h3>Your transaction status on {l1ToL2MessageDisplay.l2Network.name}</h3>
