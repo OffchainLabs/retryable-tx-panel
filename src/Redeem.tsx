@@ -1,4 +1,4 @@
-import React, { useMemo } from "react";
+import { useMemo } from "react";
 import { L1ToL2MessageStatusDisplay } from "./App";
 import { JsonRpcSigner } from "@ethersproject/providers";
 import { L1ToL2MessageWriter } from "@arbitrum/sdk";
@@ -39,6 +39,8 @@ function Redeem({
             const rec = await res.wait();
             if (rec.status === 1) {
               alert(`Retryable successfully redeemed! ${rec.transactionHash}`);
+              // Reload the page to show the new status
+              window.location.reload();
             } else {
               throw new Error("Failed to redeed");
             }
