@@ -411,14 +411,11 @@ function App() {
         </h6>
       </div>
 
-      <div> {l1TxnResultText} </div>
-      <div>
-        {l1TxnReceipt && (
+      <div>{l1TxnReceipt && (
           <a href={l1TxnReceipt.l1Network.explorerUrl + '/tx/' + l1TxnReceipt.l1TxnReceipt.transactionHash} rel="noreferrer" target="_blank">
-            <h3>L1 Tx on {l1TxnReceipt.l1Network.name}</h3>
+            L1 Tx on {l1TxnReceipt.l1Network.name}
           </a>
-        )}
-      </div>
+        )} {l1TxnResultText} </div>
       <br />
       <div>
         {" "}
@@ -440,8 +437,7 @@ function App() {
           <div key={l1ToL2MessageDisplay.l1ToL2Message.retryableCreationId}>
             {
               <>
-                <h2>-----{l1ToL2MessageDisplay.l2Network.name}-----</h2>
-                <h3>Your transaction status</h3>
+                <h3>Your transaction status on {l1ToL2MessageDisplay.l2Network.name}</h3>
                 <p>{l1ToL2MessageDisplay.text}</p>
                 {l1ToL2MessageDisplay.showRedeemButton ? (
                   <Redeem
@@ -466,18 +462,17 @@ function App() {
                 Retryable Ticket
               </a>
               <br />
-              <a
-                href={
-                  l1ToL2MessageDisplay.explorerUrl +
-                  "/tx/" +
-                  l1ToL2MessageDisplay.l2TxHash
-                }
-                rel="noreferrer"
-                target="_blank"
-              >
-                L2 Tx
-              </a>
-              <br />
+              {l1ToL2MessageDisplay.l2TxHash !== "null" && (
+              <><a
+                  href={l1ToL2MessageDisplay.explorerUrl +
+                    "/tx/" +
+                    l1ToL2MessageDisplay.l2TxHash}
+                  rel="noreferrer"
+                  target="_blank"
+                >
+                  L2 Tx
+                </a><br /></>
+              )}
             </p>
           </div>
         );
