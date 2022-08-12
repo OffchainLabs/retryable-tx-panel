@@ -451,8 +451,8 @@ function App() {
                 ) : null}
               </>
             }
-            <h3>Txn links</h3>
             <p>
+            -----Txn links----- <br />
               <a
                 href={
                   l1ToL2MessageDisplay.explorerUrl +
