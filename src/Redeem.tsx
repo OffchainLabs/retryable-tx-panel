@@ -42,7 +42,7 @@ function Redeem({
               // Reload the page to show the new status
               window.location.reload();
             } else {
-              throw new Error("Failed to redeed");
+              throw new Error("Failed to redeem");
             }
           } catch (err) {
             alert("Failed to redeem retryable:");
