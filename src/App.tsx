@@ -16,7 +16,7 @@ import {
   getL2Network
 } from "@arbitrum/sdk-nitro/dist/lib/dataEntities/networks"
 
-import { JsonRpcProvider } from "@ethersproject/providers";
+import { JsonRpcProvider, StaticJsonRpcProvider } from "@ethersproject/providers";
 
 import Redeem from "./Redeem";
 import { L1ToL2MessageWaitResult } from "@arbitrum/sdk/dist/lib/message/L1ToL2Message";
@@ -153,7 +153,7 @@ const supportedL1Networks = {
 const getL1TxnReceipt = async (txnHash: string): Promise<ReceiptRes | undefined> => {
   for (let [chainID, rpcURL] of Object.entries(supportedL1Networks)) {
     const l1Network = await getL1Network(+chainID);
-    const l1Provider = await new JsonRpcProvider(rpcURL);
+    const l1Provider = await new StaticJsonRpcProvider(rpcURL);
 
     const rec = await l1Provider.getTransactionReceipt(txnHash);
     if (rec) {
@@ -187,7 +187,7 @@ const getL1ToL2Messages = async (
     if (!l2Network.rpcURL && l2ChainID === 42170) {
       l2Network.rpcURL = "https://nova.arbitrum.io/rpc"
     }
-    const l2Provider = new JsonRpcProvider(l2Network.rpcURL);
+    const l2Provider = new StaticJsonRpcProvider(l2Network.rpcURL);
     const l1ToL2MessagesWithNetwork: L1ToL2MessageReaderWithNetwork[] = (
       await l1TxnReceipt.getL1ToL2Messages(l2Provider)
     ).map(l1ToL2Message => {
