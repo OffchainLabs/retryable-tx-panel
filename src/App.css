@@ -11,7 +11,7 @@
   line-height: 28px;
   padding: 8px 16px;
   width: 100%;
-  min-width: 300px;
+  min-width: 100px;
   min-height: 44px;
   border: unset;
   border-radius: 4px;
@@ -50,4 +50,23 @@ input[type="submit"] {
   border: unset;
   border-radius: 4px;
   outline-color: rgb(84 105 212 / 0.5);
+}
+
+a { 
+  text-decoration: underline;
+  color: white; 
+  
+}
+a:visited { 
+  text-decoration: underline;
+  color: white; 
+}
+
+html {
+  scroll-behavior: smooth;
+}
+
+.redeemtext {
+ width: 100%;
+ height: 10em; 
 }

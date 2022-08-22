@@ -1,21 +1,25 @@
 import "./App.css";
-import React, { useState, useMemo, useEffect } from "react";
+import React, { useState, useMemo, useEffect, useRef } from "react";
 import { useWallet } from "@gimmixorg/use-wallet";
 import {
-  L1Network,
-  L2Network,
-  getL2Network,
-  getL1Network,
-  L1ToL2MessageReader,
   L1TransactionReceipt,
   L1ToL2MessageStatus,
-  getRawArbTransactionReceipt
-} from "@arbitrum/sdk";
-import { JsonRpcProvider } from "@ethersproject/providers";
-import { BigNumber } from "@ethersproject/bignumber";
-import { toUtf8String } from "ethers/lib/utils";
+  L1Network,
+  L2Network,
+  IL1ToL2MessageReader,
+} from "@arbitrum/sdk"
+
+// import directly from nitro sdk since `getL1Network` in migration sdk
+// require a provider while the one in nitro sdk can take a chainID
+import {
+  getL1Network,
+  getL2Network
+} from "@arbitrum/sdk-nitro/dist/lib/dataEntities/networks"
+
+import { JsonRpcProvider, StaticJsonRpcProvider } from "@ethersproject/providers";
 
 import Redeem from "./Redeem";
+import { L1ToL2MessageWaitResult } from "@arbitrum/sdk/dist/lib/message/L1ToL2Message";
 
 export enum L1ReceiptState {
   EMPTY,
@@ -34,12 +38,12 @@ export enum AlertLevel {
   NONE
 }
 
-interface L1ToL2MessageReaderWithNetwork extends L1ToL2MessageReader {
+interface L1ToL2MessageReaderWithNetwork extends IL1ToL2MessageReader {
   l2Network: L2Network;
 }
 
 const looksLikeCallToInboxethDeposit = async (
-  l1ToL2Message: L1ToL2MessageReader
+  l1ToL2Message: IL1ToL2MessageReader
 ): Promise<boolean> => {
   const txData = await l1ToL2Message.getInputs();
 
@@ -103,7 +107,8 @@ export interface L1ToL2MessageStatusDisplay {
   showRedeemButton: boolean;
   explorerUrl: string;
   l2Network: L2Network;
-  l1ToL2Message: L1ToL2MessageReader;
+  l1ToL2Message: IL1ToL2MessageReader;
+  l2TxHash: string;
 }
 
 export enum Status {
@@ -129,19 +134,26 @@ export interface RetryableTxs {
   l2ChainId: number;
 }
 
+export interface ReceiptRes {
+  l1TxnReceipt: L1TransactionReceipt,
+  l1Network: L1Network,
+  l1Provider: JsonRpcProvider
+}
+
 if (!process.env.REACT_APP_INFURA_KEY)
   throw new Error("No REACT_APP_INFURA_KEY set");
 
 const supportedL1Networks = {
   1: `https://mainnet.infura.io/v3/${process.env.REACT_APP_INFURA_KEY}`,
-  4: `https://rinkeby.infura.io/v3/${process.env.REACT_APP_INFURA_KEY}`
+  4: `https://rinkeby.infura.io/v3/${process.env.REACT_APP_INFURA_KEY}`,
+  5: `https://goerli.infura.io/v3/${process.env.REACT_APP_INFURA_KEY}`
 };
 
 
-const getL1TxnReceipt = async (txnHash: string) => {
+const getL1TxnReceipt = async (txnHash: string): Promise<ReceiptRes | undefined> => {
   for (let [chainID, rpcURL] of Object.entries(supportedL1Networks)) {
     const l1Network = await getL1Network(+chainID);
-    const l1Provider = await new JsonRpcProvider(rpcURL);
+    const l1Provider = await new StaticJsonRpcProvider(rpcURL);
 
     const rec = await l1Provider.getTransactionReceipt(txnHash);
     if (rec) {
@@ -160,10 +172,22 @@ const getL1ToL2Messages = async (
 ): Promise<L1ToL2MessageReaderWithNetwork[]> => {
   let allL1ToL2Messages: L1ToL2MessageReaderWithNetwork[] = [];
 
-  for (let l2ChainID of l1Network.partnerChainIDs) {
-    // TODO: error handlle
+  // Workaround https://github.com/OffchainLabs/arbitrum-sdk/pull/137
+  for (let l2ChainID of Array.from(new Set(l1Network.partnerChainIDs))) {
+    // TODO: error handle
     const l2Network = await getL2Network(l2ChainID);
-    const l2Provider = new JsonRpcProvider(l2Network.rpcURL);
+
+    // Check if any l1ToL2 msg is sent to the inbox of this l2Network
+    const logFromL2Inbox = l1TxnReceipt.logs.filter(log => {
+      return log.address.toLowerCase() === l2Network.ethBridge.inbox.toLowerCase()
+    })
+    if (logFromL2Inbox.length === 0) continue
+
+    // Workaround https://github.com/OffchainLabs/arbitrum-sdk/pull/138
+    if (!l2Network.rpcURL && l2ChainID === 42170) {
+      l2Network.rpcURL = "https://nova.arbitrum.io/rpc"
+    }
+    const l2Provider = new StaticJsonRpcProvider(l2Network.rpcURL);
     const l1ToL2MessagesWithNetwork: L1ToL2MessageReaderWithNetwork[] = (
       await l1TxnReceipt.getL1ToL2Messages(l2Provider)
     ).map(l1ToL2Message => {
@@ -178,14 +202,27 @@ const l1ToL2MessageToStatusDisplay = async (
   l1ToL2Message: L1ToL2MessageReaderWithNetwork,
 ): Promise<L1ToL2MessageStatusDisplay> => {
   const { l2Network } = l1ToL2Message;
-  const messageStatus = await l1ToL2Message.waitForStatus()
-  const { explorerUrl } = await getL2Network(l1ToL2Message.l2Provider);
+  const { explorerUrl } = l2Network;
+
+  let messageStatus: L1ToL2MessageWaitResult
+  try {
+    messageStatus = await l1ToL2Message.waitForStatus(undefined, 1);
+  } catch (e) {
+    // catch timeout if not immediately found
+    messageStatus = { status: L1ToL2MessageStatus.NOT_YET_CREATED }
+  }
+
+  let l2TxHash = "null"
+  if (messageStatus.status === L1ToL2MessageStatus.REDEEMED) {
+    l2TxHash = messageStatus.l2TxReceipt.transactionHash
+  }
 
   // naming is hard
   const stuffTheyAllHave = {
     explorerUrl,
     l2Network,
-    l1ToL2Message
+    l1ToL2Message,
+    l2TxHash,
   };
   switch (messageStatus.status) {
     case L1ToL2MessageStatus.CREATION_FAILED:
@@ -225,12 +262,7 @@ const l1ToL2MessageToStatusDisplay = async (
     }
 
     case L1ToL2MessageStatus.REDEEMED: {
-      const autoRedeemReceipt = await l1ToL2Message.getAutoRedeemReceipt();
-
-      const text =
-        autoRedeemReceipt && autoRedeemReceipt.status === 1
-          ? "Success! 🎉 Your retryable was auto-executed."
-          : "Success! 🎉 Your retryable ticket has been executed directly on L2.";
+      const text = "Success! 🎉 Your retryable was executed.";
       return {
         text: text,
         alertLevel: AlertLevel.GREEN,
@@ -249,65 +281,9 @@ const l1ToL2MessageToStatusDisplay = async (
         };
       }
 
-      const l2Provider = l1ToL2Message.l2Provider as JsonRpcProvider;
-      const autoRedeemRec = await getRawArbTransactionReceipt(
-        l2Provider,
-        l1ToL2Message.autoRedeemId
-      );
-
-      // sanity check; should never occur
-      if (autoRedeemRec && autoRedeemRec.status === 1) {
-        return {
-          text:
-            "WARNING: auto-redeem succeeded, but transaction not executed..??? Contact support",
-          alertLevel: AlertLevel.RED,
-          showRedeemButton: false,
-          ...stuffTheyAllHave
-        };
-      }
       const text = (() => {
-        if (!autoRedeemRec) {
-          return "Auto-redeem not attempted; you can redeem it now:";
-        }
-        // https://github.com/OffchainLabs/arb-os/blob/develop/arb_os/constants.json
-        switch (BigNumber.from(autoRedeemRec.returnCode).toNumber()) {
-          case 1:
-            return `Your auto redeem reverted. The revert reason is: ${toUtf8String(
-              `0x${autoRedeemRec.returnData?.substr(10)}`
-            )}. You can redeem it now.`;
-          case 2:
-            return "Auto redeem failed; hit congestion in the chain; you can redeem it now:";
-          case 3:
-            return "auto redeem TxResultCode_insufficientGasFunds; you can redeem it now:";
-          case 4:
-            return "auto redeem TxResultCode_insufficientBalance; you can redeem it now:";
-          case 5:
-            return "auto redeem _TxResultCode_reserved_was_badSequenceNum; you can redeem it now:";
-          case 6:
-            return "auto redeem TxResultCode_formatError; you can redeem it now:";
-          case 7:
-            return "auto redeem TxResultCode_cannotDeployAtAddress; you can redeem it now:";
-          case 8:
-            return "auto redeem _TxResultCode_exceededTxGasLimit; you can redeem it now:";
-          case 9:
-            return "auto redeem TxResultCode_insufficientGasForBaseFee; you can redeem it now:";
-          case 10:
-            return "auto redeem TxResultCode_belowMinimumTxGas; you can redeem it now:";
-          case 11:
-            return "auto redeem TxResultCode_gasPriceTooLow; you can redeem it now:";
-          case 12:
-            return "auto redeem TxResultCode_noGasForAutoRedeem; you can redeem it now:";
-          case 13:
-            return "auto redeem TxResultCode_senderNotPermitted; you can redeem it now:";
-          case 14:
-            return "auto redeem TxResultCode_sequenceNumberTooLow; you can redeem it now:";
-          case 15:
-            return "auto redeem TxResultCode_sequenceNumberTooHigh; you can redeem it now:";
-          case 16:
-            return "auto redeem TxResultCode_executionRanOutOfGas; you can redeem it now:";
-          default:
-            return "auto redeem reverted; you can redeem it now:";
-        }
+        // we do not know why auto redeem failed in nitro
+        return "Auto-redeem failed; you can redeem it now:";
       })();
       return {
         text,
@@ -327,6 +303,7 @@ function App() {
   const [connectedNetworkId, setConnectedNetworkID] = useState<number | null>(
     null
   );
+  const resultRef = useRef<null | HTMLDivElement>(null); 
 
   const signer = useMemo(() => {
     if (!provider) {
@@ -350,18 +327,26 @@ function App() {
   const [l1TxnHashState, setL1TxnHashState] = React.useState<L1ReceiptState>(
     L1ReceiptState.EMPTY
   );
+  const [l1TxnReceipt, setl1TxnReceipt] = React.useState<ReceiptRes>();
   const [l1ToL2MessagesDisplays, setl1ToL2MessagesDisplays] = React.useState<
     L1ToL2MessageStatusDisplay[]
   >([]);
 
   const retryablesSearch = async (txHash: string) => {
+    setl1TxnReceipt(undefined);
     setl1ToL2MessagesDisplays([]);
     setL1TxnHashState(L1ReceiptState.LOADING);
 
     if (txHash.length !== 66) {
       return setL1TxnHashState(L1ReceiptState.INVALID_INPUT_LENGTH);
     }
+
+    // simple deep linking
+    window.history.pushState("", "", `/${txHash}`);
+
     const receiptRes = await getL1TxnReceipt(txHash);
+    setl1TxnReceipt(receiptRes);
+
     if (receiptRes === undefined) {
       return setL1TxnHashState(L1ReceiptState.NOT_FOUND);
     }
@@ -386,6 +371,8 @@ function App() {
       l1ToL2MessageStatuses.push(l1ToL2MessageStatus);
     }
     setl1ToL2MessagesDisplays(l1ToL2MessageStatuses);
+
+    if(resultRef.current) resultRef.current.scrollIntoView() // scroll to results
   };
 
   const handleChange = (event: any) => {
@@ -395,6 +382,13 @@ function App() {
     event.preventDefault();
     retryablesSearch(input);
   };
+
+  // simple deep linking
+  if (input === "" && window.location.pathname.length === 67) {
+    const txhash = window.location.pathname.substring(1,)
+    setInput(txhash)
+    retryablesSearch(txhash)
+  }
 
   const { text: l1TxnResultText } = receiptStateToDisplayableResult(
     l1TxnHashState
@@ -420,12 +414,16 @@ function App() {
         </h6>
       </div>
 
-      <div> {l1TxnResultText} </div>
+      <div>{l1TxnReceipt && (
+          <a href={l1TxnReceipt.l1Network.explorerUrl + '/tx/' + l1TxnReceipt.l1TxnReceipt.transactionHash} rel="noreferrer" target="_blank">
+            L1 Tx on {l1TxnReceipt.l1Network.name}
+          </a>
+        )} {l1TxnResultText} </div>
       <br />
       <div>
         {" "}
         {l1TxnHashState === L1ReceiptState.MESSAGES_FOUND &&
-        l1ToL2MessagesDisplays.length === 0
+          l1ToL2MessagesDisplays.length === 0
           ? "loading messages..."
           : null}{" "}
       </div>
@@ -439,10 +437,10 @@ function App() {
 
       {l1ToL2MessagesDisplays.map((l1ToL2MessageDisplay, i) => {
         return (
-          <div key={l1ToL2MessageDisplay.l1ToL2Message.retryableCreationId}>
+          <div key={l1ToL2MessageDisplay.l1ToL2Message.retryableCreationId} ref={resultRef}>
             {
               <>
-                <h2>Your transaction status:</h2>
+                <h3>Your transaction status on {l1ToL2MessageDisplay.l2Network.name}</h3>
                 <p>{l1ToL2MessageDisplay.text}</p>
                 {l1ToL2MessageDisplay.showRedeemButton ? (
                   <Redeem
@@ -453,9 +451,8 @@ function App() {
                 ) : null}
               </>
             }
-            <h2>Txn links:</h2>
             <p>
-              <br />
+            -----Txn links----- <br />
               <a
                 href={
                   l1ToL2MessageDisplay.explorerUrl +
@@ -468,30 +465,17 @@ function App() {
                 Retryable Ticket
               </a>
               <br />
-              <a
-                href={
-                  l1ToL2MessageDisplay.explorerUrl +
-                  "/tx/" +
-                  l1ToL2MessageDisplay.l1ToL2Message.autoRedeemId
-                }
-                rel="noreferrer"
-                target="_blank"
-              >
-                Auto Redeem
-              </a>
-              <br />
-              <a
-                href={
-                  l1ToL2MessageDisplay.explorerUrl +
-                  "/tx/" +
-                  l1ToL2MessageDisplay.l1ToL2Message.l2TxHash
-                }
-                rel="noreferrer"
-                target="_blank"
-              >
-                L2 tx
-              </a>
-              <br />
+              {l1ToL2MessageDisplay.l2TxHash !== "null" && (
+              <><a
+                  href={l1ToL2MessageDisplay.explorerUrl +
+                    "/tx/" +
+                    l1ToL2MessageDisplay.l2TxHash}
+                  rel="noreferrer"
+                  target="_blank"
+                >
+                  L2 Tx
+                </a><br /></>
+              )}
             </p>
           </div>
         );
