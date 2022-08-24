@@ -219,7 +219,7 @@ const getL1ToL2MessagesAndDepositMessages = async (
     allL1ToL2Messages = allL1ToL2Messages.concat(l1ToL2MessagesWithNetwork);
     allDepositMessages = allDepositMessages.concat(depositMessagesWithNetwork)
   }
-  let allMesaages: L1ToL2MessagesAndDepositMessages = {
+  const allMesaages: L1ToL2MessagesAndDepositMessages = {
     retryables: allL1ToL2Messages,
     deposits: allDepositMessages
   };
