@@ -4,7 +4,7 @@
   "license": "Apache-2.0",
   "private": true,
   "dependencies": {
-    "@arbitrum/sdk": "^2.0.13",
+    "@arbitrum/sdk": "^2.0.14",
     "@ethersproject/address": "^5.0.8",
     "@ethersproject/bignumber": "^5.1.1",
     "@ethersproject/bytes": "^5.0.8",

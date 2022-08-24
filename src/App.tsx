@@ -7,7 +7,12 @@ import {
   L1Network,
   L2Network,
   IL1ToL2MessageReader,
+  // L2ToL1Message,
 } from "@arbitrum/sdk"
+
+import {
+  EthDepositMessage
+} from "@arbitrum/sdk/dist/lib/utils/migration_types";
 
 // import directly from nitro sdk since `getL1Network` in migration sdk
 // require a provider while the one in nitro sdk can take a chainID
@@ -40,6 +45,15 @@ export enum AlertLevel {
 
 interface L1ToL2MessageReaderWithNetwork extends IL1ToL2MessageReader {
   l2Network: L2Network;
+}
+
+interface EthDepositMessageWithNetwork extends EthDepositMessage {
+  l2Network: L2Network;
+}
+
+interface L1ToL2MessagesAndDepositMessages {
+  retryables: L1ToL2MessageReaderWithNetwork[],
+  deposits: EthDepositMessageWithNetwork[]
 }
 
 const looksLikeCallToInboxethDeposit = async (
@@ -101,13 +115,16 @@ const receiptStateToDisplayableResult = (
   }
 };
 
-export interface L1ToL2MessageStatusDisplay {
+export interface MessageStatusDisplay {
+  isRetryables: boolean;
+  [x: string]: any;
   text: string;
   alertLevel: AlertLevel;
   showRedeemButton: boolean;
   explorerUrl: string;
   l2Network: L2Network;
   l1ToL2Message: IL1ToL2MessageReader;
+  ethDepositMessage: EthDepositMessage; 
   l2TxHash: string;
 }
 
@@ -166,12 +183,13 @@ const getL1TxnReceipt = async (txnHash: string): Promise<ReceiptRes | undefined>
   }
 };
 
-const getL1ToL2Messages = async (
+
+const getL1ToL2MessagesAndDepositMessages = async (
   l1TxnReceipt: L1TransactionReceipt,
   l1Network: L1Network
-): Promise<L1ToL2MessageReaderWithNetwork[]> => {
+): Promise<L1ToL2MessagesAndDepositMessages> => {
   let allL1ToL2Messages: L1ToL2MessageReaderWithNetwork[] = [];
-
+  let allDepositMessages: EthDepositMessageWithNetwork[] = [];
   // Workaround https://github.com/OffchainLabs/arbitrum-sdk/pull/137
   for (let l2ChainID of Array.from(new Set(l1Network.partnerChainIDs))) {
     // TODO: error handle
@@ -193,14 +211,59 @@ const getL1ToL2Messages = async (
     ).map(l1ToL2Message => {
       return Object.assign(l1ToL2Message, { l2Network });
     });
+    const depositMessagesWithNetwork: EthDepositMessageWithNetwork[] = (
+      await l1TxnReceipt.getEthDepositMessages(l2Provider)
+    ).map(depositMessage => {
+      return Object.assign(depositMessage, { l2Network });
+    });
     allL1ToL2Messages = allL1ToL2Messages.concat(l1ToL2MessagesWithNetwork);
+    allDepositMessages = allDepositMessages.concat(depositMessagesWithNetwork)
   }
-  return allL1ToL2Messages;
+  let allMesaages: L1ToL2MessagesAndDepositMessages = {
+    retryables: allL1ToL2Messages,
+    deposits: allDepositMessages
+  };
+  return allMesaages;
 };
+
+const depositMessageStatusDisplay = async (
+  ethDepositMessage: EthDepositMessageWithNetwork
+): Promise<MessageStatusDisplay> => {
+  const { l2Network } = ethDepositMessage;
+  const { explorerUrl } = l2Network;
+  const depositTxReceipt = await ethDepositMessage.wait();
+  const l2TxHash = ethDepositMessage.l2DepositTxHash;
+
+  // naming is hard
+  const stuffTheyAllHave = {
+    isRetryables: false,
+    l1ToL2Message: null as any,
+    explorerUrl,
+    l2Network,
+    ethDepositMessage,
+    l2TxHash,
+  };
+  if(depositTxReceipt?.status === 1) {
+    return {
+      text: "Success! 🎉 Your Eth deposit has completed",
+      alertLevel: AlertLevel.GREEN,
+      showRedeemButton: false,
+      ...stuffTheyAllHave
+    };
+  } else {
+    return {
+      text: "Something failed in this tracker, you can try to check your account on l2",
+      alertLevel: AlertLevel.RED,
+      showRedeemButton: false,
+      ...stuffTheyAllHave
+    };
+  }
+
+}
 
 const l1ToL2MessageToStatusDisplay = async (
   l1ToL2Message: L1ToL2MessageReaderWithNetwork,
-): Promise<L1ToL2MessageStatusDisplay> => {
+): Promise<MessageStatusDisplay> => {
   const { l2Network } = l1ToL2Message;
   const { explorerUrl } = l2Network;
 
@@ -219,6 +282,8 @@ const l1ToL2MessageToStatusDisplay = async (
 
   // naming is hard
   const stuffTheyAllHave = {
+    isRetryables: true,
+    ethDepositMessage: null as any,
     explorerUrl,
     l2Network,
     l1ToL2Message,
@@ -328,13 +393,20 @@ function App() {
     L1ReceiptState.EMPTY
   );
   const [l1TxnReceipt, setl1TxnReceipt] = React.useState<ReceiptRes>();
-  const [l1ToL2MessagesDisplays, setl1ToL2MessagesDisplays] = React.useState<
-    L1ToL2MessageStatusDisplay[]
+  const [messagesDisplays, setMessagesDisplays] = React.useState<
+  MessageStatusDisplay[]
   >([]);
+
+  const getRetryableIdOrDepositHash = (message: MessageStatusDisplay) => {
+    if(message.isRetryables) {
+      return message.l1ToL2Message.retryableCreationId;
+    }
+    return message.ethDepositMessage.l2DepositTxHash;
+  }
 
   const retryablesSearch = async (txHash: string) => {
     setl1TxnReceipt(undefined);
-    setl1ToL2MessagesDisplays([]);
+    setMessagesDisplays([]);
     setL1TxnHashState(L1ReceiptState.LOADING);
 
     if (txHash.length !== 66) {
@@ -355,22 +427,32 @@ function App() {
       return setL1TxnHashState(L1ReceiptState.FAILED);
     }
 
-    const l1ToL2Messages = await getL1ToL2Messages(l1TxnReceipt, l1Network);
-    if (l1ToL2Messages.length === 0) {
+    const allMesaages = await getL1ToL2MessagesAndDepositMessages(l1TxnReceipt, l1Network);
+    const l1ToL2Messages = allMesaages.retryables;
+    const depositMessages = allMesaages.deposits;
+
+    if (l1ToL2Messages.length === 0 && depositMessages.length === 0) {
       return setL1TxnHashState(L1ReceiptState.NO_L1_L2_MESSAGES);
     }
 
     setL1TxnHashState(L1ReceiptState.MESSAGES_FOUND);
 
-
-    const l1ToL2MessageStatuses: L1ToL2MessageStatusDisplay[] = [];
+    const messageStatuses: MessageStatusDisplay[] = [];
     for (let l1ToL2Message of l1ToL2Messages) {
       const l1ToL2MessageStatus = await l1ToL2MessageToStatusDisplay(
         l1ToL2Message,
       );
-      l1ToL2MessageStatuses.push(l1ToL2MessageStatus);
+      messageStatuses.push(l1ToL2MessageStatus);
     }
-    setl1ToL2MessagesDisplays(l1ToL2MessageStatuses);
+
+    for (let depositMessage of depositMessages) {
+      const l1ToL2MessageStatus = await depositMessageStatusDisplay(
+        depositMessage,
+      );
+      messageStatuses.push(l1ToL2MessageStatus);
+    }
+
+    setMessagesDisplays(messageStatuses);
 
     if(resultRef.current) resultRef.current.scrollIntoView() // scroll to results
   };
@@ -423,11 +505,11 @@ function App() {
       <div>
         {" "}
         {l1TxnHashState === L1ReceiptState.MESSAGES_FOUND &&
-          l1ToL2MessagesDisplays.length === 0
+          messagesDisplays.length === 0
           ? "loading messages..."
           : null}{" "}
       </div>
-      {l1ToL2MessagesDisplays.some(msg => msg.showRedeemButton) ? (
+      {messagesDisplays.some(msg => msg.showRedeemButton) ? (
         signer ? (
           <button onClick={() => disconnect()}>Disconnect Wallet</button>
         ) : (
@@ -435,9 +517,9 @@ function App() {
         )
       ) : null}
 
-      {l1ToL2MessagesDisplays.map((l1ToL2MessageDisplay, i) => {
+      {messagesDisplays.map((l1ToL2MessageDisplay, i) => {
         return (
-          <div key={l1ToL2MessageDisplay.l1ToL2Message.retryableCreationId} ref={resultRef}>
+          <div key={getRetryableIdOrDepositHash(l1ToL2MessageDisplay)} ref={resultRef}>
             {
               <>
                 <h3>Your transaction status on {l1ToL2MessageDisplay.l2Network.name}</h3>
@@ -453,17 +535,22 @@ function App() {
             }
             <p>
             -----Txn links----- <br />
-              <a
-                href={
-                  l1ToL2MessageDisplay.explorerUrl +
-                  "/tx/" +
-                  l1ToL2MessageDisplay.l1ToL2Message.retryableCreationId
-                }
-                rel="noreferrer"
-                target="_blank"
-              >
-                Retryable Ticket
-              </a>
+            {
+              <>
+              {l1ToL2MessageDisplay.isRetryables ? (
+                <a
+                  href={
+                    l1ToL2MessageDisplay.explorerUrl +
+                    "/tx/" +
+                    getRetryableIdOrDepositHash(l1ToL2MessageDisplay)
+                  }
+                  rel="noreferrer"
+                  target="_blank"
+                >
+                  Retryable Ticket
+                </a>): null}
+              </>
+            }
               <br />
               {l1ToL2MessageDisplay.l2TxHash !== "null" && (
               <><a

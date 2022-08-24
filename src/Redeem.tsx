@@ -1,19 +1,17 @@
 import { useMemo } from "react";
-import { L1ToL2MessageStatusDisplay } from "./App";
+import { MessageStatusDisplay } from "./App";
 import { JsonRpcSigner } from "@ethersproject/providers";
 import { L1ToL2MessageWriter } from "@arbitrum/sdk";
-import React from "react";
 
 function Redeem({
   l1ToL2Message,
   signer,
   connectedNetworkId
 }: {
-  l1ToL2Message: L1ToL2MessageStatusDisplay;
+  l1ToL2Message: MessageStatusDisplay;
   signer: JsonRpcSigner | null;
   connectedNetworkId: number | null;
 }) {
-  const [message, setMessage] = React.useState<string>("");
   const redeemButton = useMemo(() => {
     if (!signer) return "connect signer to redeem";
     if (connectedNetworkId !== l1ToL2Message.l2Network.chainID) {
@@ -40,15 +38,14 @@ function Redeem({
             const res = await l1ToL2MessageWriter.redeem();
             const rec = await res.wait();
             if (rec.status === 1) {
-              setMessage(`Retryable successfully redeemed! ${rec.transactionHash}`);
+              alert(`Retryable successfully redeemed! ${rec.transactionHash}`);
               // Reload the page to show the new status
               window.location.reload();
             } else {
-              setMessage(res.toString());
               throw new Error("Failed to redeem");
             }
           } catch (err) {
-            setMessage((err as Error).toString());
+            alert("Failed to redeem retryable:");
           }
         }}
       >
@@ -57,7 +54,7 @@ function Redeem({
     );
   }, [connectedNetworkId, l1ToL2Message, signer]);
 
-  return <><div>{redeemButton}</div><div>{message && (<textarea className="redeemtext">{message}</textarea>)}</div></>;
+  return <div>{redeemButton}</div>;
 }
 
 export default Redeem;
