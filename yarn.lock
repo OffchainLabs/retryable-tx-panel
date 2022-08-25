@@ -42,7 +42,7 @@
     ts-node "^10.2.1"
     typechain "7.0.0"
 
-"@arbitrum/sdk@^2.0.14":
+"@arbitrum/sdk@^2.0.15":
   version "2.0.15"
   resolved "https://registry.yarnpkg.com/@arbitrum/sdk/-/sdk-2.0.15.tgz#cd698af0470a20729e818045b3141c1dbcbcf521"
   integrity sha512-eCb9Cb/nvVRgvuX8fuIpbCFai4o4ARlYFdeqWpRwf8YEslcbDR7uEAHVqrNhSWGSHFeGEMs6lliotFbPcpSO8w==
