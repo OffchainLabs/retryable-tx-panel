@@ -7,7 +7,6 @@ import {
   L1Network,
   L2Network,
   IL1ToL2MessageReader,
-  // L2ToL1Message,
 } from "@arbitrum/sdk"
 
 import {
