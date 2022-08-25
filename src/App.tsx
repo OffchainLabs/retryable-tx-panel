@@ -115,18 +115,23 @@ const receiptStateToDisplayableResult = (
   }
 };
 
-export interface MessageStatusDisplay {
-  isRetryables: boolean;
-  [x: string]: any;
+interface MessageStatusDisplayBase{
   text: string;
   alertLevel: AlertLevel;
   showRedeemButton: boolean;
   explorerUrl: string;
   l2Network: L2Network;
-  l1ToL2Message: IL1ToL2MessageReader;
-  ethDepositMessage: EthDepositMessage; 
   l2TxHash: string;
 }
+interface MessageStatusDisplayRetryable extends MessageStatusDisplayBase{
+  l1ToL2Message: IL1ToL2MessageReader;
+  ethDepositMessage: undefined;
+}
+interface MessageStatusDisplayDeposit extends MessageStatusDisplayBase{
+  l1ToL2Message: undefined;
+  ethDepositMessage: EthDepositMessage; 
+}
+export type MessageStatusDisplay = MessageStatusDisplayRetryable | MessageStatusDisplayDeposit 
 
 export enum Status {
   CREATION_FAILURE,
@@ -236,8 +241,7 @@ const depositMessageStatusDisplay = async (
 
   // naming is hard
   const stuffTheyAllHave = {
-    isRetryables: false,
-    l1ToL2Message: null as any,
+    l1ToL2Message: undefined,
     explorerUrl,
     l2Network,
     ethDepositMessage,
@@ -282,8 +286,7 @@ const l1ToL2MessageToStatusDisplay = async (
 
   // naming is hard
   const stuffTheyAllHave = {
-    isRetryables: true,
-    ethDepositMessage: null as any,
+    ethDepositMessage: undefined,
     explorerUrl,
     l2Network,
     l1ToL2Message,
@@ -398,7 +401,7 @@ function App() {
   >([]);
 
   const getRetryableIdOrDepositHash = (message: MessageStatusDisplay) => {
-    if(message.isRetryables) {
+    if(message.l1ToL2Message !== undefined) {
       return message.l1ToL2Message.retryableCreationId;
     }
     return message.ethDepositMessage.l2DepositTxHash;
@@ -517,16 +520,16 @@ function App() {
         )
       ) : null}
 
-      {messagesDisplays.map((l1ToL2MessageDisplay, i) => {
+      {messagesDisplays.map((messageDisplay, i) => {
         return (
-          <div key={getRetryableIdOrDepositHash(l1ToL2MessageDisplay)} ref={resultRef}>
+          <div key={getRetryableIdOrDepositHash(messageDisplay)} ref={resultRef}>
             {
               <>
-                <h3>Your transaction status on {l1ToL2MessageDisplay.l2Network.name}</h3>
-                <p>{l1ToL2MessageDisplay.text}</p>
-                {l1ToL2MessageDisplay.showRedeemButton ? (
+                <h3>Your transaction status on {messageDisplay.l2Network.name}</h3>
+                <p>{messageDisplay.text}</p>
+                {messageDisplay.showRedeemButton ? (
                   <Redeem
-                    l1ToL2Message={l1ToL2MessageDisplay}
+                    l1ToL2Message={messageDisplay}
                     signer={signer}
                     connectedNetworkId={connectedNetworkId}
                   />
@@ -537,12 +540,12 @@ function App() {
             -----Txn links----- <br />
             {
               <>
-              {l1ToL2MessageDisplay.isRetryables ? (
+              {messageDisplay.l1ToL2Message !== undefined ? (
                 <a
                   href={
-                    l1ToL2MessageDisplay.explorerUrl +
+                    messageDisplay.explorerUrl +
                     "/tx/" +
-                    getRetryableIdOrDepositHash(l1ToL2MessageDisplay)
+                    getRetryableIdOrDepositHash(messageDisplay)
                   }
                   rel="noreferrer"
                   target="_blank"
@@ -552,11 +555,11 @@ function App() {
               </>
             }
               <br />
-              {l1ToL2MessageDisplay.l2TxHash !== "null" && (
+              {messageDisplay.l2TxHash !== "null" && (
               <><a
-                  href={l1ToL2MessageDisplay.explorerUrl +
+                  href={messageDisplay.explorerUrl +
                     "/tx/" +
-                    l1ToL2MessageDisplay.l2TxHash}
+                    messageDisplay.l2TxHash}
                   rel="noreferrer"
                   target="_blank"
                 >
