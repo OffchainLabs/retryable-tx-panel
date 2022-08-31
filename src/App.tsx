@@ -218,7 +218,7 @@ const getL1ToL2MessagesAndDepositMessages = async (
     const depositMessagesWithNetwork: EthDepositMessageWithNetwork[] = (
       await l1TxnReceipt.getEthDepositMessages(l2Provider)
     ).map(depositMessage => {
-      return Object.assign(depositMessage, { l2Network });
+      return {...depositMessage, l2Network};
     });
     allL1ToL2Messages = allL1ToL2Messages.concat(l1ToL2MessagesWithNetwork);
     allDepositMessages = allDepositMessages.concat(depositMessagesWithNetwork)
