@@ -342,7 +342,7 @@ function App() {
     }
 
     // simple deep linking
-    window.history.pushState("", "", `/${txHash}`);
+    window.history.pushState("", "", `/?t=${txHash}`);
 
     const receiptRes = await getL1TxnReceipt(txHash);
     setl1TxnReceipt(receiptRes);
@@ -382,10 +382,9 @@ function App() {
     event.preventDefault();
     retryablesSearch(input);
   };
-
   // simple deep linking
-  if (input === "" && window.location.pathname.length === 67) {
-    const txhash = window.location.pathname.substring(1,)
+  const txhash = new URLSearchParams(window.location.search).get("t")
+  if (input === "" && txhash?.length === 66){
     setInput(txhash)
     retryablesSearch(txhash)
   }
