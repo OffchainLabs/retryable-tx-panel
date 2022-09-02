@@ -1,6 +1,7 @@
 import "./App.css";
 import React, { useState, useMemo, useEffect, useRef } from "react";
 import { useWallet } from "@gimmixorg/use-wallet";
+import TrackedRetryables from "./TrackedRetryables"
 import {
   L1TransactionReceipt,
   L1ToL2MessageStatus,
@@ -394,6 +395,7 @@ function App() {
   );
   return (
     <div>
+      <TrackedRetryables/>
       <div>
         <form onSubmit={handleSubmit}>
           <div className="form-container">
