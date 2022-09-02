@@ -41,10 +41,6 @@ function TrackedRetryables({ retryablesSearch }: TrackedRetryablesProps) {
     keepUpdatingTrackedRetryables();
   }, []);
 
-  const options = [
-    { name: "Swedish", value: "sv" },
-    { name: "English", value: "en" }
-  ];
   return (
     <div id="redeemable-container">
       <span>
