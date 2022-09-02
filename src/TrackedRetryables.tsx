@@ -16,7 +16,10 @@ const unredeemedRetryablesURL = `${process.env
   .REACT_APP_DEV_REDEEMABLE_RETRYABLES_ROOT ||
   "https://retryablestatus.arbitrum.io"}/unredeemed/mainnet/`;
 
-function TrackedRerryables() {
+interface TrackedRetryablesProps {
+  retryablesSearch: (l1Hash: string) => Promise<void>;
+}
+function TrackedRetryables({ retryablesSearch }: TrackedRetryablesProps) {
   const [trackedRetryables, setTrackedRetryables] = useState<
     TrackedRetryable[]
   >([]);
@@ -38,13 +41,35 @@ function TrackedRerryables() {
     keepUpdatingTrackedRetryables();
   }, []);
 
+  const options = [
+    { name: "Swedish", value: "sv" },
+    { name: "English", value: "en" }
+  ];
   return (
-    <div>
-      {" "}
-      Found {trackedRetryables.length ? trackedRetryables.length : null}{" "}
-      potentially redeemable retryables{" "}
+    <div id="redeemable-container">
+      <span>
+        {" "}
+        {trackedRetryables.length
+          ? `Found ${trackedRetryables.length}
+potentially redeemable retryables:`
+          : null}
+      </span>
+      <ul>
+        {trackedRetryables.map(retryable => {
+          return (
+            <li
+              onClick={() => {
+                retryablesSearch(retryable.l1TxHash);
+              }}
+              className="redeemable-item"
+            >{`${retryable.l1TxHash.substring(0, 15)}... (${
+              retryable.ArbchainId === 42161 ? "Arb1" : "Nova"
+            })`}</li>
+          );
+        })}
+      </ul>
     </div>
   );
 }
 
-export default TrackedRerryables;
+export default TrackedRetryables;

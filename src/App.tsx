@@ -395,7 +395,7 @@ function App() {
   );
   return (
     <div>
-      <TrackedRetryables/>
+      <TrackedRetryables retryablesSearch={retryablesSearch}/>
       <div>
         <form onSubmit={handleSubmit}>
           <div className="form-container">
