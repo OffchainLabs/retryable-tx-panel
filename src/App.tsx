@@ -6,15 +6,11 @@ import {
   L1ToL2MessageStatus,
   L1Network,
   L2Network,
-  IL1ToL2MessageReader,
+  getL1Network,
+  getL2Network,
+  L1ToL2MessageReader,
 } from "@arbitrum/sdk"
 
-// import directly from nitro sdk since `getL1Network` in migration sdk
-// require a provider while the one in nitro sdk can take a chainID
-import {
-  getL1Network,
-  getL2Network
-} from "@arbitrum/sdk-nitro/dist/lib/dataEntities/networks"
 
 import { JsonRpcProvider, StaticJsonRpcProvider } from "@ethersproject/providers";
 
@@ -38,24 +34,11 @@ export enum AlertLevel {
   NONE
 }
 
-interface L1ToL2MessageReaderWithNetwork extends IL1ToL2MessageReader {
+interface L1ToL2MessageReaderWithNetwork extends L1ToL2MessageReader {
   l2Network: L2Network;
 }
 
-const looksLikeCallToInboxethDeposit = async (
-  l1ToL2Message: IL1ToL2MessageReader
-): Promise<boolean> => {
-  const txData = await l1ToL2Message.getInputs();
 
-  return (
-    txData.l2CallValue.isZero() &&
-    txData.maxGas.isZero() &&
-    txData.gasPriceBid.isZero() &&
-    txData.callDataLength.isZero() &&
-    txData.destinationAddress === txData.excessFeeRefundAddress &&
-    txData.excessFeeRefundAddress === txData.callValueRefundAddress
-  );
-};
 const receiptStateToDisplayableResult = (
   l1ReceiptState: L1ReceiptState
 ): {
@@ -107,7 +90,7 @@ export interface L1ToL2MessageStatusDisplay {
   showRedeemButton: boolean;
   explorerUrl: string;
   l2Network: L2Network;
-  l1ToL2Message: IL1ToL2MessageReader;
+  l1ToL2Message: L1ToL2MessageReader;
   l2TxHash: string;
 }
 
@@ -184,10 +167,21 @@ const getL1ToL2Messages = async (
     if (logFromL2Inbox.length === 0) continue
 
     // Workaround https://github.com/OffchainLabs/arbitrum-sdk/pull/138
-    if (!l2Network.rpcURL && l2ChainID === 42170) {
-      l2Network.rpcURL = "https://nova.arbitrum.io/rpc"
+    let l2RpcURL
+    if (l2ChainID === 42170) {
+      l2RpcURL = "https://nova.arbitrum.io/rpc"
     }
-    const l2Provider = new StaticJsonRpcProvider(l2Network.rpcURL);
+    if (l2ChainID === 42161) {
+      l2RpcURL = "https://arb1.arbitrum.io/rpc"
+    }
+    if (l2ChainID === 421611) {
+      l2RpcURL = "https://rinkeby.arbitrum.io/rpc"
+    }
+    if (l2ChainID === 421613) {
+      l2RpcURL = "https://goerli-rollup.arbitrum.io/rpc"
+    }
+
+    const l2Provider = new StaticJsonRpcProvider(l2RpcURL);
     const l1ToL2MessagesWithNetwork: L1ToL2MessageReaderWithNetwork[] = (
       await l1TxnReceipt.getL1ToL2Messages(l2Provider)
     ).map(l1ToL2Message => {
@@ -228,22 +222,12 @@ const l1ToL2MessageToStatusDisplay = async (
     case L1ToL2MessageStatus.CREATION_FAILED:
       return {
         text:
-          "L2 message creation reverted; perhaps provided maxSubmissionCost was too low?",
+          "????!!!!",
         alertLevel: AlertLevel.RED,
         showRedeemButton: false,
         ...stuffTheyAllHave
       };
     case L1ToL2MessageStatus.EXPIRED: {
-      const looksLikeEthDeposit = await looksLikeCallToInboxethDeposit(l1ToL2Message)
-      if (looksLikeEthDeposit) {
-        return {
-          text: "Success! 🎉 Your Eth deposit has completed",
-          alertLevel: AlertLevel.GREEN,
-          showRedeemButton: false,
-          ...stuffTheyAllHave
-        }
-      }
-
       return {
         text: "Retryable ticket expired.",
         alertLevel: AlertLevel.RED,
@@ -271,16 +255,6 @@ const l1ToL2MessageToStatusDisplay = async (
       };
     }
     case L1ToL2MessageStatus.FUNDS_DEPOSITED_ON_L2: {
-      const looksLikeEthDeposit = await looksLikeCallToInboxethDeposit(l1ToL2Message)
-      if (looksLikeEthDeposit) {
-        return {
-          text: "Success! 🎉 Your Eth deposit has completed",
-          alertLevel: AlertLevel.GREEN,
-          showRedeemButton: false,
-          ...stuffTheyAllHave
-        };
-      }
-
       const text = (() => {
         // we do not know why auto redeem failed in nitro
         return "Auto-redeem failed; you can redeem it now:";
@@ -431,6 +405,7 @@ function App() {
           <button onClick={() => disconnect()}>Disconnect Wallet</button>
         ) : (
           <button onClick={() => connect()}>Connect Wallet</button>
+          
         )
       ) : null}
 
