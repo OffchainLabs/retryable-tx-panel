@@ -58,7 +58,7 @@ const receiptStateToDisplayableResult = (
       };
     case L1ReceiptState.INVALID_INPUT_LENGTH:
       return {
-        text: "Error: invalid transction hash",
+        text: "Error: invalid transaction hash",
         alertLevel: AlertLevel.RED
       };
     case L1ReceiptState.NOT_FOUND:
@@ -222,7 +222,7 @@ const l1ToL2MessageToStatusDisplay = async (
     case L1ToL2MessageStatus.CREATION_FAILED:
       return {
         text:
-          "????!!!!",
+          "L2 message creation reverted; perhaps provided maxSubmissionCost was too low using?",
         alertLevel: AlertLevel.RED,
         showRedeemButton: false,
         ...stuffTheyAllHave
@@ -268,7 +268,7 @@ const l1ToL2MessageToStatusDisplay = async (
     }
 
     default:
-      throw new Error("Uncaught L1ToL2MessageStatus type in switch statemmtn");
+      throw new Error("Uncaught L1ToL2MessageStatus type in switch statement");
   }
 };
 
