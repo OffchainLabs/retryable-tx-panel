@@ -37,7 +37,19 @@ export enum AlertLevel {
 interface L1ToL2MessageReaderWithNetwork extends L1ToL2MessageReader {
   l2Network: L2Network;
 }
-
+const looksLikeCallToInboxethDeposit = async (
+  l1ToL2Message: L1ToL2MessageReader
+): Promise<boolean> => {
+  const txData = await l1ToL2Message.messageData;
+  return (
+    txData.l2CallValue.isZero() &&
+    txData.gasLimit.isZero() &&
+    txData.maxFeePerGas.isZero() &&
+    (txData.data.toString() === "0x0000000000000000000000000000000000000000000000000000000000000000") &&
+    txData.destAddress === txData.excessFeeRefundAddress &&
+    txData.excessFeeRefundAddress === txData.callValueRefundAddress
+  );
+};
 
 const receiptStateToDisplayableResult = (
   l1ReceiptState: L1ReceiptState
@@ -166,21 +178,21 @@ const getL1ToL2Messages = async (
     })
     if (logFromL2Inbox.length === 0) continue
 
-    // Workaround https://github.com/OffchainLabs/arbitrum-sdk/pull/138
     let l2RpcURL
-    if (l2ChainID === 42170) {
-      l2RpcURL = "https://nova.arbitrum.io/rpc"
+    switch (l2ChainID) {
+      case 42161: 
+      l2RpcURL = "https://arb1.arbitrum.io/rpc";
+      break;
+      case 42170: 
+      l2RpcURL = "https://nova.arbitrum.io/rpc";
+      break;
+      case 421611: 
+      l2RpcURL = "https://rinkeby.arbitrum.io/rpc";
+      break;
+      case 421613: 
+      l2RpcURL = "https://goerli-rollup.arbitrum.io/rpc";
+      break;
     }
-    if (l2ChainID === 42161) {
-      l2RpcURL = "https://arb1.arbitrum.io/rpc"
-    }
-    if (l2ChainID === 421611) {
-      l2RpcURL = "https://rinkeby.arbitrum.io/rpc"
-    }
-    if (l2ChainID === 421613) {
-      l2RpcURL = "https://goerli-rollup.arbitrum.io/rpc"
-    }
-
     const l2Provider = new StaticJsonRpcProvider(l2RpcURL);
     const l1ToL2MessagesWithNetwork: L1ToL2MessageReaderWithNetwork[] = (
       await l1TxnReceipt.getL1ToL2Messages(l2Provider)
@@ -222,12 +234,21 @@ const l1ToL2MessageToStatusDisplay = async (
     case L1ToL2MessageStatus.CREATION_FAILED:
       return {
         text:
-          "L2 message creation reverted; perhaps provided maxSubmissionCost was too low using?",
+          "L2 message creation reverted; perhaps provided gas limit or maxFeePerGas for L2 was too low?",
         alertLevel: AlertLevel.RED,
         showRedeemButton: false,
         ...stuffTheyAllHave
       };
     case L1ToL2MessageStatus.EXPIRED: {
+      const looksLikeEthDeposit = await looksLikeCallToInboxethDeposit(l1ToL2Message)
+      if (looksLikeEthDeposit) {
+        return {
+          text: "Success! 🎉 Your Eth deposit has completed",
+          alertLevel: AlertLevel.GREEN,
+          showRedeemButton: false,
+          ...stuffTheyAllHave
+        }
+      }
       return {
         text: "Retryable ticket expired.",
         alertLevel: AlertLevel.RED,
@@ -255,6 +276,15 @@ const l1ToL2MessageToStatusDisplay = async (
       };
     }
     case L1ToL2MessageStatus.FUNDS_DEPOSITED_ON_L2: {
+      const looksLikeEthDeposit = await looksLikeCallToInboxethDeposit(l1ToL2Message)
+      if (looksLikeEthDeposit) {
+        return {
+          text: "Success! 🎉 Your Eth deposit has completed",
+          alertLevel: AlertLevel.GREEN,
+          showRedeemButton: false,
+          ...stuffTheyAllHave
+        };
+      }
       const text = (() => {
         // we do not know why auto redeem failed in nitro
         return "Auto-redeem failed; you can redeem it now:";
@@ -278,7 +308,7 @@ function App() {
     null
   );
   const resultRef = useRef<null | HTMLDivElement>(null); 
-
+  
   const signer = useMemo(() => {
     if (!provider) {
       return null;
@@ -339,6 +369,7 @@ function App() {
 
     const l1ToL2MessageStatuses: L1ToL2MessageStatusDisplay[] = [];
     for (let l1ToL2Message of l1ToL2Messages) {
+
       const l1ToL2MessageStatus = await l1ToL2MessageToStatusDisplay(
         l1ToL2Message,
       );
