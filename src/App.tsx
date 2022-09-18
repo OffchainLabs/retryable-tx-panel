@@ -45,7 +45,7 @@ const looksLikeCallToInboxethDeposit = async (
     txData.l2CallValue.isZero() &&
     txData.gasLimit.isZero() &&
     txData.maxFeePerGas.isZero() &&
-    (txData.data.toString() === ethers.constants.HashZero) &&
+    ((txData.data.toString() === ethers.constants.HashZero) || (txData.data.toString() === "")) &&
     txData.destAddress === txData.excessFeeRefundAddress &&
     txData.excessFeeRefundAddress === txData.callValueRefundAddress
   );
@@ -167,7 +167,6 @@ const getL1ToL2Messages = async (
 ): Promise<L1ToL2MessageReaderWithNetwork[]> => {
   let allL1ToL2Messages: L1ToL2MessageReaderWithNetwork[] = [];
 
-  // Workaround https://github.com/OffchainLabs/arbitrum-sdk/pull/137
   for (let l2ChainID of Array.from(new Set(l1Network.partnerChainIDs))) {
     // TODO: error handle
     const l2Network = await getL2Network(l2ChainID);
@@ -181,17 +180,17 @@ const getL1ToL2Messages = async (
     let l2RpcURL
     switch (l2ChainID) {
       case 42161: 
-      l2RpcURL = "https://arb1.arbitrum.io/rpc";
-      break;
+        l2RpcURL = "https://arb1.arbitrum.io/rpc";
+        break;
       case 42170: 
-      l2RpcURL = "https://nova.arbitrum.io/rpc";
-      break;
+        l2RpcURL = "https://nova.arbitrum.io/rpc";
+        break;
       case 421611: 
-      l2RpcURL = "https://rinkeby.arbitrum.io/rpc";
-      break;
+        l2RpcURL = "https://rinkeby.arbitrum.io/rpc";
+        break;
       case 421613: 
-      l2RpcURL = "https://goerli-rollup.arbitrum.io/rpc";
-      break;
+        l2RpcURL = "https://goerli-rollup.arbitrum.io/rpc";
+        break;
     }
     const l2Provider = new StaticJsonRpcProvider(l2RpcURL);
     const l1ToL2MessagesWithNetwork: L1ToL2MessageReaderWithNetwork[] = (
