@@ -11,7 +11,7 @@ import {
   L1ToL2MessageReader,
 } from "@arbitrum/sdk"
 
-
+import {ethers} from "ethers";
 import { JsonRpcProvider, StaticJsonRpcProvider } from "@ethersproject/providers";
 
 import Redeem from "./Redeem";
@@ -45,7 +45,7 @@ const looksLikeCallToInboxethDeposit = async (
     txData.l2CallValue.isZero() &&
     txData.gasLimit.isZero() &&
     txData.maxFeePerGas.isZero() &&
-    (txData.data.toString() === "0x0000000000000000000000000000000000000000000000000000000000000000") &&
+    (txData.data.toString() === ethers.constants.HashZero) &&
     txData.destAddress === txData.excessFeeRefundAddress &&
     txData.excessFeeRefundAddress === txData.callValueRefundAddress
   );
