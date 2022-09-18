@@ -10,7 +10,7 @@
     "@jridgewell/gen-mapping" "^0.1.0"
     "@jridgewell/trace-mapping" "^0.3.9"
 
-"@arbitrum/sdk@^^v3.0.0-rc.0":
+"@arbitrum/sdk@^v3.0.0-rc.0":
   version "3.0.0-rc.0"
   resolved "https://registry.yarnpkg.com/@arbitrum/sdk/-/sdk-3.0.0-rc.0.tgz#8e9e4681195b38b2abd78ab1d083d9f6c070ae61"
   integrity sha512-C4Y0jP8HOTGML1bxj1yXFMLP4AuQfgpE82045tAoZy8MKv/iiWH7KwLQ9Wz6NyDOgM1Nka+fXLu5qwHMVi7kKw==
