@@ -234,7 +234,7 @@ const l1ToL2MessageToStatusDisplay = async (
     case L1ToL2MessageStatus.CREATION_FAILED:
       return {
         text:
-          "L2 message creation reverted; perhaps provided gas limit or maxFeePerGas for L2 was too low?",
+          "L2 message creation reverted; perhaps provided maxSubmissionCost was too low?",
         alertLevel: AlertLevel.RED,
         showRedeemButton: false,
         ...stuffTheyAllHave
