@@ -191,6 +191,8 @@ const getL1ToL2Messages = async (
       case 421613: 
         l2RpcURL = "https://goerli-rollup.arbitrum.io/rpc";
         break;
+      default:
+        throw new Error("Unknown L2 chain id. This chain is not supported by dashboard");
     }
     const l2Provider = new StaticJsonRpcProvider(l2RpcURL);
     const l1ToL2MessagesWithNetwork: L1ToL2MessageReaderWithNetwork[] = (
