@@ -45,7 +45,7 @@ const looksLikeCallToInboxethDeposit = async (
     txData.l2CallValue.isZero() &&
     txData.gasLimit.isZero() &&
     txData.maxFeePerGas.isZero() &&
-    ((txData.data.toString() === ethers.constants.HashZero) || (txData.data.toString() === "")) &&
+    ((txData.data.toString() === ethers.constants.HashZero) || (txData.data.toString() === "") || (txData.data.toString() === "0x")) &&
     txData.destAddress === txData.excessFeeRefundAddress &&
     txData.excessFeeRefundAddress === txData.callValueRefundAddress
   );
