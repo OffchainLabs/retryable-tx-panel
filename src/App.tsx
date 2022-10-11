@@ -140,7 +140,6 @@ if (!process.env.REACT_APP_INFURA_KEY)
 
 const supportedL1Networks = {
   1: `https://mainnet.infura.io/v3/${process.env.REACT_APP_INFURA_KEY}`,
-  4: `https://rinkeby.infura.io/v3/${process.env.REACT_APP_INFURA_KEY}`,
   5: `https://goerli.infura.io/v3/${process.env.REACT_APP_INFURA_KEY}`
 };
 
@@ -184,9 +183,6 @@ const getL1ToL2Messages = async (
         break;
       case 42170: 
         l2RpcURL = "https://nova.arbitrum.io/rpc";
-        break;
-      case 421611: 
-        l2RpcURL = "https://rinkeby.arbitrum.io/rpc";
         break;
       case 421613: 
         l2RpcURL = "https://goerli-rollup.arbitrum.io/rpc";
