@@ -1,4 +1,4 @@
-# Retryable Transaction Panel
+# Arbitrum Retryable Dashboard
 
 ## Run Locally
 
