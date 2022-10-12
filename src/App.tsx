@@ -8,14 +8,20 @@ import {
   L2Network,
   getL1Network,
   getL2Network,
-  L1ToL2MessageReader,
-} from "@arbitrum/sdk"
+  L1ToL2MessageReader
+} from "@arbitrum/sdk";
 
-import {ethers} from "ethers";
-import { JsonRpcProvider, StaticJsonRpcProvider } from "@ethersproject/providers";
+import { ethers } from "ethers";
+import {
+  JsonRpcProvider,
+  StaticJsonRpcProvider
+} from "@ethersproject/providers";
 
 import Redeem from "./Redeem";
-import { L1ToL2MessageWaitResult,EthDepositMessage } from "@arbitrum/sdk/dist/lib/message/L1ToL2Message";
+import {
+  L1ToL2MessageWaitResult,
+  EthDepositMessage
+} from "@arbitrum/sdk/dist/lib/message/L1ToL2Message";
 
 export enum L1ReceiptState {
   EMPTY,
@@ -43,8 +49,8 @@ interface EthDepositMessageWithNetwork extends EthDepositMessage {
 }
 
 interface L1ToL2MessagesAndDepositMessages {
-  retryables: L1ToL2MessageReaderWithNetwork[],
-  deposits: EthDepositMessageWithNetwork[]
+  retryables: L1ToL2MessageReaderWithNetwork[];
+  deposits: EthDepositMessageWithNetwork[];
 }
 
 const looksLikeCallToInboxethDeposit = async (
@@ -55,7 +61,9 @@ const looksLikeCallToInboxethDeposit = async (
     txData.l2CallValue.isZero() &&
     txData.gasLimit.isZero() &&
     txData.maxFeePerGas.isZero() &&
-    ((txData.data.toString() === ethers.constants.HashZero) || (txData.data.toString() === "") || (txData.data.toString() === "0x")) &&
+    (txData.data.toString() === ethers.constants.HashZero ||
+      txData.data.toString() === "" ||
+      txData.data.toString() === "0x") &&
     txData.destAddress === txData.excessFeeRefundAddress &&
     txData.excessFeeRefundAddress === txData.callValueRefundAddress
   );
@@ -107,7 +115,6 @@ const receiptStateToDisplayableResult = (
 };
 
 interface MessageStatusDisplayBase {
-
   text: string;
   alertLevel: AlertLevel;
   showRedeemButton: boolean;
@@ -115,16 +122,17 @@ interface MessageStatusDisplayBase {
   l2Network: L2Network;
   l2TxHash: string;
 }
-interface MessageStatusDisplayRetryable extends MessageStatusDisplayBase{
+interface MessageStatusDisplayRetryable extends MessageStatusDisplayBase {
   l1ToL2Message: L1ToL2MessageReader;
   ethDepositMessage: undefined;
 }
-interface MessageStatusDisplayDeposit extends MessageStatusDisplayBase{
+interface MessageStatusDisplayDeposit extends MessageStatusDisplayBase {
   l1ToL2Message: undefined;
-  ethDepositMessage: EthDepositMessage; 
+  ethDepositMessage: EthDepositMessage;
 }
-export type MessageStatusDisplay = MessageStatusDisplayRetryable | MessageStatusDisplayDeposit 
-
+export type MessageStatusDisplay =
+  | MessageStatusDisplayRetryable
+  | MessageStatusDisplayDeposit;
 
 export enum Status {
   CREATION_FAILURE,
@@ -150,9 +158,9 @@ export interface RetryableTxs {
 }
 
 export interface ReceiptRes {
-  l1TxnReceipt: L1TransactionReceipt,
-  l1Network: L1Network,
-  l1Provider: JsonRpcProvider
+  l1TxnReceipt: L1TransactionReceipt;
+  l1Network: L1Network;
+  l1Provider: JsonRpcProvider;
 }
 
 if (!process.env.REACT_APP_INFURA_KEY)
@@ -163,8 +171,9 @@ const supportedL1Networks = {
   5: `https://goerli.infura.io/v3/${process.env.REACT_APP_INFURA_KEY}`
 };
 
-
-const getL1TxnReceipt = async (txnHash: string): Promise<ReceiptRes | undefined> => {
+const getL1TxnReceipt = async (
+  txnHash: string
+): Promise<ReceiptRes | undefined> => {
   for (let [chainID, rpcURL] of Object.entries(supportedL1Networks)) {
     const l1Network = await getL1Network(+chainID);
     const l1Provider = await new StaticJsonRpcProvider(rpcURL);
@@ -191,39 +200,43 @@ const getL1ToL2MessagesAndDepositMessages = async (
     const l2Network = await getL2Network(l2ChainID);
 
     // Check if any l1ToL2 msg is sent to the inbox of this l2Network
-    const logFromL2Inbox = l1TxnReceipt.logs.filter(log => {
-      return log.address.toLowerCase() === l2Network.ethBridge.inbox.toLowerCase()
-    })
-    if (logFromL2Inbox.length === 0) continue
+    const logFromL2Inbox = l1TxnReceipt.logs.filter((log) => {
+      return (
+        log.address.toLowerCase() === l2Network.ethBridge.inbox.toLowerCase()
+      );
+    });
+    if (logFromL2Inbox.length === 0) continue;
 
-    let l2RpcURL
+    let l2RpcURL;
     switch (l2ChainID) {
-      case 42161: 
+      case 42161:
         l2RpcURL = "https://arb1.arbitrum.io/rpc";
         break;
-      case 42170: 
+      case 42170:
         l2RpcURL = "https://nova.arbitrum.io/rpc";
         break;
-      case 421613: 
+      case 421613:
         l2RpcURL = "https://goerli-rollup.arbitrum.io/rpc";
         break;
       default:
-        throw new Error("Unknown L2 chain id. This chain is not supported by dashboard");
+        throw new Error(
+          "Unknown L2 chain id. This chain is not supported by dashboard"
+        );
     }
     const l2Provider = new StaticJsonRpcProvider(l2RpcURL);
     const l1ToL2MessagesWithNetwork: L1ToL2MessageReaderWithNetwork[] = (
       await l1TxnReceipt.getL1ToL2Messages(l2Provider)
-    ).map(l1ToL2Message => {
+    ).map((l1ToL2Message) => {
       return Object.assign(l1ToL2Message, { l2Network });
     });
-    
+
     const depositMessagesWithNetwork: EthDepositMessageWithNetwork[] = (
       await l1TxnReceipt.getEthDeposits(l2Provider)
-    ).map(depositMessage => {
+    ).map((depositMessage) => {
       return Object.assign(depositMessage, { l2Network });
     });
     allL1ToL2Messages = allL1ToL2Messages.concat(l1ToL2MessagesWithNetwork);
-    allDepositMessages = allDepositMessages.concat(depositMessagesWithNetwork)
+    allDepositMessages = allDepositMessages.concat(depositMessagesWithNetwork);
   }
   const allMesaages: L1ToL2MessagesAndDepositMessages = {
     retryables: allL1ToL2Messages,
@@ -246,9 +259,9 @@ const depositMessageStatusDisplay = async (
     explorerUrl,
     l2Network,
     ethDepositMessage,
-    l2TxHash,
+    l2TxHash
   };
-  if(depositTxReceipt?.status === 1) {
+  if (depositTxReceipt?.status === 1) {
     return {
       text: "Success! 🎉 Your Eth deposit has completed",
       alertLevel: AlertLevel.GREEN,
@@ -263,26 +276,25 @@ const depositMessageStatusDisplay = async (
       ...stuffTheyAllHave
     };
   }
-
-}
+};
 
 const l1ToL2MessageToStatusDisplay = async (
-  l1ToL2Message: L1ToL2MessageReaderWithNetwork,
+  l1ToL2Message: L1ToL2MessageReaderWithNetwork
 ): Promise<MessageStatusDisplay> => {
   const { l2Network } = l1ToL2Message;
   const { explorerUrl } = l2Network;
 
-  let messageStatus: L1ToL2MessageWaitResult
+  let messageStatus: L1ToL2MessageWaitResult;
   try {
     messageStatus = await l1ToL2Message.waitForStatus(undefined, 1);
   } catch (e) {
     // catch timeout if not immediately found
-    messageStatus = { status: L1ToL2MessageStatus.NOT_YET_CREATED }
+    messageStatus = { status: L1ToL2MessageStatus.NOT_YET_CREATED };
   }
 
-  let l2TxHash = "null"
+  let l2TxHash = "null";
   if (messageStatus.status === L1ToL2MessageStatus.REDEEMED) {
-    l2TxHash = messageStatus.l2TxReceipt.transactionHash
+    l2TxHash = messageStatus.l2TxReceipt.transactionHash;
   }
 
   // naming is hard
@@ -296,21 +308,22 @@ const l1ToL2MessageToStatusDisplay = async (
   switch (messageStatus.status) {
     case L1ToL2MessageStatus.CREATION_FAILED:
       return {
-        text:
-          "L2 message creation reverted; perhaps provided maxSubmissionCost was too low?",
+        text: "L2 message creation reverted; perhaps provided maxSubmissionCost was too low?",
         alertLevel: AlertLevel.RED,
         showRedeemButton: false,
         ...stuffTheyAllHave
       };
     case L1ToL2MessageStatus.EXPIRED: {
-      const looksLikeEthDeposit = await looksLikeCallToInboxethDeposit(l1ToL2Message)
+      const looksLikeEthDeposit = await looksLikeCallToInboxethDeposit(
+        l1ToL2Message
+      );
       if (looksLikeEthDeposit) {
         return {
           text: "Success! 🎉 Your Eth deposit has completed",
           alertLevel: AlertLevel.GREEN,
           showRedeemButton: false,
           ...stuffTheyAllHave
-        }
+        };
       }
       return {
         text: "Retryable ticket expired.",
@@ -321,8 +334,7 @@ const l1ToL2MessageToStatusDisplay = async (
     }
     case L1ToL2MessageStatus.NOT_YET_CREATED: {
       return {
-        text:
-          "L1 to L2 message initiated from L1, but not yet created — check again in a few minutes!",
+        text: "L1 to L2 message initiated from L1, but not yet created — check again in a few minutes!",
         alertLevel: AlertLevel.YELLOW,
         showRedeemButton: false,
         ...stuffTheyAllHave
@@ -339,7 +351,9 @@ const l1ToL2MessageToStatusDisplay = async (
       };
     }
     case L1ToL2MessageStatus.FUNDS_DEPOSITED_ON_L2: {
-      const looksLikeEthDeposit = await looksLikeCallToInboxethDeposit(l1ToL2Message)
+      const looksLikeEthDeposit = await looksLikeCallToInboxethDeposit(
+        l1ToL2Message
+      );
       if (looksLikeEthDeposit) {
         return {
           text: "Success! 🎉 Your Eth deposit has completed",
@@ -370,8 +384,8 @@ function App() {
   const [connectedNetworkId, setConnectedNetworkID] = useState<number | null>(
     null
   );
-  const resultRef = useRef<null | HTMLDivElement>(null); 
-  
+  const resultRef = useRef<null | HTMLDivElement>(null);
+
   const signer = useMemo(() => {
     if (!provider) {
       return null;
@@ -384,9 +398,7 @@ function App() {
     if (!signer) {
       setConnectedNetworkID(null);
     } else {
-      signer
-        .getChainId()
-        .then(chainID => setConnectedNetworkID(chainID));
+      signer.getChainId().then((chainID) => setConnectedNetworkID(chainID));
     }
   }, [signer, provider]);
 
@@ -396,15 +408,15 @@ function App() {
   );
   const [l1TxnReceipt, setl1TxnReceipt] = React.useState<ReceiptRes>();
   const [messagesDisplays, setMessagesDisplays] = React.useState<
-  MessageStatusDisplay[]
+    MessageStatusDisplay[]
   >([]);
 
   const getRetryableIdOrDepositHash = (message: MessageStatusDisplay) => {
-    if(message.l1ToL2Message !== undefined) {
+    if (message.l1ToL2Message !== undefined) {
       return message.l1ToL2Message.retryableCreationId;
     }
     return message.ethDepositMessage.l2DepositTxHash;
-  }
+  };
 
   const retryablesSearch = async (txHash: string) => {
     setl1TxnReceipt(undefined);
@@ -429,7 +441,10 @@ function App() {
       return setL1TxnHashState(L1ReceiptState.FAILED);
     }
 
-    const allMesaages = await getL1ToL2MessagesAndDepositMessages(l1TxnReceipt, l1Network);
+    const allMesaages = await getL1ToL2MessagesAndDepositMessages(
+      l1TxnReceipt,
+      l1Network
+    );
     const l1ToL2Messages = allMesaages.retryables;
     const depositMessages = allMesaages.deposits;
 
@@ -441,23 +456,22 @@ function App() {
 
     const messageStatuses: MessageStatusDisplay[] = [];
     for (let l1ToL2Message of l1ToL2Messages) {
-
       const l1ToL2MessageStatus = await l1ToL2MessageToStatusDisplay(
-        l1ToL2Message,
+        l1ToL2Message
       );
       messageStatuses.push(l1ToL2MessageStatus);
     }
 
     for (let depositMessage of depositMessages) {
       const l1ToL2MessageStatus = await depositMessageStatusDisplay(
-        depositMessage,
+        depositMessage
       );
       messageStatuses.push(l1ToL2MessageStatus);
     }
 
     setMessagesDisplays(messageStatuses);
 
-    if(resultRef.current) resultRef.current.scrollIntoView() // scroll to results
+    if (resultRef.current) resultRef.current.scrollIntoView(); // scroll to results
   };
 
   const handleChange = (event: any) => {
@@ -469,15 +483,14 @@ function App() {
   };
 
   // simple deep linking
-  const txhash = new URLSearchParams(window.location.search).get("t")
-  if (input === "" && txhash?.length === 66){
-    setInput(txhash)
-    retryablesSearch(txhash)
+  const txhash = new URLSearchParams(window.location.search).get("t");
+  if (input === "" && txhash?.length === 66) {
+    setInput(txhash);
+    retryablesSearch(txhash);
   }
 
-  const { text: l1TxnResultText } = receiptStateToDisplayableResult(
-    l1TxnHashState
-  );
+  const { text: l1TxnResultText } =
+    receiptStateToDisplayableResult(l1TxnHashState);
   return (
     <div>
       <div>
@@ -499,35 +512,49 @@ function App() {
         </h6>
       </div>
 
-      <div>{l1TxnReceipt && (
-          <a href={l1TxnReceipt.l1Network.explorerUrl + '/tx/' + l1TxnReceipt.l1TxnReceipt.transactionHash} rel="noreferrer" target="_blank">
+      <div>
+        {l1TxnReceipt && (
+          <a
+            href={
+              l1TxnReceipt.l1Network.explorerUrl +
+              "/tx/" +
+              l1TxnReceipt.l1TxnReceipt.transactionHash
+            }
+            rel="noreferrer"
+            target="_blank"
+          >
             L1 Tx on {l1TxnReceipt.l1Network.name}
           </a>
-        )} {l1TxnResultText} </div>
+        )}{" "}
+        {l1TxnResultText}{" "}
+      </div>
       <br />
       <div>
         {" "}
         {l1TxnHashState === L1ReceiptState.MESSAGES_FOUND &&
-          messagesDisplays.length === 0
+        messagesDisplays.length === 0
           ? "loading messages..."
           : null}{" "}
       </div>
-      {messagesDisplays.some(msg => msg.showRedeemButton) ? (
+      {messagesDisplays.some((msg) => msg.showRedeemButton) ? (
         signer ? (
           <button onClick={() => disconnect()}>Disconnect Wallet</button>
         ) : (
           <button onClick={() => connect()}>Connect Wallet</button>
-          
         )
       ) : null}
 
       {messagesDisplays.map((messageDisplay, i) => {
         return (
-          <div key={getRetryableIdOrDepositHash(messageDisplay)} ref={resultRef}>
-          {
-
+          <div
+            key={getRetryableIdOrDepositHash(messageDisplay)}
+            ref={resultRef}
+          >
+            {
               <>
-                <h3>Your transaction status on {messageDisplay.l2Network.name}</h3>
+                <h3>
+                  Your transaction status on {messageDisplay.l2Network.name}
+                </h3>
                 <p>{messageDisplay.text}</p>
                 {messageDisplay.showRedeemButton ? (
                   <Redeem
@@ -539,34 +566,40 @@ function App() {
               </>
             }
             <p>
-            -----Txn links----- <br />
-            {
-              <>
-              {messageDisplay.l1ToL2Message !== undefined ? (
-                <a
-                  href={
-                    messageDisplay.explorerUrl +
-                    "/tx/" +
-                    getRetryableIdOrDepositHash(messageDisplay)
-                  }
-                  rel="noreferrer"
-                  target="_blank"
-                >
-                  Retryable Ticket
-                </a>): null}
-              </>
-            }
+              -----Txn links----- <br />
+              {
+                <>
+                  {messageDisplay.l1ToL2Message !== undefined ? (
+                    <a
+                      href={
+                        messageDisplay.explorerUrl +
+                        "/tx/" +
+                        getRetryableIdOrDepositHash(messageDisplay)
+                      }
+                      rel="noreferrer"
+                      target="_blank"
+                    >
+                      Retryable Ticket
+                    </a>
+                  ) : null}
+                </>
+              }
               <br />
               {messageDisplay.l2TxHash !== "null" && (
-              <><a
-                  href={messageDisplay.explorerUrl +
-                    "/tx/" +
-                    messageDisplay.l2TxHash}
-                  rel="noreferrer"
-                  target="_blank"
-                >
-                  L2 Tx
-                </a><br /></>
+                <>
+                  <a
+                    href={
+                      messageDisplay.explorerUrl +
+                      "/tx/" +
+                      messageDisplay.l2TxHash
+                    }
+                    rel="noreferrer"
+                    target="_blank"
+                  >
+                    L2 Tx
+                  </a>
+                  <br />
+                </>
               )}
             </p>
           </div>
