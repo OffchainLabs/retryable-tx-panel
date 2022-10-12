@@ -13,6 +13,7 @@ function Redeem({
   signer: JsonRpcSigner | null;
   connectedNetworkId: number | null;
 }) {
+  
   const [message, setMessage] = React.useState<string>("");
   const redeemButton = useMemo(() => {
     if (!signer) return "connect signer to redeem";
@@ -25,16 +26,13 @@ function Redeem({
           // NOTE: we could have a "reader to writer" method in migration sdk
           //       but we don't have it and therefore the below mess
           const _l1ToL2Message = l1ToL2Message.l1ToL2Message as any
-          const isNitro = _l1ToL2Message.nitroReader !== undefined
-          const innerReader = isNitro ? _l1ToL2Message.nitroReader : _l1ToL2Message.classicReader
           const l1ToL2MessageWriter = new L1ToL2MessageWriter(
             signer,
             l1ToL2Message.l2Network.chainID,
-            innerReader.sender,
-            innerReader.messageNumber,
-            innerReader.l1BaseFee,
-            innerReader.messageData,
-            isNitro ? undefined : innerReader.retryableCreationId
+            _l1ToL2Message.sender,
+            _l1ToL2Message.messageNumber,
+            _l1ToL2Message.l1BaseFee,
+            _l1ToL2Message.messageData
           );
           try {
             const res = await l1ToL2MessageWriter.redeem();
@@ -60,4 +58,6 @@ function Redeem({
   return <><div>{redeemButton}</div><div>{message && (<textarea className="redeemtext">{message}</textarea>)}</div></>;
 }
 
+
 export default Redeem;
+

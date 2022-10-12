@@ -6,24 +6,16 @@ import {
   L1ToL2MessageStatus,
   L1Network,
   L2Network,
-  IL1ToL2MessageReader,
+  getL1Network,
+  getL2Network,
+  L1ToL2MessageReader,
 } from "@arbitrum/sdk"
 
-import {
-  EthDepositMessage
-} from "@arbitrum/sdk/dist/lib/utils/migration_types";
-
-// import directly from nitro sdk since `getL1Network` in migration sdk
-// require a provider while the one in nitro sdk can take a chainID
-import {
-  getL1Network,
-  getL2Network
-} from "@arbitrum/sdk-nitro/dist/lib/dataEntities/networks"
-
+import {ethers} from "ethers";
 import { JsonRpcProvider, StaticJsonRpcProvider } from "@ethersproject/providers";
 
 import Redeem from "./Redeem";
-import { L1ToL2MessageWaitResult } from "@arbitrum/sdk/dist/lib/message/L1ToL2Message";
+import { L1ToL2MessageWaitResult,EthDepositMessage } from "@arbitrum/sdk/dist/lib/message/L1ToL2Message";
 
 export enum L1ReceiptState {
   EMPTY,
@@ -42,7 +34,7 @@ export enum AlertLevel {
   NONE
 }
 
-interface L1ToL2MessageReaderWithNetwork extends IL1ToL2MessageReader {
+interface L1ToL2MessageReaderWithNetwork extends L1ToL2MessageReader {
   l2Network: L2Network;
 }
 
@@ -56,19 +48,19 @@ interface L1ToL2MessagesAndDepositMessages {
 }
 
 const looksLikeCallToInboxethDeposit = async (
-  l1ToL2Message: IL1ToL2MessageReader
+  l1ToL2Message: L1ToL2MessageReader
 ): Promise<boolean> => {
-  const txData = await l1ToL2Message.getInputs();
-
+  const txData = await l1ToL2Message.messageData;
   return (
     txData.l2CallValue.isZero() &&
-    txData.maxGas.isZero() &&
-    txData.gasPriceBid.isZero() &&
-    txData.callDataLength.isZero() &&
-    txData.destinationAddress === txData.excessFeeRefundAddress &&
+    txData.gasLimit.isZero() &&
+    txData.maxFeePerGas.isZero() &&
+    ((txData.data.toString() === ethers.constants.HashZero) || (txData.data.toString() === "") || (txData.data.toString() === "0x")) &&
+    txData.destAddress === txData.excessFeeRefundAddress &&
     txData.excessFeeRefundAddress === txData.callValueRefundAddress
   );
 };
+
 const receiptStateToDisplayableResult = (
   l1ReceiptState: L1ReceiptState
 ): {
@@ -88,7 +80,7 @@ const receiptStateToDisplayableResult = (
       };
     case L1ReceiptState.INVALID_INPUT_LENGTH:
       return {
-        text: "Error: invalid transction hash",
+        text: "Error: invalid transaction hash",
         alertLevel: AlertLevel.RED
       };
     case L1ReceiptState.NOT_FOUND:
@@ -114,7 +106,8 @@ const receiptStateToDisplayableResult = (
   }
 };
 
-interface MessageStatusDisplayBase{
+interface MessageStatusDisplayBase {
+
   text: string;
   alertLevel: AlertLevel;
   showRedeemButton: boolean;
@@ -123,7 +116,7 @@ interface MessageStatusDisplayBase{
   l2TxHash: string;
 }
 interface MessageStatusDisplayRetryable extends MessageStatusDisplayBase{
-  l1ToL2Message: IL1ToL2MessageReader;
+  l1ToL2Message: L1ToL2MessageReader;
   ethDepositMessage: undefined;
 }
 interface MessageStatusDisplayDeposit extends MessageStatusDisplayBase{
@@ -131,6 +124,7 @@ interface MessageStatusDisplayDeposit extends MessageStatusDisplayBase{
   ethDepositMessage: EthDepositMessage; 
 }
 export type MessageStatusDisplay = MessageStatusDisplayRetryable | MessageStatusDisplayDeposit 
+
 
 export enum Status {
   CREATION_FAILURE,
@@ -166,7 +160,6 @@ if (!process.env.REACT_APP_INFURA_KEY)
 
 const supportedL1Networks = {
   1: `https://mainnet.infura.io/v3/${process.env.REACT_APP_INFURA_KEY}`,
-  4: `https://rinkeby.infura.io/v3/${process.env.REACT_APP_INFURA_KEY}`,
   5: `https://goerli.infura.io/v3/${process.env.REACT_APP_INFURA_KEY}`
 };
 
@@ -187,14 +180,12 @@ const getL1TxnReceipt = async (txnHash: string): Promise<ReceiptRes | undefined>
   }
 };
 
-
 const getL1ToL2MessagesAndDepositMessages = async (
   l1TxnReceipt: L1TransactionReceipt,
   l1Network: L1Network
 ): Promise<L1ToL2MessagesAndDepositMessages> => {
   let allL1ToL2Messages: L1ToL2MessageReaderWithNetwork[] = [];
   let allDepositMessages: EthDepositMessageWithNetwork[] = [];
-  // Workaround https://github.com/OffchainLabs/arbitrum-sdk/pull/137
   for (let l2ChainID of Array.from(new Set(l1Network.partnerChainIDs))) {
     // TODO: error handle
     const l2Network = await getL2Network(l2ChainID);
@@ -205,18 +196,29 @@ const getL1ToL2MessagesAndDepositMessages = async (
     })
     if (logFromL2Inbox.length === 0) continue
 
-    // Workaround https://github.com/OffchainLabs/arbitrum-sdk/pull/138
-    if (!l2Network.rpcURL && l2ChainID === 42170) {
-      l2Network.rpcURL = "https://nova.arbitrum.io/rpc"
+    let l2RpcURL
+    switch (l2ChainID) {
+      case 42161: 
+        l2RpcURL = "https://arb1.arbitrum.io/rpc";
+        break;
+      case 42170: 
+        l2RpcURL = "https://nova.arbitrum.io/rpc";
+        break;
+      case 421613: 
+        l2RpcURL = "https://goerli-rollup.arbitrum.io/rpc";
+        break;
+      default:
+        throw new Error("Unknown L2 chain id. This chain is not supported by dashboard");
     }
-    const l2Provider = new StaticJsonRpcProvider(l2Network.rpcURL);
+    const l2Provider = new StaticJsonRpcProvider(l2RpcURL);
     const l1ToL2MessagesWithNetwork: L1ToL2MessageReaderWithNetwork[] = (
       await l1TxnReceipt.getL1ToL2Messages(l2Provider)
     ).map(l1ToL2Message => {
       return Object.assign(l1ToL2Message, { l2Network });
     });
+    
     const depositMessagesWithNetwork: EthDepositMessageWithNetwork[] = (
-      await l1TxnReceipt.getEthDepositMessages(l2Provider)
+      await l1TxnReceipt.getEthDeposits(l2Provider)
     ).map(depositMessage => {
       return Object.assign(depositMessage, { l2Network });
     });
@@ -289,7 +291,7 @@ const l1ToL2MessageToStatusDisplay = async (
     explorerUrl,
     l2Network,
     l1ToL2Message,
-    l2TxHash,
+    l2TxHash
   };
   switch (messageStatus.status) {
     case L1ToL2MessageStatus.CREATION_FAILED:
@@ -310,7 +312,6 @@ const l1ToL2MessageToStatusDisplay = async (
           ...stuffTheyAllHave
         }
       }
-
       return {
         text: "Retryable ticket expired.",
         alertLevel: AlertLevel.RED,
@@ -347,7 +348,6 @@ const l1ToL2MessageToStatusDisplay = async (
           ...stuffTheyAllHave
         };
       }
-
       const text = (() => {
         // we do not know why auto redeem failed in nitro
         return "Auto-redeem failed; you can redeem it now:";
@@ -361,7 +361,7 @@ const l1ToL2MessageToStatusDisplay = async (
     }
 
     default:
-      throw new Error("Uncaught L1ToL2MessageStatus type in switch statemmtn");
+      throw new Error("Uncaught L1ToL2MessageStatus type in switch statement");
   }
 };
 
@@ -371,7 +371,7 @@ function App() {
     null
   );
   const resultRef = useRef<null | HTMLDivElement>(null); 
-
+  
   const signer = useMemo(() => {
     if (!provider) {
       return null;
@@ -441,6 +441,7 @@ function App() {
 
     const messageStatuses: MessageStatusDisplay[] = [];
     for (let l1ToL2Message of l1ToL2Messages) {
+
       const l1ToL2MessageStatus = await l1ToL2MessageToStatusDisplay(
         l1ToL2Message,
       );
@@ -516,13 +517,15 @@ function App() {
           <button onClick={() => disconnect()}>Disconnect Wallet</button>
         ) : (
           <button onClick={() => connect()}>Connect Wallet</button>
+          
         )
       ) : null}
 
       {messagesDisplays.map((messageDisplay, i) => {
         return (
           <div key={getRetryableIdOrDepositHash(messageDisplay)} ref={resultRef}>
-            {
+          {
+
               <>
                 <h3>Your transaction status on {messageDisplay.l2Network.name}</h3>
                 <p>{messageDisplay.text}</p>
