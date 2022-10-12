@@ -107,6 +107,7 @@ const receiptStateToDisplayableResult = (
 };
 
 interface MessageStatusDisplayBase {
+
   text: string;
   alertLevel: AlertLevel;
   showRedeemButton: boolean;
@@ -114,6 +115,15 @@ interface MessageStatusDisplayBase {
   l2Network: L2Network;
   l2TxHash: string;
 }
+interface MessageStatusDisplayRetryable extends MessageStatusDisplayBase{
+  l1ToL2Message: IL1ToL2MessageReader;
+  ethDepositMessage: undefined;
+}
+interface MessageStatusDisplayDeposit extends MessageStatusDisplayBase{
+  l1ToL2Message: undefined;
+  ethDepositMessage: EthDepositMessage; 
+}
+export type MessageStatusDisplay = MessageStatusDisplayRetryable | MessageStatusDisplayDeposit 
 
 interface MessageStatusDisplayRetryable extends MessageStatusDisplayBase{
   l1ToL2Message: L1ToL2MessageReader;
@@ -185,7 +195,6 @@ const getL1ToL2MessagesAndDepositMessages = async (
 ): Promise<L1ToL2MessagesAndDepositMessages> => {
   let allL1ToL2Messages: L1ToL2MessageReaderWithNetwork[] = [];
   let allDepositMessages: EthDepositMessageWithNetwork[] = [];
-
   for (let l2ChainID of Array.from(new Set(l1Network.partnerChainIDs))) {
     // TODO: error handle
     const l2Network = await getL2Network(l2ChainID);
@@ -216,12 +225,12 @@ const getL1ToL2MessagesAndDepositMessages = async (
     ).map(l1ToL2Message => {
       return Object.assign(l1ToL2Message, { l2Network });
     });
-        const depositMessagesWithNetwork: EthDepositMessageWithNetwork[] = (
+    
+    const depositMessagesWithNetwork: EthDepositMessageWithNetwork[] = (
       await l1TxnReceipt.getEthDeposits(l2Provider)
     ).map(depositMessage => {
       return Object.assign(depositMessage, { l2Network });
     });
-    
     allL1ToL2Messages = allL1ToL2Messages.concat(l1ToL2MessagesWithNetwork);
     allDepositMessages = allDepositMessages.concat(depositMessagesWithNetwork)
   }
@@ -406,6 +415,13 @@ function App() {
   }
 
 
+  const getRetryableIdOrDepositHash = (message: MessageStatusDisplay) => {
+    if(message.l1ToL2Message !== undefined) {
+      return message.l1ToL2Message.retryableCreationId;
+    }
+    return message.ethDepositMessage.l2DepositTxHash;
+  }
+
   const retryablesSearch = async (txHash: string) => {
     setl1TxnReceipt(undefined);
     setMessagesDisplays([]);
@@ -439,7 +455,6 @@ function App() {
 
     setL1TxnHashState(L1ReceiptState.MESSAGES_FOUND);
 
-
     const messageStatuses: MessageStatusDisplay[] = [];
     for (let l1ToL2Message of l1ToL2Messages) {
 
@@ -455,6 +470,7 @@ function App() {
       );
       messageStatuses.push(l1ToL2MessageStatus);
     }
+
     setMessagesDisplays(messageStatuses);
 
     if(resultRef.current) resultRef.current.scrollIntoView() // scroll to results
@@ -467,6 +483,7 @@ function App() {
     event.preventDefault();
     retryablesSearch(input);
   };
+
   // simple deep linking
   const txhash = new URLSearchParams(window.location.search).get("t")
   if (input === "" && txhash?.length === 66){
@@ -524,6 +541,7 @@ function App() {
         return (
           <div key={getRetryableIdOrDepositHash(messageDisplay)} ref={resultRef}>
           {
+
               <>
                 <h3>Your transaction status on {messageDisplay.l2Network.name}</h3>
                 <p>{messageDisplay.text}</p>
