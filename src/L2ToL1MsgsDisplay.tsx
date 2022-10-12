@@ -3,32 +3,8 @@ import { L2ToL1MessageData } from "./lib";
 import {
   L2ToL1MessageStatus,
   L2ToL1MessageWriter,
-  L2Network
+  L2ToL1Message
 } from "@arbitrum/sdk";
-
-import { BigNumber } from "ethers";
-
-// TODO: import/export from arbitrim/sdk
-export const getOutboxAddr = (network: L2Network, batchNumber: BigNumber) => {
-  // find the outbox where the activation batch number of the next outbox
-  // is greater than the supplied batch
-  const res = Object.entries(network.ethBridge.outboxes)
-    .sort((a, b) => {
-      if (a[1].lt(b[1])) return -1;
-      else if (a[1].eq(b[1])) return 0;
-      else return 1;
-    })
-    .find(
-      (_, index, array) =>
-        array[index + 1] === undefined || array[index + 1][1].gt(batchNumber)
-    );
-
-  if (!res) {
-    throw new Error("could not find outbox address");
-  }
-
-  return res[0];
-};
 
 const etaDisplay = (etaSeconds: number) => {
   const minutesLeft = Math.round(etaSeconds / 60);
@@ -58,7 +34,8 @@ function L2ToL1MsgsDisplay({
 }) {
   const renderMessage = (l2ToL1Message: L2ToL1MessageData) => {
     switch (l2ToL1Message.status) {
-      case L2ToL1MessageStatus.NOT_FOUND:
+      // case L2ToL1MessageStatus.NOT_FOUND:
+      // UNSURE: NOT_FOUND no longer exists
       case L2ToL1MessageStatus.UNCONFIRMED:
         return (
           <div>
@@ -88,22 +65,20 @@ function L2ToL1MsgsDisplay({
                 <button
                   onClick={async () => {
                     if (!signer) return;
-                    const outboxAddr = getOutboxAddr(
-                      l2ToL1Message.l2Network,
-                      l2ToL1Message.l2ToL1Message.batchNumber
-                    );
+                    const [l2ToL1TxEvent] = await L2ToL1Message.getL2ToL1Events(l2ToL1Message.l2Provider, {
+                      fromBlock: 'earliest', // UNSURE: can we get the exact block?
+                      toBlock: 'latest' // UNSURE: can we get the exact block?
+                    })
                     const l2ToL1MessageWriter = new L2ToL1MessageWriter(
                       signer,
-                      outboxAddr,
-                      l2ToL1Message.l2ToL1Message.batchNumber,
-                      l2ToL1Message.l2ToL1Message.indexInBatch
+                      l2ToL1TxEvent
                     );
 
-                    const proofData = await l2ToL1MessageWriter.tryGetProof(
+                    const proofData = await l2ToL1MessageWriter.getOutboxProof(
                       l2ToL1Message.l2Provider
                     );
-                    if (!proofData) return;
-                    const res = await l2ToL1MessageWriter.execute(proofData);
+                    if (!proofData) return; // UNSURE: do we still need the proofData?
+                    const res = await l2ToL1MessageWriter.execute(l2ToL1Message.l2Provider);
                     const rec = await res.wait();
                     if (rec.status === 1) {
                       alert(

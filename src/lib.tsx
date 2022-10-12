@@ -47,7 +47,7 @@ export const getL2ToL1Messages = async (
     const l2Provider = await new JsonRpcProvider(rpcURL);
 
     // TODO
-    const l1ChainID = l2Network.partnerChainID as 1 | 4;
+    const l1ChainID = l2Network.partnerChainID as 1 | 5;
     const l1Network = await getL1Network(l1ChainID);
 
     const l1Provider = await new JsonRpcProvider(
@@ -67,15 +67,14 @@ export const getL2ToL1Messages = async (
       }
       const l2Receipt = new L2TransactionReceipt(receipt);
       const l2ToL1Messages = await l2Receipt.getL2ToL1Messages(
-        l1Provider,
-        l2Network
+        l1Provider
       );
 
       const l2MessagesData: L2ToL1MessageData[] = [];
       for (let l2ToL1Message of l2ToL1Messages) {
         try {
-          const proofData = await l2ToL1Message.tryGetProof(l2Provider);
-          const status = await l2ToL1Message.status(proofData);
+          // UNSURE: deleted the proofData as it's an unused var
+          const status = await l2ToL1Message.status(l2Provider);
           const deadlineBlock =
             status !== L2ToL1MessageStatus.CONFIRMED &&
             status !== L2ToL1MessageStatus.EXECUTED
@@ -102,7 +101,7 @@ export const getL2ToL1Messages = async (
             console.warn('batch doesnt exist');
             
             l2MessagesData.push({
-              status: L2ToL1MessageStatus.NOT_FOUND,
+              status: L2ToL1MessageStatus.UNCONFIRMED, // UNSURE: L2ToL1MessageStatus.NOT_FOUND has been removed
               l2ToL1Message,
               confirmationInfo: null,
               l1Network,
