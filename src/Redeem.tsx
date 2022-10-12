@@ -1,5 +1,5 @@
 import { useMemo } from "react";
-import { L1ToL2MessageStatusDisplay } from "./App";
+import { MessageStatusDisplay } from "./App";
 import { JsonRpcSigner } from "@ethersproject/providers";
 import { L1ToL2MessageWriter } from "@arbitrum/sdk";
 import React from "react";
@@ -9,7 +9,7 @@ function Redeem({
   signer,
   connectedNetworkId
 }: {
-  l1ToL2Message: L1ToL2MessageStatusDisplay;
+  l1ToL2Message: MessageStatusDisplay;
   signer: JsonRpcSigner | null;
   connectedNetworkId: number | null;
 }) {
