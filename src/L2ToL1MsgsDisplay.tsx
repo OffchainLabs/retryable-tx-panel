@@ -65,10 +65,13 @@ function L2ToL1MsgsDisplay({
                 <button
                   onClick={async () => {
                     if (!signer) return;
-                    const [l2ToL1TxEvent] = await L2ToL1Message.getL2ToL1Events(l2ToL1Message.l2Provider, {
-                      fromBlock: 'earliest', // UNSURE: can we get the exact block?
-                      toBlock: 'latest' // UNSURE: can we get the exact block?
-                    })
+                    const [l2ToL1TxEvent] = await L2ToL1Message.getL2ToL1Events(
+                      l2ToL1Message.l2Provider,
+                      {
+                        fromBlock: "earliest", // UNSURE: can we get the exact block?
+                        toBlock: "latest" // UNSURE: can we get the exact block?
+                      }
+                    );
                     const l2ToL1MessageWriter = new L2ToL1MessageWriter(
                       signer,
                       l2ToL1TxEvent
@@ -78,7 +81,9 @@ function L2ToL1MsgsDisplay({
                       l2ToL1Message.l2Provider
                     );
                     if (!proofData) return; // UNSURE: do we still need the proofData?
-                    const res = await l2ToL1MessageWriter.execute(l2ToL1Message.l2Provider);
+                    const res = await l2ToL1MessageWriter.execute(
+                      l2ToL1Message.l2Provider
+                    );
                     const rec = await res.wait();
                     if (rec.status === 1) {
                       alert(
