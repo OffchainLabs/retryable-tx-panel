@@ -116,16 +116,6 @@ interface MessageStatusDisplayBase {
   l2TxHash: string;
 }
 interface MessageStatusDisplayRetryable extends MessageStatusDisplayBase{
-  l1ToL2Message: IL1ToL2MessageReader;
-  ethDepositMessage: undefined;
-}
-interface MessageStatusDisplayDeposit extends MessageStatusDisplayBase{
-  l1ToL2Message: undefined;
-  ethDepositMessage: EthDepositMessage; 
-}
-export type MessageStatusDisplay = MessageStatusDisplayRetryable | MessageStatusDisplayDeposit 
-
-interface MessageStatusDisplayRetryable extends MessageStatusDisplayBase{
   l1ToL2Message: L1ToL2MessageReader;
   ethDepositMessage: undefined;
 }
@@ -134,6 +124,7 @@ interface MessageStatusDisplayDeposit extends MessageStatusDisplayBase{
   ethDepositMessage: EthDepositMessage; 
 }
 export type MessageStatusDisplay = MessageStatusDisplayRetryable | MessageStatusDisplayDeposit 
+
 
 export enum Status {
   CREATION_FAILURE,
@@ -407,13 +398,6 @@ function App() {
   const [messagesDisplays, setMessagesDisplays] = React.useState<
   MessageStatusDisplay[]
   >([]);
-  const getRetryableIdOrDepositHash = (message: MessageStatusDisplay) => {
-    if(message.l1ToL2Message !== undefined) {
-      return message.l1ToL2Message.retryableCreationId;
-    }
-    return message.ethDepositMessage.l2DepositTxHash;
-  }
-
 
   const getRetryableIdOrDepositHash = (message: MessageStatusDisplay) => {
     if(message.l1ToL2Message !== undefined) {
