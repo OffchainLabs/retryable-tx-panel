@@ -50,6 +50,7 @@
     ]
   },
   "devDependencies": {
+    "prettier": "2.7.1",
     "webpack-bundle-analyzer": "^4.5.0"
   },
   "resolutions": {
