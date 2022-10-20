@@ -34,8 +34,6 @@ function L2ToL1MsgsDisplay({
 }) {
   const renderMessage = (l2ToL1Message: L2ToL1MessageData) => {
     switch (l2ToL1Message.status) {
-      // case L2ToL1MessageStatus.NOT_FOUND:
-      // UNSURE: NOT_FOUND no longer exists
       case L2ToL1MessageStatus.UNCONFIRMED:
         return (
           <div>
@@ -68,8 +66,8 @@ function L2ToL1MsgsDisplay({
                     const [l2ToL1TxEvent] = await L2ToL1Message.getL2ToL1Events(
                       l2ToL1Message.l2Provider,
                       {
-                        fromBlock: "earliest", // UNSURE: can we get the exact block?
-                        toBlock: "latest" // UNSURE: can we get the exact block?
+                        fromBlock: l2ToL1Message.createdAtL2BlockNumber,
+                        toBlock: l2ToL1Message.createdAtL2BlockNumber + 1 
                       }
                     );
                     const l2ToL1MessageWriter = new L2ToL1MessageWriter(
@@ -77,10 +75,6 @@ function L2ToL1MsgsDisplay({
                       l2ToL1TxEvent
                     );
 
-                    const proofData = await l2ToL1MessageWriter.getOutboxProof(
-                      l2ToL1Message.l2Provider
-                    );
-                    if (!proofData) return; // UNSURE: do we still need the proofData?
                     const res = await l2ToL1MessageWriter.execute(
                       l2ToL1Message.l2Provider
                     );

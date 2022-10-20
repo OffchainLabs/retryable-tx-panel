@@ -12,8 +12,8 @@ import { BigNumber } from "@ethersproject/bignumber";
 import { supportedL1Networks } from "./App";
 
 const supportedL2Networks = {
-  421611: `https://rinkeby.arbitrum.io/rpc`,
-  42161: `https://arb1.arbitrum.io/rpc`
+  42161: `https://arb1.arbitrum.io/rpc`,
+  421613: `https://goerli-rollup.arbitrum.io/rpc`
 };
 
 export enum L2TxnStatus {
@@ -37,6 +37,7 @@ export interface L2ToL1MessageData {
   l1Network: L1Network;
   l2Network: L2Network;
   l2Provider: JsonRpcProvider;
+  createdAtL2BlockNumber: number;
 }
 
 export const getL2ToL1Messages = async (
@@ -49,12 +50,10 @@ export const getL2ToL1Messages = async (
     // TODO
     const l1ChainID = l2Network.partnerChainID as 1 | 5;
     const l1Network = await getL1Network(l1ChainID);
-
     const l1Provider = await new JsonRpcProvider(
       supportedL1Networks[l1ChainID]
     );
     const currentL1Block = BigNumber.from(await l1Provider.getBlockNumber());
-
     const receipt = await l2Provider.getTransactionReceipt(txHash);
     if (receipt) {
       if (receipt.status === 0) {
@@ -67,11 +66,9 @@ export const getL2ToL1Messages = async (
       }
       const l2Receipt = new L2TransactionReceipt(receipt);
       const l2ToL1Messages = await l2Receipt.getL2ToL1Messages(l1Provider);
-
       const l2MessagesData: L2ToL1MessageData[] = [];
       for (let l2ToL1Message of l2ToL1Messages) {
         try {
-          // UNSURE: deleted the proofData as it's an unused var
           const status = await l2ToL1Message.status(l2Provider);
           const deadlineBlock =
             status !== L2ToL1MessageStatus.CONFIRMED &&
@@ -93,7 +90,8 @@ export const getL2ToL1Messages = async (
               : null,
             l1Network,
             l2Network,
-            l2Provider
+            l2Provider,
+            createdAtL2BlockNumber: l2Receipt.blockNumber
           });
         } catch (e) {
           const expectedError = "batch doesn't exist";
@@ -104,12 +102,13 @@ export const getL2ToL1Messages = async (
             console.warn("batch doesnt exist");
 
             l2MessagesData.push({
-              status: L2ToL1MessageStatus.UNCONFIRMED, // UNSURE: L2ToL1MessageStatus.NOT_FOUND has been removed
+              status: L2ToL1MessageStatus.UNCONFIRMED,
               l2ToL1Message,
               confirmationInfo: null,
               l1Network,
               l2Network,
-              l2Provider
+              l2Provider,
+              createdAtL2BlockNumber: l2Receipt.blockNumber
             });
           } else {
             throw e;
