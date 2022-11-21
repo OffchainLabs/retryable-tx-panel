@@ -1,6 +1,14 @@
-# Getting Started with Create React App
+# Arbitrum Retryable Dashboard
 
-This project was bootstrapped with [Create React App](https://github.com/facebook/create-react-app).
+## Run Locally
+
+1. `git clone https://github.com/OffchainLabs/retryable-tx-panel`
+
+2. Set env vars:
+
+   1. `touch .env`
+
+   2. In `.env`, add `REACT_APP_INFURA_KEY=my-infura-key`
 
 ## Available Scripts
 
