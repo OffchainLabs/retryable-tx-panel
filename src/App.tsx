@@ -11,6 +11,7 @@ import {
   getL2Network,
   L1ToL2MessageReader
 } from "@arbitrum/sdk";
+import { useParams } from "react-router-dom";
 
 import { ethers } from "ethers";
 import {
@@ -254,11 +255,11 @@ const getL1ToL2MessagesAndDepositMessages = async (
     allL1ToL2Messages = allL1ToL2Messages.concat(l1ToL2MessagesWithNetwork);
     allDepositMessages = allDepositMessages.concat(depositMessagesWithNetwork);
   }
-  const allMesaages: L1ToL2MessagesAndDepositMessages = {
+  const allMessages: L1ToL2MessagesAndDepositMessages = {
     retryables: allL1ToL2Messages,
     deposits: allDepositMessages
   };
-  return allMesaages;
+  return allMessages;
 };
 
 const depositMessageStatusDisplay = async (
@@ -449,7 +450,7 @@ function App() {
     }
 
     // simple deep linking
-    window.history.pushState("", "", `/?t=${txHash}`);
+    window.history.pushState("", "", `/tx/${txHash}`);
 
     const receiptRes = await getL1TxnReceipt(txHash);
     setl1TxnReceipt(receiptRes);
@@ -476,12 +477,12 @@ function App() {
       return setTxnHashState(ReceiptState.L1_FAILED);
     }
 
-    const allMesaages = await getL1ToL2MessagesAndDepositMessages(
+    const allMessages = await getL1ToL2MessagesAndDepositMessages(
       l1TxnReceipt,
       l1Network
     );
-    const l1ToL2Messages = allMesaages.retryables;
-    const depositMessages = allMesaages.deposits;
+    const l1ToL2Messages = allMessages.retryables;
+    const depositMessages = allMessages.deposits;
 
     if (l1ToL2Messages.length === 0 && depositMessages.length === 0) {
       return setTxnHashState(ReceiptState.NO_L1_L2_MESSAGES);
@@ -518,7 +519,8 @@ function App() {
   };
 
   // simple deep linking
-  const txhash = new URLSearchParams(window.location.search).get("t");
+  let { txhash } = useParams();
+
   if (input === "" && txhash?.length === 66) {
     setInput(txhash);
     retryablesSearch(txhash);
