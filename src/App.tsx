@@ -11,7 +11,7 @@ import {
   getL2Network,
   L1ToL2MessageReader
 } from "@arbitrum/sdk";
-import { useParams } from "react-router-dom";
+import { useNavigate, useParams, generatePath } from "react-router-dom";
 
 import { ethers } from "ethers";
 import {
@@ -397,6 +397,7 @@ const l1ToL2MessageToStatusDisplay = async (
 };
 
 function App() {
+  const navigate = useNavigate();
   const { connect, disconnect, provider } = useWallet();
   const [connectedNetworkId, setConnectedNetworkID] = useState<number | null>(
     null
@@ -450,7 +451,7 @@ function App() {
     }
 
     // simple deep linking
-    window.history.pushState("", "", `/tx/${txHash}`);
+    navigate(generatePath("tx/:txhash", { txhash: txHash }));
 
     const receiptRes = await getL1TxnReceipt(txHash);
     setl1TxnReceipt(receiptRes);
