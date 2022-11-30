@@ -41,7 +41,7 @@ const router = createBrowserRouter([
         children: [
           {
             path: "/tx/:txHash",
-            element: <App />
+            element: null
           }
         ]
       }
