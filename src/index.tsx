@@ -8,6 +8,7 @@ import {
 import "./index.css";
 import App from "./App";
 import logo from "./logo.svg";
+import { isValidTxHash } from "./isValidTxHash";
 
 const router = createBrowserRouter([
   {
@@ -15,11 +16,16 @@ const router = createBrowserRouter([
     element: <App />,
     loader: ({ params }) => {
       // If the app was accessed through old URL format, redirect
-      const txhash = new URLSearchParams(window.location.search).get("t");
+      const oldTxHash = new URLSearchParams(window.location.search).get("t");
+      const { txHash } = params;
 
       // This loader is executed when accessing tx/:txhash, we need this check to avoid infinite loop
-      if (txhash?.length === 66 && !params.txhash) {
-        return redirect(`tx/${txhash}`);
+      if (txHash || !oldTxHash) {
+        return;
+      }
+
+      if (isValidTxHash(oldTxHash)) {
+        return redirect(`tx/${oldTxHash}`);
       }
     },
     children: [
@@ -27,14 +33,14 @@ const router = createBrowserRouter([
         path: "tx",
         element: null,
         loader: ({ params }) => {
-          const { txhash } = params;
-          if (!txhash || txhash.length !== 66) {
+          const { txHash } = params;
+          if (!txHash || !isValidTxHash(txHash)) {
             return redirect("/");
           }
         },
         children: [
           {
-            path: "/tx/:txhash",
+            path: "/tx/:txHash",
             element: <App />
           }
         ]

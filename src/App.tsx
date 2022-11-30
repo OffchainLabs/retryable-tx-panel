@@ -26,6 +26,7 @@ import {
 } from "@arbitrum/sdk/dist/lib/message/L1ToL2Message";
 import { getL2ToL1Messages, L2ToL1MessageData, L2TxnStatus } from "./lib";
 import L2ToL1MsgsDisplay from "./L2ToL1MsgsDisplay";
+import { isValidTxHash } from "./isValidTxHash";
 
 export enum ReceiptState {
   EMPTY,
@@ -520,11 +521,11 @@ function App() {
   };
 
   // simple deep linking
-  let { txhash } = useParams();
+  let { txHash } = useParams();
 
-  if (input === "" && txhash?.length === 66) {
-    setInput(txhash);
-    retryablesSearch(txhash);
+  if (input === "" && isValidTxHash(txHash)) {
+    setInput(txHash);
+    retryablesSearch(txHash);
   }
   const { text: l1TxnResultText } =
     receiptStateToDisplayableResult(txHashState);
