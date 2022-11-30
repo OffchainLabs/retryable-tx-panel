@@ -398,7 +398,23 @@ const l1ToL2MessageToStatusDisplay = async (
 };
 
 function App() {
+  const { txHash } = useParams();
   const navigate = useNavigate();
+
+  const oldTxHash = new URLSearchParams(window.location.search).get("t");
+
+  useEffect(() => {
+    if (!oldTxHash) {
+      return;
+    }
+
+    if (isValidTxHash(oldTxHash)) {
+      navigate(generatePath("tx/:txHash", { txHash: oldTxHash }));
+    } else {
+      navigate("/");
+    }
+  }, [navigate, oldTxHash]);
+
   const { connect, disconnect, provider } = useWallet();
   const [connectedNetworkId, setConnectedNetworkID] = useState<number | null>(
     null
@@ -452,7 +468,7 @@ function App() {
     }
 
     // simple deep linking
-    navigate(generatePath("tx/:txhash", { txhash: txHash }));
+    navigate(generatePath("tx/:txHash", { txHash }));
 
     const receiptRes = await getL1TxnReceipt(txHash);
     setl1TxnReceipt(receiptRes);
@@ -521,8 +537,6 @@ function App() {
   };
 
   // simple deep linking
-  let { txHash } = useParams();
-
   if (input === "" && isValidTxHash(txHash)) {
     setInput(txHash);
     retryablesSearch(txHash);
