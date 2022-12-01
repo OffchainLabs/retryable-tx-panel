@@ -11,6 +11,7 @@ import {
   getL2Network,
   L1ToL2MessageReader
 } from "@arbitrum/sdk";
+import { useNavigate, useParams, generatePath } from "react-router-dom";
 
 import { ethers } from "ethers";
 import {
@@ -25,6 +26,7 @@ import {
 } from "@arbitrum/sdk/dist/lib/message/L1ToL2Message";
 import { getL2ToL1Messages, L2ToL1MessageData, L2TxnStatus } from "./lib";
 import L2ToL1MsgsDisplay from "./L2ToL1MsgsDisplay";
+import { isValidTxHash } from "./isValidTxHash";
 
 export enum ReceiptState {
   EMPTY,
@@ -254,11 +256,11 @@ const getL1ToL2MessagesAndDepositMessages = async (
     allL1ToL2Messages = allL1ToL2Messages.concat(l1ToL2MessagesWithNetwork);
     allDepositMessages = allDepositMessages.concat(depositMessagesWithNetwork);
   }
-  const allMesaages: L1ToL2MessagesAndDepositMessages = {
+  const allMessages: L1ToL2MessagesAndDepositMessages = {
     retryables: allL1ToL2Messages,
     deposits: allDepositMessages
   };
-  return allMesaages;
+  return allMessages;
 };
 
 const depositMessageStatusDisplay = async (
@@ -396,6 +398,23 @@ const l1ToL2MessageToStatusDisplay = async (
 };
 
 function App() {
+  const { txHash } = useParams();
+  const navigate = useNavigate();
+
+  const oldTxHash = new URLSearchParams(window.location.search).get("t");
+
+  useEffect(() => {
+    if (!oldTxHash) {
+      return;
+    }
+
+    if (isValidTxHash(oldTxHash)) {
+      navigate(generatePath("tx/:txHash", { txHash: oldTxHash }));
+    } else {
+      navigate("/");
+    }
+  }, [navigate, oldTxHash]);
+
   const { connect, disconnect, provider } = useWallet();
   const [connectedNetworkId, setConnectedNetworkID] = useState<number | null>(
     null
@@ -449,7 +468,7 @@ function App() {
     }
 
     // simple deep linking
-    window.history.pushState("", "", `/?t=${txHash}`);
+    navigate(generatePath("tx/:txHash", { txHash }));
 
     const receiptRes = await getL1TxnReceipt(txHash);
     setl1TxnReceipt(receiptRes);
@@ -476,12 +495,12 @@ function App() {
       return setTxnHashState(ReceiptState.L1_FAILED);
     }
 
-    const allMesaages = await getL1ToL2MessagesAndDepositMessages(
+    const allMessages = await getL1ToL2MessagesAndDepositMessages(
       l1TxnReceipt,
       l1Network
     );
-    const l1ToL2Messages = allMesaages.retryables;
-    const depositMessages = allMesaages.deposits;
+    const l1ToL2Messages = allMessages.retryables;
+    const depositMessages = allMessages.deposits;
 
     if (l1ToL2Messages.length === 0 && depositMessages.length === 0) {
       return setTxnHashState(ReceiptState.NO_L1_L2_MESSAGES);
@@ -518,10 +537,9 @@ function App() {
   };
 
   // simple deep linking
-  const txhash = new URLSearchParams(window.location.search).get("t");
-  if (input === "" && txhash?.length === 66) {
-    setInput(txhash);
-    retryablesSearch(txhash);
+  if (input === "" && isValidTxHash(txHash)) {
+    setInput(txHash);
+    retryablesSearch(txHash);
   }
   const { text: l1TxnResultText } =
     receiptStateToDisplayableResult(txHashState);
