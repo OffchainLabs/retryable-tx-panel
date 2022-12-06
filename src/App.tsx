@@ -1,5 +1,5 @@
 import "./App.css";
-import React, { useState, useEffect, useRef } from "react";
+import React, { useEffect, useRef } from "react";
 import {
   L1TransactionReceipt,
   L1ToL2MessageStatus,
@@ -12,7 +12,7 @@ import {
 } from "@arbitrum/sdk";
 import { useNavigate, useParams, generatePath } from "react-router-dom";
 
-import { useProvider, useSigner } from "wagmi";
+import { useNetwork, useSigner } from "wagmi";
 import { ethers } from "ethers";
 import {
   JsonRpcProvider,
@@ -417,21 +417,10 @@ function App() {
     }
   }, [navigate, oldTxHash]);
 
-  const provider = useProvider();
   const { data: signer = null } = useSigner();
 
-  const [connectedNetworkId, setConnectedNetworkID] = useState<number | null>(
-    null
-  );
   const resultRef = useRef<null | HTMLDivElement>(null);
-
-  useEffect(() => {
-    if (!signer) {
-      setConnectedNetworkID(null);
-    } else {
-      signer.getChainId().then((chainID) => setConnectedNetworkID(chainID));
-    }
-  }, [signer, provider]);
+  const { chain } = useNetwork();
 
   const [input, setInput] = React.useState<string>("");
   const [txHashState, setTxnHashState] = React.useState<ReceiptState>(
@@ -595,7 +584,7 @@ function App() {
       <L2ToL1MsgsDisplay
         signer={signer as JsonRpcSigner}
         l2ToL1Messages={l2ToL1MessagesToShow}
-        connectedNetworkId={connectedNetworkId}
+        connectedNetworkId={chain?.id}
       />
 
       {messagesDisplays.map((messageDisplay) => {
@@ -614,7 +603,7 @@ function App() {
                   <Redeem
                     l1ToL2Message={messageDisplay}
                     signer={signer as JsonRpcSigner}
-                    connectedNetworkId={connectedNetworkId}
+                    connectedNetworkId={chain?.id}
                   />
                 ) : null}
               </>

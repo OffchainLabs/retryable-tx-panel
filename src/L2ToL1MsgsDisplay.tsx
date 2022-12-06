@@ -30,7 +30,7 @@ function L2ToL1MsgsDisplay({
 }: {
   l2ToL1Messages: L2ToL1MessageData[];
   signer: JsonRpcSigner | null;
-  connectedNetworkId: number | null;
+  connectedNetworkId?: number;
 }) {
   const renderMessage = (l2ToL1Message: L2ToL1MessageData) => {
     switch (l2ToL1Message.status) {

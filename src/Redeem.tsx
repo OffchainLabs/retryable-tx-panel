@@ -11,7 +11,7 @@ function Redeem({
 }: {
   l1ToL2Message: MessageStatusDisplay;
   signer: JsonRpcSigner | null;
-  connectedNetworkId: number | null;
+  connectedNetworkId?: number;
 }) {
   const [message, setMessage] = React.useState<string>("");
   const redeemButton = useMemo(() => {

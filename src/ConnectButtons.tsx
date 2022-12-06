@@ -1,10 +1,11 @@
 import { useAccount, useConnect, useDisconnect } from "wagmi";
 
 const ConnectButtons = () => {
-  const { connector: activeConnector, address, isConnected } = useAccount();
-  const { connect, connectors, error, isLoading, pendingConnector } =
-    useConnect();
+  const { address, isConnected } = useAccount();
+  const { connect, connectors, error } = useConnect();
   const { disconnect } = useDisconnect();
+
+  const [activeConnector] = connectors;
 
   return (
     <>
@@ -14,24 +15,19 @@ const ConnectButtons = () => {
           <div>Connected to {activeConnector?.name}</div>
         </div>
       )}
-
-      {connectors.map((connector) => (
-        <button
-          disabled={!connector.ready}
-          key={connector.id}
-          onClick={() =>
-            connector.id === activeConnector?.id
-              ? disconnect()
-              : connect({ connector })
-          }
-        >
-          {connector.name}
-          {!connector.ready && " (unsupported)"}
-          {isLoading &&
-            connector.id === pendingConnector?.id &&
-            " (connecting)"}
+      {isConnected && (
+        <button disabled={!activeConnector.ready} onClick={() => disconnect()}>
+          Disconnect
         </button>
-      ))}
+      )}
+      {!isConnected && (
+        <button
+          disabled={!activeConnector.ready}
+          onClick={() => connect({ connector: activeConnector })}
+        >
+          Connect
+        </button>
+      )}
       {error && <div>{error.message}</div>}
     </>
   );
