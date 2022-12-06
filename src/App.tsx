@@ -1,6 +1,5 @@
 import "./App.css";
-import React, { useState, useMemo, useEffect, useRef } from "react";
-import { useWallet } from "@gimmixorg/use-wallet";
+import React, { useState, useEffect, useRef } from "react";
 import {
   L1TransactionReceipt,
   L1ToL2MessageStatus,
@@ -13,10 +12,12 @@ import {
 } from "@arbitrum/sdk";
 import { useNavigate, useParams, generatePath } from "react-router-dom";
 
+import { useProvider, useSigner } from "wagmi";
 import { ethers } from "ethers";
 import {
   JsonRpcProvider,
-  StaticJsonRpcProvider
+  StaticJsonRpcProvider,
+  JsonRpcSigner
 } from "@ethersproject/providers";
 
 import Redeem from "./Redeem";
@@ -27,6 +28,7 @@ import {
 import { getL2ToL1Messages, L2ToL1MessageData, L2TxnStatus } from "./lib";
 import L2ToL1MsgsDisplay from "./L2ToL1MsgsDisplay";
 import { isValidTxHash } from "./isValidTxHash";
+import { ConnectButtons } from "./ConnectButtons";
 
 export enum ReceiptState {
   EMPTY,
@@ -415,19 +417,13 @@ function App() {
     }
   }, [navigate, oldTxHash]);
 
-  const { connect, disconnect, provider } = useWallet();
+  const provider = useProvider();
+  const { data: signer = null } = useSigner();
+
   const [connectedNetworkId, setConnectedNetworkID] = useState<number | null>(
     null
   );
   const resultRef = useRef<null | HTMLDivElement>(null);
-
-  const signer = useMemo(() => {
-    if (!provider) {
-      return null;
-    } else {
-      return provider.getSigner();
-    }
-  }, [provider]);
 
   useEffect(() => {
     if (!signer) {
@@ -593,20 +589,16 @@ function App() {
       l2ToL1MessagesToShow.some(
         (msg) => msg.status === L2ToL1MessageStatus.CONFIRMED
       ) ? (
-        signer ? (
-          <button onClick={() => disconnect()}>Disconnect Wallet</button>
-        ) : (
-          <button onClick={() => connect()}>Connect Wallet</button>
-        )
+        <ConnectButtons />
       ) : null}
 
       <L2ToL1MsgsDisplay
-        signer={signer}
+        signer={signer as JsonRpcSigner}
         l2ToL1Messages={l2ToL1MessagesToShow}
         connectedNetworkId={connectedNetworkId}
       />
 
-      {messagesDisplays.map((messageDisplay, i) => {
+      {messagesDisplays.map((messageDisplay) => {
         return (
           <div
             key={getRetryableIdOrDepositHash(messageDisplay)}
@@ -618,10 +610,10 @@ function App() {
                   Your transaction status on {messageDisplay.l2Network.name}
                 </h3>
                 <p>{messageDisplay.text}</p>
-                {messageDisplay.showRedeemButton ? (
+                {true ? (
                   <Redeem
                     l1ToL2Message={messageDisplay}
-                    signer={signer}
+                    signer={signer as JsonRpcSigner}
                     connectedNetworkId={connectedNetworkId}
                   />
                 ) : null}

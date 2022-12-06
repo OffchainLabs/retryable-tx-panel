@@ -46,8 +46,8 @@ function Redeem({
               setMessage(res.toString());
               throw new Error("Failed to redeem");
             }
-          } catch (err) {
-            setMessage((err as Error).toString());
+          } catch (err: any) {
+            setMessage(err.message.toString());
           }
         }}
       >

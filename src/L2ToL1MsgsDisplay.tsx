@@ -67,7 +67,7 @@ function L2ToL1MsgsDisplay({
                       l2ToL1Message.l2Provider,
                       {
                         fromBlock: l2ToL1Message.createdAtL2BlockNumber,
-                        toBlock: l2ToL1Message.createdAtL2BlockNumber + 1 
+                        toBlock: l2ToL1Message.createdAtL2BlockNumber + 1
                       }
                     );
                     const l2ToL1MessageWriter = new L2ToL1MessageWriter(
