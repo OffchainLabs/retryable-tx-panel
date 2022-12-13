@@ -599,7 +599,7 @@ function App() {
                   Your transaction status on {messageDisplay.l2Network.name}
                 </h3>
                 <p>{messageDisplay.text}</p>
-                {true ? (
+                {messageDisplay.showRedeemButton ? (
                   <Redeem
                     l1ToL2Message={messageDisplay}
                     signer={signer as JsonRpcSigner}
