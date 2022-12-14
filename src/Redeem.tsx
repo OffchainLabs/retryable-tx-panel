@@ -58,7 +58,7 @@ function Redeem({
 
   return (
     <>
-      <div>{redeemButton}</div>
+      {redeemButton}
       <div>
         {message && <textarea className="redeemtext">{message}</textarea>}
       </div>

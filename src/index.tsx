@@ -53,15 +53,13 @@ const router = createBrowserRouter([
 
 ReactDOM.render(
   <React.StrictMode>
-    <div className="Header">
-      <header className="Header-header">
-        <h2>Arbitrum Cross-chain Message Dashboard</h2>
-        <img src={logo} className="Header-logo" alt="logo" />
-        <WagmiProvider>
-          <RouterProvider router={router} />
-        </WagmiProvider>
-      </header>
-    </div>
+    <header>
+      <h1>Arbitrum Cross-chain Message Dashboard</h1>
+      <img src={logo} className="Header-logo" alt="logo" />
+      <WagmiProvider>
+        <RouterProvider router={router} />
+      </WagmiProvider>
+    </header>
   </React.StrictMode>,
   document.getElementById("root")
 );

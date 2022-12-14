@@ -1,22 +1,3 @@
-body {
-  background-color: #282c34;
-  margin: 0;
-  font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', 'Roboto', 'Oxygen',
-    'Ubuntu', 'Cantarell', 'Fira Sans', 'Droid Sans', 'Helvetica Neue',
-    sans-serif;
-  -webkit-font-smoothing: antialiased;
-  -moz-osx-font-smoothing: grayscale;
-}
-
-code {
-  font-family: source-code-pro, Menlo, Monaco, Consolas, 'Courier New',
-    monospace;
-}
-
-.Header {
-  text-align: center;
-}
-
 .Header-logo {
   height: 30vmin;
   pointer-events: none;
@@ -28,19 +9,26 @@ code {
   }
 }
 
-.Header-header {
-  background-color: #282c34;
+header {
   min-height: 100vh;
   display: flex;
   flex-direction: column;
   align-items: center;
   justify-content: center;
-  font-size: calc(10px + 2vmin);
   color: white;
 }
 
-.Header-link {
-  color: #61dafb;
+header > div {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  width: 100%;
+  margin-top: var(--space-l);
+}
+
+.receipt-text {
+  margin-top: var(--space-m);
 }
 
 @keyframes Header-logo-spin {

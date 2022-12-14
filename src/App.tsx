@@ -529,26 +529,19 @@ function App() {
     receiptStateToDisplayableResult(txHashState);
   return (
     <div>
-      <div>
-        <form onSubmit={handleSubmit}>
-          <div className="form-container">
-            <input
-              autoFocus
-              placeholder="Tx hash"
-              value={input}
-              onChange={handleChange}
-              className="input-style"
-            />
-            <input type="submit" value="Submit" />
-          </div>
-        </form>
-        <h6>
-          Paste your tx hash above and find out whats up with your cross chain
-          message.
-        </h6>
-      </div>
+      <h2>Find out what&apos;s up with your cross-chain message</h2>
+      <form className="form-container" onSubmit={handleSubmit}>
+        <input
+          autoFocus
+          placeholder="Paste your transaction hash"
+          value={input}
+          onChange={handleChange}
+          className="input-style"
+        />
+        <input type="submit" value="Submit" />
+      </form>
 
-      <div>
+      <div className="receipt-text">
         {l1TxnReceipt && (
           <a
             href={
@@ -638,7 +631,7 @@ function App() {
                     rel="noreferrer"
                     target="_blank"
                   >
-                    L2 Tx
+                    L2 Transaction
                   </a>
                   <br />
                 </>
