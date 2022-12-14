@@ -1,6 +1,6 @@
 import { useMemo } from "react";
 import { MessageStatusDisplay } from "./App";
-import { JsonRpcSigner } from "@ethersproject/providers";
+import { Signer } from "@ethersproject/abstract-signer";
 import { L1ToL2MessageWriter } from "@arbitrum/sdk";
 import React from "react";
 
@@ -10,7 +10,7 @@ function Redeem({
   connectedNetworkId
 }: {
   l1ToL2Message: MessageStatusDisplay;
-  signer: JsonRpcSigner | null;
+  signer: Signer | null;
   connectedNetworkId?: number;
 }) {
   const [message, setMessage] = React.useState<string>("");

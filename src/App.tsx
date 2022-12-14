@@ -16,8 +16,7 @@ import { useNetwork, useSigner } from "wagmi";
 import { ethers } from "ethers";
 import {
   JsonRpcProvider,
-  StaticJsonRpcProvider,
-  JsonRpcSigner
+  StaticJsonRpcProvider
 } from "@ethersproject/providers";
 
 import Redeem from "./Redeem";
@@ -582,7 +581,7 @@ function App() {
       ) : null}
 
       <L2ToL1MsgsDisplay
-        signer={signer as JsonRpcSigner}
+        signer={signer}
         l2ToL1Messages={l2ToL1MessagesToShow}
         connectedNetworkId={chain?.id}
       />
@@ -602,7 +601,7 @@ function App() {
                 {messageDisplay.showRedeemButton ? (
                   <Redeem
                     l1ToL2Message={messageDisplay}
-                    signer={signer as JsonRpcSigner}
+                    signer={signer}
                     connectedNetworkId={chain?.id}
                   />
                 ) : null}

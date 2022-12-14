@@ -1,4 +1,4 @@
-import { JsonRpcSigner } from "@ethersproject/providers";
+import { Signer } from "@ethersproject/abstract-signer";
 import { L2ToL1MessageData } from "./lib";
 import {
   L2ToL1MessageStatus,
@@ -29,7 +29,7 @@ function L2ToL1MsgsDisplay({
   connectedNetworkId
 }: {
   l2ToL1Messages: L2ToL1MessageData[];
-  signer: JsonRpcSigner | null;
+  signer: Signer | null;
   connectedNetworkId?: number;
 }) {
   const renderMessage = (l2ToL1Message: L2ToL1MessageData) => {
