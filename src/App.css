@@ -17,6 +17,10 @@
   --blue-lighter: #96bedc;
 }
 
+* {
+  box-sizing: border-box;
+}
+
 html {
   font-size: var(--font-size-m);
   background-image: url('https://bridge.arbitrum.io/images/space.webp');
@@ -24,6 +28,10 @@ html {
 }
 
 body {
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  min-height: 100vh;
   font-family: 'DM Sans', -apple-system, BlinkMacSystemFont, 'Segoe UI', 'Roboto', 'Oxygen',
     'Ubuntu', 'Cantarell', 'Fira Sans', 'Droid Sans', 'Helvetica Neue',
     sans-serif;
