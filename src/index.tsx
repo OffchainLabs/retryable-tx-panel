@@ -9,6 +9,7 @@ import {
 } from "react-router-dom";
 import "./index.css";
 import App from "./App";
+import { WagmiProvider } from "./WagmiProvider";
 import logo from "./logo.svg";
 import { isValidTxHash } from "./isValidTxHash";
 
@@ -56,7 +57,9 @@ ReactDOM.render(
       <header className="Header-header">
         <h2>Arbitrum Cross-chain Message Dashboard</h2>
         <img src={logo} className="Header-logo" alt="logo" />
-        <RouterProvider router={router} />
+        <WagmiProvider>
+          <RouterProvider router={router} />
+        </WagmiProvider>
       </header>
     </div>
   </React.StrictMode>,

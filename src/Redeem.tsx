@@ -1,6 +1,6 @@
 import { useMemo } from "react";
 import { MessageStatusDisplay } from "./App";
-import { JsonRpcSigner } from "@ethersproject/providers";
+import { Signer } from "@ethersproject/abstract-signer";
 import { L1ToL2MessageWriter } from "@arbitrum/sdk";
 import React from "react";
 
@@ -10,8 +10,8 @@ function Redeem({
   connectedNetworkId
 }: {
   l1ToL2Message: MessageStatusDisplay;
-  signer: JsonRpcSigner | null;
-  connectedNetworkId: number | null;
+  signer: Signer | null;
+  connectedNetworkId?: number;
 }) {
   const [message, setMessage] = React.useState<string>("");
   const redeemButton = useMemo(() => {
@@ -46,8 +46,8 @@ function Redeem({
               setMessage(res.toString());
               throw new Error("Failed to redeem");
             }
-          } catch (err) {
-            setMessage((err as Error).toString());
+          } catch (err: any) {
+            setMessage(err.message.toString());
           }
         }}
       >

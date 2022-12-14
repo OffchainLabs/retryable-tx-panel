@@ -1,6 +1,5 @@
 import "./App.css";
-import React, { useState, useMemo, useEffect, useRef } from "react";
-import { useWallet } from "@gimmixorg/use-wallet";
+import React, { useEffect, useRef } from "react";
 import {
   L1TransactionReceipt,
   L1ToL2MessageStatus,
@@ -13,6 +12,7 @@ import {
 } from "@arbitrum/sdk";
 import { useNavigate, useParams, generatePath } from "react-router-dom";
 
+import { useNetwork, useSigner } from "wagmi";
 import { ethers } from "ethers";
 import {
   JsonRpcProvider,
@@ -27,6 +27,7 @@ import {
 import { getL2ToL1Messages, L2ToL1MessageData, L2TxnStatus } from "./lib";
 import L2ToL1MsgsDisplay from "./L2ToL1MsgsDisplay";
 import { isValidTxHash } from "./isValidTxHash";
+import { ConnectButtons } from "./ConnectButtons";
 
 export enum ReceiptState {
   EMPTY,
@@ -415,27 +416,10 @@ function App() {
     }
   }, [navigate, oldTxHash]);
 
-  const { connect, disconnect, provider } = useWallet();
-  const [connectedNetworkId, setConnectedNetworkID] = useState<number | null>(
-    null
-  );
+  const { data: signer = null } = useSigner();
+
   const resultRef = useRef<null | HTMLDivElement>(null);
-
-  const signer = useMemo(() => {
-    if (!provider) {
-      return null;
-    } else {
-      return provider.getSigner();
-    }
-  }, [provider]);
-
-  useEffect(() => {
-    if (!signer) {
-      setConnectedNetworkID(null);
-    } else {
-      signer.getChainId().then((chainID) => setConnectedNetworkID(chainID));
-    }
-  }, [signer, provider]);
+  const { chain } = useNetwork();
 
   const [input, setInput] = React.useState<string>("");
   const [txHashState, setTxnHashState] = React.useState<ReceiptState>(
@@ -593,20 +577,16 @@ function App() {
       l2ToL1MessagesToShow.some(
         (msg) => msg.status === L2ToL1MessageStatus.CONFIRMED
       ) ? (
-        signer ? (
-          <button onClick={() => disconnect()}>Disconnect Wallet</button>
-        ) : (
-          <button onClick={() => connect()}>Connect Wallet</button>
-        )
+        <ConnectButtons />
       ) : null}
 
       <L2ToL1MsgsDisplay
         signer={signer}
         l2ToL1Messages={l2ToL1MessagesToShow}
-        connectedNetworkId={connectedNetworkId}
+        connectedNetworkId={chain?.id}
       />
 
-      {messagesDisplays.map((messageDisplay, i) => {
+      {messagesDisplays.map((messageDisplay) => {
         return (
           <div
             key={getRetryableIdOrDepositHash(messageDisplay)}
@@ -622,7 +602,7 @@ function App() {
                   <Redeem
                     l1ToL2Message={messageDisplay}
                     signer={signer}
-                    connectedNetworkId={connectedNetworkId}
+                    connectedNetworkId={chain?.id}
                   />
                 ) : null}
               </>
