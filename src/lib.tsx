@@ -13,7 +13,8 @@ import { supportedL1Networks } from "./App";
 
 const supportedL2Networks = {
   42161: `https://arb1.arbitrum.io/rpc`,
-  421613: `https://goerli-rollup.arbitrum.io/rpc`
+  421613: `https://goerli-rollup.arbitrum.io/rpc`,
+  42170: `https://nova.arbitrum.io/rpc`
 };
 
 export enum L2TxnStatus {
