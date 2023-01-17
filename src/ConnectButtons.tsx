@@ -8,15 +8,14 @@ const ConnectButtons = () => {
   const [activeConnector] = connectors;
 
   return (
-    <>
+    <div className="buttons-wrapper">
+      {isConnected && <div>{address}</div>}
       {isConnected && (
-        <div>
-          <div>{address}</div>
-          <div>Connected to {activeConnector?.name}</div>
-        </div>
-      )}
-      {isConnected && (
-        <button disabled={!activeConnector.ready} onClick={() => disconnect()}>
+        <button
+          className="button-outline button-small"
+          disabled={!activeConnector.ready}
+          onClick={() => disconnect()}
+        >
           Disconnect
         </button>
       )}
@@ -25,11 +24,11 @@ const ConnectButtons = () => {
           disabled={!activeConnector.ready}
           onClick={() => connect({ connector: activeConnector })}
         >
-          Connect
+          Connect to Redeem
         </button>
       )}
       {error && <div>{error.message}</div>}
-    </>
+    </div>
   );
 };
 

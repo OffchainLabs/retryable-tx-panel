@@ -1,11 +1,22 @@
-.Header-logo {
+.header-logo {
+  width: 100%;
+  overflow: hidden;
+}
+
+.header-logo img {
   height: 300px;
   filter: drop-shadow(2px 4px 26px rgba(255,255,255,0.4));
   pointer-events: none;
 }
 
+@media screen and (max-width: 400px) {
+  .header-logo img {
+    height: 240px;
+  }
+}
+
 @media (prefers-reduced-motion: no-preference) {
-  .Header-logo {
+  .header-logo img {
     animation: Header-logo-spin infinite 20s linear;
   }
 }
@@ -28,7 +39,7 @@ header > div {
 }
 
 .receipt-text {
-  margin-top: var(--space-m);
+  margin: var(--space-m) auto;
 }
 
 @keyframes Header-logo-spin {
@@ -38,4 +49,19 @@ header > div {
   to {
     transform: rotate(360deg);
   }
+}
+
+.external-link {
+  display: inline-flex;
+  justify-content: center;
+  align-items: center;
+  font-size: var(--font-size-m);
+}
+
+.text-align-center {
+  text-align: center;
+}
+
+.react-tooltip {
+  font-size: var(--font-size-m);
 }
