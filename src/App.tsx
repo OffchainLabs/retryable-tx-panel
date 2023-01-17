@@ -28,6 +28,7 @@ import { getL2ToL1Messages, L2ToL1MessageData, L2TxnStatus } from "./lib";
 import L2ToL1MsgsDisplay from "./L2ToL1MsgsDisplay";
 import { isValidTxHash } from "./isValidTxHash";
 import { ConnectButtons } from "./ConnectButtons";
+import { ExternalLink } from "./ExternalLink";
 
 export enum ReceiptState {
   EMPTY,
@@ -359,11 +360,9 @@ const l1ToL2MessageToStatusDisplay = async (
         ...stuffTheyAllHave
       };
     }
-
     case L1ToL2MessageStatus.REDEEMED: {
-      const text = "Success! 🎉 Your retryable was executed.";
       return {
-        text: text,
+        text: "Success! 🎉 Your retryable was executed.",
         alertLevel: AlertLevel.GREEN,
         showRedeemButton: false,
         ...stuffTheyAllHave
@@ -381,10 +380,9 @@ const l1ToL2MessageToStatusDisplay = async (
           ...stuffTheyAllHave
         };
       }
-      const text = (() => {
+      const text =
         // we do not know why auto redeem failed in nitro
-        return "Auto-redeem failed; you can redeem it now:";
-      })();
+        "Auto-redeem failed; you can redeem it now:";
       return {
         text,
         alertLevel: AlertLevel.YELLOW,
@@ -515,6 +513,7 @@ function App() {
   const handleChange = (event: any) => {
     setInput(event.target.value);
   };
+
   const handleSubmit = (event: any) => {
     event.preventDefault();
     retryablesSearch(input);
@@ -525,30 +524,24 @@ function App() {
     setInput(txHash);
     retryablesSearch(txHash);
   }
+
   const { text: l1TxnResultText } =
     receiptStateToDisplayableResult(txHashState);
   return (
     <div>
-      <div>
-        <form onSubmit={handleSubmit}>
-          <div className="form-container">
-            <input
-              autoFocus
-              placeholder="Tx hash"
-              value={input}
-              onChange={handleChange}
-              className="input-style"
-            />
-            <input type="submit" value="Submit" />
-          </div>
-        </form>
-        <h6>
-          Paste your tx hash above and find out whats up with your cross chain
-          message.
-        </h6>
-      </div>
+      <h2>Find out what&apos;s up with your cross-chain message</h2>
+      <form className="form-container" onSubmit={handleSubmit}>
+        <input
+          autoFocus
+          placeholder="Paste your transaction hash"
+          value={input}
+          onChange={handleChange}
+          className="input-style"
+        />
+        <input type="submit" value="Submit" />
+      </form>
 
-      <div>
+      <div className="receipt-text">
         {l1TxnReceipt && (
           <a
             href={
@@ -559,26 +552,17 @@ function App() {
             rel="noreferrer"
             target="_blank"
           >
-            L1 Tx on {l1TxnReceipt.l1Network.name}
+            L1 Transaction on {l1TxnReceipt.l1Network.name}
           </a>
         )}{" "}
         {l1TxnResultText}{" "}
       </div>
-      <br />
       <div>
-        {" "}
         {txHashState === ReceiptState.MESSAGES_FOUND &&
-        messagesDisplays.length === 0 &&
-        l2ToL1MessagesToShow.length === 0
-          ? "loading messages..."
-          : null}{" "}
+          messagesDisplays.length === 0 &&
+          l2ToL1MessagesToShow.length === 0 &&
+          "Loading messages..."}
       </div>
-      {messagesDisplays.some((msg) => msg.showRedeemButton) ||
-      l2ToL1MessagesToShow.some(
-        (msg) => msg.status === L2ToL1MessageStatus.CONFIRMED
-      ) ? (
-        <ConnectButtons />
-      ) : null}
 
       <L2ToL1MsgsDisplay
         signer={signer}
@@ -589,64 +573,53 @@ function App() {
       {messagesDisplays.map((messageDisplay) => {
         return (
           <div
+            className="text-align-center"
             key={getRetryableIdOrDepositHash(messageDisplay)}
             ref={resultRef}
           >
             {
               <>
                 <h3>
-                  Your transaction status on {messageDisplay.l2Network.name}
+                  L2{" "}
+                  {messageDisplay.l2TxHash !== "null" ? (
+                    <ExternalLink
+                      href={`${messageDisplay.explorerUrl}/tx/${messageDisplay.l2TxHash}`}
+                    >
+                      Transaction
+                    </ExternalLink>
+                  ) : (
+                    "Transaction"
+                  )}{" "}
+                  status on {messageDisplay.l2Network.name}
                 </h3>
+                {messageDisplay.l1ToL2Message !== undefined && (
+                  <ExternalLink
+                    href={`${
+                      messageDisplay.explorerUrl
+                    }/tx/${getRetryableIdOrDepositHash(messageDisplay)}`}
+                    showIcon
+                  >
+                    Check Your Retryable Ticket on{" "}
+                    {messageDisplay.l2Network.name}
+                  </ExternalLink>
+                )}
                 <p>{messageDisplay.text}</p>
-                {messageDisplay.showRedeemButton ? (
+                {messageDisplay.showRedeemButton && (
                   <Redeem
                     l1ToL2Message={messageDisplay}
                     signer={signer}
                     connectedNetworkId={chain?.id}
                   />
-                ) : null}
+                )}
               </>
             }
-            <p>
-              -----Txn links----- <br />
-              {
-                <>
-                  {messageDisplay.l1ToL2Message !== undefined ? (
-                    <a
-                      href={
-                        messageDisplay.explorerUrl +
-                        "/tx/" +
-                        getRetryableIdOrDepositHash(messageDisplay)
-                      }
-                      rel="noreferrer"
-                      target="_blank"
-                    >
-                      Retryable Ticket
-                    </a>
-                  ) : null}
-                </>
-              }
-              <br />
-              {messageDisplay.l2TxHash !== "null" && (
-                <>
-                  <a
-                    href={
-                      messageDisplay.explorerUrl +
-                      "/tx/" +
-                      messageDisplay.l2TxHash
-                    }
-                    rel="noreferrer"
-                    target="_blank"
-                  >
-                    L2 Tx
-                  </a>
-                  <br />
-                </>
-              )}
-            </p>
           </div>
         );
       })}
+      {(messagesDisplays.some((msg) => msg.showRedeemButton) ||
+        l2ToL1MessagesToShow.some(
+          (msg) => msg.status === L2ToL1MessageStatus.CONFIRMED
+        )) && <ConnectButtons />}
     </div>
   );
 }

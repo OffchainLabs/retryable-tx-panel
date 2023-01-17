@@ -1,46 +1,44 @@
-body {
-  background-color: #282c34;
-  margin: 0;
-  font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', 'Roboto', 'Oxygen',
-    'Ubuntu', 'Cantarell', 'Fira Sans', 'Droid Sans', 'Helvetica Neue',
-    sans-serif;
-  -webkit-font-smoothing: antialiased;
-  -moz-osx-font-smoothing: grayscale;
+.header-logo {
+  width: 100%;
 }
 
-code {
-  font-family: source-code-pro, Menlo, Monaco, Consolas, 'Courier New',
-    monospace;
-}
-
-.Header {
-  text-align: center;
-}
-
-.Header-logo {
-  height: 30vmin;
+.header-logo img {
+  height: 300px;
+  filter: drop-shadow(2px 4px 26px rgba(255,255,255,0.4));
   pointer-events: none;
 }
 
+@media screen and (max-width: 400px) {
+  .header-logo img {
+    height: 240px;
+  }
+}
+
 @media (prefers-reduced-motion: no-preference) {
-  .Header-logo {
+  .header-logo img {
     animation: Header-logo-spin infinite 20s linear;
   }
 }
 
-.Header-header {
-  background-color: #282c34;
-  min-height: 100vh;
+header {
   display: flex;
   flex-direction: column;
   align-items: center;
   justify-content: center;
-  font-size: calc(10px + 2vmin);
   color: white;
 }
 
-.Header-link {
-  color: #61dafb;
+header > div {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  width: 100%;
+  margin-top: var(--space-l);
+}
+
+.receipt-text {
+  margin: var(--space-m) auto;
 }
 
 @keyframes Header-logo-spin {
@@ -50,4 +48,19 @@ code {
   to {
     transform: rotate(360deg);
   }
+}
+
+.external-link {
+  display: inline-flex;
+  justify-content: center;
+  align-items: center;
+  font-size: var(--font-size-m);
+}
+
+.text-align-center {
+  text-align: center;
+}
+
+.react-tooltip {
+  font-size: var(--font-size-m);
 }
