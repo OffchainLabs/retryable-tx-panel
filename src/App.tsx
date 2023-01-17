@@ -525,8 +525,6 @@ function App() {
     retryablesSearch(txHash);
   }
 
-  useEffect(() => {}, [input]);
-
   const { text: l1TxnResultText } =
     receiptStateToDisplayableResult(txHashState);
   return (
