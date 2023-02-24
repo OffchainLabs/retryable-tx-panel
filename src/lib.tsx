@@ -1,4 +1,4 @@
-import { JsonRpcProvider } from "@ethersproject/providers";
+import { JsonRpcProvider } from '@ethersproject/providers';
 import {
   L2ToL1Message,
   L2TransactionReceipt,
@@ -6,21 +6,21 @@ import {
   getL1Network,
   L2ToL1MessageStatus,
   L1Network,
-  L2Network
-} from "@arbitrum/sdk";
-import { BigNumber } from "@ethersproject/bignumber";
-import { supportedL1Networks } from "./App";
+  L2Network,
+} from '@arbitrum/sdk';
+import { BigNumber } from '@ethersproject/bignumber';
+import { supportedL1Networks } from './App';
 
 const supportedL2Networks = {
   42161: `https://arb1.arbitrum.io/rpc`,
   421613: `https://goerli-rollup.arbitrum.io/rpc`,
-  42170: `https://nova.arbitrum.io/rpc`
+  42170: `https://nova.arbitrum.io/rpc`,
 };
 
 export enum L2TxnStatus {
-  SUCCESS = "SUCCESS",
-  FAILURE = "FAILURE",
-  NOT_FOUND = "NOT_FOUND"
+  SUCCESS = 'SUCCESS',
+  FAILURE = 'FAILURE',
+  NOT_FOUND = 'NOT_FOUND',
 }
 interface L2ToL1MessageSearchResult {
   l2TxnStatus: L2TxnStatus;
@@ -42,9 +42,9 @@ export interface L2ToL1MessageData {
 }
 
 export const getL2ToL1Messages = async (
-  txHash: string
+  txHash: string,
 ): Promise<L2ToL1MessageSearchResult> => {
-  for (let [chainID, rpcURL] of Object.entries(supportedL2Networks)) {
+  for (const [chainID, rpcURL] of Object.entries(supportedL2Networks)) {
     const l2Network = await getL2Network(+chainID);
     const l2Provider = await new JsonRpcProvider(rpcURL);
 
@@ -52,7 +52,7 @@ export const getL2ToL1Messages = async (
     const l1ChainID = l2Network.partnerChainID as 1 | 5;
     const l1Network = await getL1Network(l1ChainID);
     const l1Provider = await new JsonRpcProvider(
-      supportedL1Networks[l1ChainID]
+      supportedL1Networks[l1ChainID],
     );
     const currentL1Block = BigNumber.from(await l1Provider.getBlockNumber());
     const receipt = await l2Provider.getTransactionReceipt(txHash);
@@ -62,13 +62,13 @@ export const getL2ToL1Messages = async (
         return {
           l2TxnStatus: L2TxnStatus.FAILURE,
           l2ToL1Messages: [],
-          l2TxHash: txHash
+          l2TxHash: txHash,
         };
       }
       const l2Receipt = new L2TransactionReceipt(receipt);
       const l2ToL1Messages = await l2Receipt.getL2ToL1Messages(l1Provider);
       const l2MessagesData: L2ToL1MessageData[] = [];
-      for (let l2ToL1Message of l2ToL1Messages) {
+      for (const l2ToL1Message of l2ToL1Messages) {
         try {
           const status = await l2ToL1Message.status(l2Provider);
           const deadlineBlock =
@@ -86,13 +86,13 @@ export const getL2ToL1Messages = async (
                   etaSeconds: deadlineBlock
                     .sub(currentL1Block)
                     .mul(15)
-                    .toNumber()
+                    .toNumber(),
                 }
               : null,
             l1Network,
             l2Network,
             l2Provider,
-            createdAtL2BlockNumber: l2Receipt.blockNumber
+            createdAtL2BlockNumber: l2Receipt.blockNumber,
           });
         } catch (e) {
           const expectedError = "batch doesn't exist";
@@ -100,7 +100,7 @@ export const getL2ToL1Messages = async (
           const actualError =
             err && (err.message || (err.error && err.error.message));
           if (actualError.includes(expectedError)) {
-            console.warn("batch doesnt exist");
+            console.warn('batch doesnt exist');
 
             l2MessagesData.push({
               status: L2ToL1MessageStatus.UNCONFIRMED,
@@ -109,7 +109,7 @@ export const getL2ToL1Messages = async (
               l1Network,
               l2Network,
               l2Provider,
-              createdAtL2BlockNumber: l2Receipt.blockNumber
+              createdAtL2BlockNumber: l2Receipt.blockNumber,
             });
           } else {
             throw e;
@@ -119,13 +119,13 @@ export const getL2ToL1Messages = async (
       return {
         l2TxnStatus: L2TxnStatus.SUCCESS,
         l2ToL1Messages: l2MessagesData,
-        l2TxHash: txHash
+        l2TxHash: txHash,
       };
     }
   }
   return {
     l2TxnStatus: L2TxnStatus.NOT_FOUND,
     l2ToL1Messages: [],
-    l2TxHash: txHash
+    l2TxHash: txHash,
   };
 };

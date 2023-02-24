@@ -1,7 +1,3 @@
 module.exports = {
-  tabWidth: 2,
-  useTabs: false,
-  semi: true,
-  singleQuote: false,
-  trailingComma: "none"
+  ...require('@offchainlabs/prettier-config'),
 };

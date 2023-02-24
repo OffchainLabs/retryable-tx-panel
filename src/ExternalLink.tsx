@@ -1,14 +1,13 @@
-import { ExternalLink as ExternalLinkIcon } from "react-feather";
+import { PropsWithChildren } from 'react';
+import { ExternalLink as ExternalLinkIcon } from 'react-feather';
 
-export function ExternalLink({
-  children,
-  showIcon = false,
-  ...props
-}: {
-  children: React.ReactNode;
-  showIcon?: boolean;
-  [x: string]: any;
-}) {
+type Props = PropsWithChildren<
+  {
+    showIcon: boolean;
+  } & React.AnchorHTMLAttributes<HTMLAnchorElement>
+>;
+
+export function ExternalLink({ children, showIcon = false, ...props }: Props) {
   return (
     <a
       className="external-link"

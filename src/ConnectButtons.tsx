@@ -1,4 +1,4 @@
-import { useAccount, useConnect, useDisconnect } from "wagmi";
+import { useAccount, useConnect, useDisconnect } from 'wagmi';
 
 const ConnectButtons = () => {
   const { address, isConnected } = useAccount();
