@@ -418,6 +418,13 @@ function App() {
 
   const resultRef = useRef<null | HTMLDivElement>(null);
   const { chain } = useNetwork();
+  // @ts-ignore
+  console.log(
+    'useNetwork chain Id:',
+    chain?.id,
+    'useSigner chain id:',
+    signer?.provider?._network.chainId,
+  );
 
   const [input, setInput] = React.useState<string>('');
   const [txHashState, setTxnHashState] = React.useState<ReceiptState>(
