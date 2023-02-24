@@ -1,19 +1,21 @@
-import { useMemo } from "react";
-import { MessageStatusDisplay } from "./App";
-import { Signer } from "@ethersproject/abstract-signer";
-import { L1ToL2MessageWriter } from "@arbitrum/sdk";
-import React from "react";
+import { useMemo } from 'react';
+import { MessageStatusDisplay } from './App';
+import { Signer } from '@ethersproject/abstract-signer';
+import { L1ToL2MessageWriter } from '@arbitrum/sdk';
+import React from 'react';
+import { BigNumber } from 'ethers';
+import { RetryableMessageParams } from '@arbitrum/sdk/dist/lib/dataEntities/message';
 
 function Redeem({
   l1ToL2Message,
   signer,
-  connectedNetworkId
+  connectedNetworkId,
 }: {
   l1ToL2Message: MessageStatusDisplay;
   signer: Signer | null;
   connectedNetworkId?: number;
 }) {
-  const [message, setMessage] = React.useState<string>("");
+  const [message, setMessage] = React.useState<string>('');
   const redeemButton = useMemo(() => {
     if (!signer) return null;
     if (connectedNetworkId !== l1ToL2Message.l2Network.chainID) {
@@ -24,30 +26,39 @@ function Redeem({
         onClick={async () => {
           // NOTE: we could have a "reader to writer" method in migration sdk
           //       but we don't have it and therefore the below mess
-          const _l1ToL2Message = l1ToL2Message.l1ToL2Message as any;
+          if (!l1ToL2Message.l1ToL2Message) {
+            return;
+          }
+
+          const _l1ToL2Message: {
+            sender: string;
+            messageNumber: BigNumber;
+            l1BaseFee: BigNumber;
+            messageData: RetryableMessageParams;
+          } = l1ToL2Message.l1ToL2Message;
           const l1ToL2MessageWriter = new L1ToL2MessageWriter(
             signer,
             l1ToL2Message.l2Network.chainID,
             _l1ToL2Message.sender,
             _l1ToL2Message.messageNumber,
             _l1ToL2Message.l1BaseFee,
-            _l1ToL2Message.messageData
+            _l1ToL2Message.messageData,
           );
           try {
             const res = await l1ToL2MessageWriter.redeem();
             const rec = await res.wait();
             if (rec.status === 1) {
               setMessage(
-                `Retryable successfully redeemed! ${rec.transactionHash}`
+                `Retryable successfully redeemed! ${rec.transactionHash}`,
               );
               // Reload the page to show the new status
               window.location.reload();
             } else {
               setMessage(res.toString());
-              throw new Error("Failed to redeem");
+              throw new Error('Failed to redeem');
             }
-          } catch (err: any) {
-            setMessage(err.message.toString());
+          } catch (err: unknown) {
+            setMessage((err as Error).message.toString());
           }
         }}
       >

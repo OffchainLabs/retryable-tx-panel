@@ -1,5 +1,5 @@
-import "./App.css";
-import React, { useEffect, useRef } from "react";
+import './App.css';
+import React, { useEffect, useRef } from 'react';
 import {
   L1TransactionReceipt,
   L1ToL2MessageStatus,
@@ -8,27 +8,27 @@ import {
   L2Network,
   getL1Network,
   getL2Network,
-  L1ToL2MessageReader
-} from "@arbitrum/sdk";
-import { useNavigate, useParams, generatePath } from "react-router-dom";
+  L1ToL2MessageReader,
+} from '@arbitrum/sdk';
+import { useNavigate, useParams, generatePath } from 'react-router-dom';
 
-import { useNetwork, useSigner } from "wagmi";
-import { ethers } from "ethers";
+import { useNetwork, useSigner } from 'wagmi';
+import { ethers } from 'ethers';
 import {
   JsonRpcProvider,
-  StaticJsonRpcProvider
-} from "@ethersproject/providers";
+  StaticJsonRpcProvider,
+} from '@ethersproject/providers';
 
-import Redeem from "./Redeem";
+import Redeem from './Redeem';
 import {
   L1ToL2MessageWaitResult,
-  EthDepositMessage
-} from "@arbitrum/sdk/dist/lib/message/L1ToL2Message";
-import { getL2ToL1Messages, L2ToL1MessageData, L2TxnStatus } from "./lib";
-import L2ToL1MsgsDisplay from "./L2ToL1MsgsDisplay";
-import { isValidTxHash } from "./isValidTxHash";
-import { ConnectButtons } from "./ConnectButtons";
-import { ExternalLink } from "./ExternalLink";
+  EthDepositMessage,
+} from '@arbitrum/sdk/dist/lib/message/L1ToL2Message';
+import { getL2ToL1Messages, L2ToL1MessageData, L2TxnStatus } from './lib';
+import L2ToL1MsgsDisplay from './L2ToL1MsgsDisplay';
+import { isValidTxHash } from './isValidTxHash';
+import { ConnectButtons } from './ConnectButtons';
+import { ExternalLink } from './ExternalLink';
 
 export enum ReceiptState {
   EMPTY,
@@ -39,14 +39,14 @@ export enum ReceiptState {
   L2_FAILED,
   NO_L1_L2_MESSAGES,
   MESSAGES_FOUND,
-  NO_L2_L1_MESSAGES
+  NO_L2_L1_MESSAGES,
 }
 
 export enum AlertLevel {
   RED,
   YELLOW,
   GREEN,
-  NONE
+  NONE,
 }
 
 interface L1ToL2MessageReaderWithNetwork extends L1ToL2MessageReader {
@@ -63,7 +63,7 @@ interface L1ToL2MessagesAndDepositMessages {
 }
 
 const looksLikeCallToInboxethDeposit = async (
-  l1ToL2Message: L1ToL2MessageReader
+  l1ToL2Message: L1ToL2MessageReader,
 ): Promise<boolean> => {
   const txData = await l1ToL2Message.messageData;
   return (
@@ -71,15 +71,15 @@ const looksLikeCallToInboxethDeposit = async (
     txData.gasLimit.isZero() &&
     txData.maxFeePerGas.isZero() &&
     (txData.data.toString() === ethers.constants.HashZero ||
-      txData.data.toString() === "" ||
-      txData.data.toString() === "0x") &&
+      txData.data.toString() === '' ||
+      txData.data.toString() === '0x') &&
     txData.destAddress === txData.excessFeeRefundAddress &&
     txData.excessFeeRefundAddress === txData.callValueRefundAddress
   );
 };
 
 const receiptStateToDisplayableResult = (
-  l1ReceiptState: ReceiptState
+  l1ReceiptState: ReceiptState,
 ): {
   text: string;
   alertLevel: AlertLevel;
@@ -87,48 +87,48 @@ const receiptStateToDisplayableResult = (
   switch (l1ReceiptState) {
     case ReceiptState.EMPTY:
       return {
-        text: "",
-        alertLevel: AlertLevel.NONE
+        text: '',
+        alertLevel: AlertLevel.NONE,
       };
     case ReceiptState.LOADING:
       return {
-        text: "Loading...",
-        alertLevel: AlertLevel.NONE
+        text: 'Loading...',
+        alertLevel: AlertLevel.NONE,
       };
     case ReceiptState.INVALID_INPUT_LENGTH:
       return {
-        text: "Error: invalid transaction hash",
-        alertLevel: AlertLevel.RED
+        text: 'Error: invalid transaction hash',
+        alertLevel: AlertLevel.RED,
       };
     case ReceiptState.NOT_FOUND:
       return {
-        text: "L1 transaction not found",
-        alertLevel: AlertLevel.YELLOW
+        text: 'L1 transaction not found',
+        alertLevel: AlertLevel.YELLOW,
       };
     case ReceiptState.L1_FAILED:
       return {
-        text: "Error: L1 transaction reverted",
-        alertLevel: AlertLevel.RED
+        text: 'Error: L1 transaction reverted',
+        alertLevel: AlertLevel.RED,
       };
     case ReceiptState.L2_FAILED:
       return {
-        text: "Error: L2 transaction reverted",
-        alertLevel: AlertLevel.RED
+        text: 'Error: L2 transaction reverted',
+        alertLevel: AlertLevel.RED,
       };
     case ReceiptState.NO_L1_L2_MESSAGES:
       return {
-        text: "No L1-to-L2 messages created by provided L1 transaction",
-        alertLevel: AlertLevel.YELLOW
+        text: 'No L1-to-L2 messages created by provided L1 transaction',
+        alertLevel: AlertLevel.YELLOW,
       };
     case ReceiptState.MESSAGES_FOUND:
       return {
-        text: "Cross chain messages found",
-        alertLevel: AlertLevel.GREEN
+        text: 'Cross chain messages found',
+        alertLevel: AlertLevel.GREEN,
       };
     case ReceiptState.NO_L2_L1_MESSAGES: {
       return {
-        text: "No L1-to-L2 messages created by provided L1 transaction",
-        alertLevel: AlertLevel.YELLOW
+        text: 'No L1-to-L2 messages created by provided L1 transaction',
+        alertLevel: AlertLevel.YELLOW,
       };
     }
   }
@@ -158,7 +158,7 @@ export enum Status {
   CREATION_FAILURE,
   NOT_FOUND,
   REEXECUTABLE,
-  SUCCEEDED
+  SUCCEEDED,
 }
 
 export interface Result {
@@ -184,17 +184,17 @@ export interface ReceiptRes {
 }
 
 if (!process.env.REACT_APP_INFURA_KEY)
-  throw new Error("No REACT_APP_INFURA_KEY set");
+  throw new Error('No REACT_APP_INFURA_KEY set');
 
 export const supportedL1Networks = {
   1: `https://mainnet.infura.io/v3/${process.env.REACT_APP_INFURA_KEY}`,
-  5: `https://goerli.infura.io/v3/${process.env.REACT_APP_INFURA_KEY}`
+  5: `https://goerli.infura.io/v3/${process.env.REACT_APP_INFURA_KEY}`,
 };
 
 const getL1TxnReceipt = async (
-  txnHash: string
+  txnHash: string,
 ): Promise<ReceiptRes | undefined> => {
-  for (let [chainID, rpcURL] of Object.entries(supportedL1Networks)) {
+  for (const [chainID, rpcURL] of Object.entries(supportedL1Networks)) {
     const l1Network = await getL1Network(+chainID);
     const l1Provider = await new StaticJsonRpcProvider(rpcURL);
 
@@ -203,7 +203,7 @@ const getL1TxnReceipt = async (
       return {
         l1TxnReceipt: new L1TransactionReceipt(rec),
         l1Network,
-        l1Provider
+        l1Provider,
       };
     }
   }
@@ -211,11 +211,11 @@ const getL1TxnReceipt = async (
 
 const getL1ToL2MessagesAndDepositMessages = async (
   l1TxnReceipt: L1TransactionReceipt,
-  l1Network: L1Network
+  l1Network: L1Network,
 ): Promise<L1ToL2MessagesAndDepositMessages> => {
   let allL1ToL2Messages: L1ToL2MessageReaderWithNetwork[] = [];
   let allDepositMessages: EthDepositMessageWithNetwork[] = [];
-  for (let l2ChainID of Array.from(new Set(l1Network.partnerChainIDs))) {
+  for (const l2ChainID of Array.from(new Set(l1Network.partnerChainIDs))) {
     // TODO: error handle
     const l2Network = await getL2Network(l2ChainID);
 
@@ -230,17 +230,17 @@ const getL1ToL2MessagesAndDepositMessages = async (
     let l2RpcURL;
     switch (l2ChainID) {
       case 42161:
-        l2RpcURL = "https://arb1.arbitrum.io/rpc";
+        l2RpcURL = 'https://arb1.arbitrum.io/rpc';
         break;
       case 42170:
-        l2RpcURL = "https://nova.arbitrum.io/rpc";
+        l2RpcURL = 'https://nova.arbitrum.io/rpc';
         break;
       case 421613:
-        l2RpcURL = "https://goerli-rollup.arbitrum.io/rpc";
+        l2RpcURL = 'https://goerli-rollup.arbitrum.io/rpc';
         break;
       default:
         throw new Error(
-          "Unknown L2 chain id. This chain is not supported by dashboard"
+          'Unknown L2 chain id. This chain is not supported by dashboard',
         );
     }
     const l2Provider = new StaticJsonRpcProvider(l2RpcURL);
@@ -260,13 +260,13 @@ const getL1ToL2MessagesAndDepositMessages = async (
   }
   const allMessages: L1ToL2MessagesAndDepositMessages = {
     retryables: allL1ToL2Messages,
-    deposits: allDepositMessages
+    deposits: allDepositMessages,
   };
   return allMessages;
 };
 
 const depositMessageStatusDisplay = async (
-  ethDepositMessage: EthDepositMessageWithNetwork
+  ethDepositMessage: EthDepositMessageWithNetwork,
 ): Promise<MessageStatusDisplay> => {
   const { l2Network } = ethDepositMessage;
   const { explorerUrl } = l2Network;
@@ -279,27 +279,27 @@ const depositMessageStatusDisplay = async (
     explorerUrl,
     l2Network,
     ethDepositMessage,
-    l2TxHash
+    l2TxHash,
   };
   if (depositTxReceipt?.status === 1) {
     return {
-      text: "Success! 🎉 Your Eth deposit has completed",
+      text: 'Success! 🎉 Your Eth deposit has completed',
       alertLevel: AlertLevel.GREEN,
       showRedeemButton: false,
-      ...stuffTheyAllHave
+      ...stuffTheyAllHave,
     };
   } else {
     return {
-      text: "Something failed in this tracker, you can try to check your account on l2",
+      text: 'Something failed in this tracker, you can try to check your account on l2',
       alertLevel: AlertLevel.RED,
       showRedeemButton: false,
-      ...stuffTheyAllHave
+      ...stuffTheyAllHave,
     };
   }
 };
 
 const l1ToL2MessageToStatusDisplay = async (
-  l1ToL2Message: L1ToL2MessageReaderWithNetwork
+  l1ToL2Message: L1ToL2MessageReaderWithNetwork,
 ): Promise<MessageStatusDisplay> => {
   const { l2Network } = l1ToL2Message;
   const { explorerUrl } = l2Network;
@@ -312,7 +312,7 @@ const l1ToL2MessageToStatusDisplay = async (
     messageStatus = { status: L1ToL2MessageStatus.NOT_YET_CREATED };
   }
 
-  let l2TxHash = "null";
+  let l2TxHash = 'null';
   if (messageStatus.status === L1ToL2MessageStatus.REDEEMED) {
     l2TxHash = messageStatus.l2TxReceipt.transactionHash;
   }
@@ -323,76 +323,76 @@ const l1ToL2MessageToStatusDisplay = async (
     explorerUrl,
     l2Network,
     l1ToL2Message,
-    l2TxHash
+    l2TxHash,
   };
   switch (messageStatus.status) {
     case L1ToL2MessageStatus.CREATION_FAILED:
       return {
-        text: "L2 message creation reverted; perhaps provided maxSubmissionCost was too low?",
+        text: 'L2 message creation reverted; perhaps provided maxSubmissionCost was too low?',
         alertLevel: AlertLevel.RED,
         showRedeemButton: false,
-        ...stuffTheyAllHave
+        ...stuffTheyAllHave,
       };
     case L1ToL2MessageStatus.EXPIRED: {
       const looksLikeEthDeposit = await looksLikeCallToInboxethDeposit(
-        l1ToL2Message
+        l1ToL2Message,
       );
       if (looksLikeEthDeposit) {
         return {
-          text: "Success! 🎉 Your Eth deposit has completed",
+          text: 'Success! 🎉 Your Eth deposit has completed',
           alertLevel: AlertLevel.GREEN,
           showRedeemButton: false,
-          ...stuffTheyAllHave
+          ...stuffTheyAllHave,
         };
       }
       return {
-        text: "Retryable ticket expired.",
+        text: 'Retryable ticket expired.',
         alertLevel: AlertLevel.RED,
         showRedeemButton: false,
-        ...stuffTheyAllHave
+        ...stuffTheyAllHave,
       };
     }
     case L1ToL2MessageStatus.NOT_YET_CREATED: {
       return {
-        text: "L1 to L2 message initiated from L1, but not yet created — check again in a few minutes!",
+        text: 'L1 to L2 message initiated from L1, but not yet created — check again in a few minutes!',
         alertLevel: AlertLevel.YELLOW,
         showRedeemButton: false,
-        ...stuffTheyAllHave
+        ...stuffTheyAllHave,
       };
     }
     case L1ToL2MessageStatus.REDEEMED: {
       return {
-        text: "Success! 🎉 Your retryable was executed.",
+        text: 'Success! 🎉 Your retryable was executed.',
         alertLevel: AlertLevel.GREEN,
         showRedeemButton: false,
-        ...stuffTheyAllHave
+        ...stuffTheyAllHave,
       };
     }
     case L1ToL2MessageStatus.FUNDS_DEPOSITED_ON_L2: {
       const looksLikeEthDeposit = await looksLikeCallToInboxethDeposit(
-        l1ToL2Message
+        l1ToL2Message,
       );
       if (looksLikeEthDeposit) {
         return {
-          text: "Success! 🎉 Your Eth deposit has completed",
+          text: 'Success! 🎉 Your Eth deposit has completed',
           alertLevel: AlertLevel.GREEN,
           showRedeemButton: false,
-          ...stuffTheyAllHave
+          ...stuffTheyAllHave,
         };
       }
       const text =
         // we do not know why auto redeem failed in nitro
-        "Auto-redeem failed; you can redeem it now:";
+        'Auto-redeem failed; you can redeem it now:';
       return {
         text,
         alertLevel: AlertLevel.YELLOW,
         showRedeemButton: true,
-        ...stuffTheyAllHave
+        ...stuffTheyAllHave,
       };
     }
 
     default:
-      throw new Error("Uncaught L1ToL2MessageStatus type in switch statement");
+      throw new Error('Uncaught L1ToL2MessageStatus type in switch statement');
   }
 };
 
@@ -400,7 +400,7 @@ function App() {
   const { txHash } = useParams();
   const navigate = useNavigate();
 
-  const oldTxHash = new URLSearchParams(window.location.search).get("t");
+  const oldTxHash = new URLSearchParams(window.location.search).get('t');
 
   useEffect(() => {
     if (!oldTxHash) {
@@ -408,9 +408,9 @@ function App() {
     }
 
     if (isValidTxHash(oldTxHash)) {
-      navigate(generatePath("tx/:txHash", { txHash: oldTxHash }));
+      navigate(generatePath('tx/:txHash', { txHash: oldTxHash }));
     } else {
-      navigate("/");
+      navigate('/');
     }
   }, [navigate, oldTxHash]);
 
@@ -419,9 +419,9 @@ function App() {
   const resultRef = useRef<null | HTMLDivElement>(null);
   const { chain } = useNetwork();
 
-  const [input, setInput] = React.useState<string>("");
+  const [input, setInput] = React.useState<string>('');
   const [txHashState, setTxnHashState] = React.useState<ReceiptState>(
-    ReceiptState.EMPTY
+    ReceiptState.EMPTY,
   );
   const [l1TxnReceipt, setl1TxnReceipt] = React.useState<ReceiptRes>();
   const [messagesDisplays, setMessagesDisplays] = React.useState<
@@ -450,7 +450,7 @@ function App() {
     }
 
     // simple deep linking
-    navigate(generatePath("tx/:txHash", { txHash }));
+    navigate(generatePath('tx/:txHash', { txHash }));
 
     const receiptRes = await getL1TxnReceipt(txHash);
     setl1TxnReceipt(receiptRes);
@@ -479,7 +479,7 @@ function App() {
 
     const allMessages = await getL1ToL2MessagesAndDepositMessages(
       l1TxnReceipt,
-      l1Network
+      l1Network,
     );
     const l1ToL2Messages = allMessages.retryables;
     const depositMessages = allMessages.deposits;
@@ -491,16 +491,16 @@ function App() {
     setTxnHashState(ReceiptState.MESSAGES_FOUND);
 
     const messageStatuses: MessageStatusDisplay[] = [];
-    for (let l1ToL2Message of l1ToL2Messages) {
+    for (const l1ToL2Message of l1ToL2Messages) {
       const l1ToL2MessageStatus = await l1ToL2MessageToStatusDisplay(
-        l1ToL2Message
+        l1ToL2Message,
       );
       messageStatuses.push(l1ToL2MessageStatus);
     }
 
-    for (let depositMessage of depositMessages) {
+    for (const depositMessage of depositMessages) {
       const l1ToL2MessageStatus = await depositMessageStatusDisplay(
-        depositMessage
+        depositMessage,
       );
       messageStatuses.push(l1ToL2MessageStatus);
     }
@@ -510,17 +510,17 @@ function App() {
     if (resultRef.current) resultRef.current.scrollIntoView(); // scroll to results
   };
 
-  const handleChange = (event: any) => {
+  const handleChange = (event: React.ChangeEvent<HTMLInputElement>) => {
     setInput(event.target.value);
   };
 
-  const handleSubmit = (event: any) => {
+  const handleSubmit = (event: React.SyntheticEvent<HTMLFormElement>) => {
     event.preventDefault();
     retryablesSearch(input);
   };
 
   // simple deep linking
-  if (input === "" && isValidTxHash(txHash)) {
+  if (input === '' && isValidTxHash(txHash)) {
     setInput(txHash);
     retryablesSearch(txHash);
   }
@@ -532,7 +532,6 @@ function App() {
       <h2>Find out what&apos;s up with your cross-chain message</h2>
       <form className="form-container" onSubmit={handleSubmit}>
         <input
-          autoFocus
           placeholder="Paste your transaction hash"
           value={input}
           onChange={handleChange}
@@ -546,7 +545,7 @@ function App() {
           <a
             href={
               l1TxnReceipt.l1Network.explorerUrl +
-              "/tx/" +
+              '/tx/' +
               l1TxnReceipt.l1TxnReceipt.transactionHash
             }
             rel="noreferrer"
@@ -554,14 +553,14 @@ function App() {
           >
             L1 Transaction on {l1TxnReceipt.l1Network.name}
           </a>
-        )}{" "}
-        {l1TxnResultText}{" "}
+        )}{' '}
+        {l1TxnResultText}{' '}
       </div>
       <div>
         {txHashState === ReceiptState.MESSAGES_FOUND &&
           messagesDisplays.length === 0 &&
           l2ToL1MessagesToShow.length === 0 &&
-          "Loading messages..."}
+          'Loading messages...'}
       </div>
 
       <L2ToL1MsgsDisplay
@@ -580,16 +579,16 @@ function App() {
             {
               <>
                 <h3>
-                  L2{" "}
-                  {messageDisplay.l2TxHash !== "null" ? (
+                  L2{' '}
+                  {messageDisplay.l2TxHash !== 'null' ? (
                     <ExternalLink
                       href={`${messageDisplay.explorerUrl}/tx/${messageDisplay.l2TxHash}`}
                     >
                       Transaction
                     </ExternalLink>
                   ) : (
-                    "Transaction"
-                  )}{" "}
+                    'Transaction'
+                  )}{' '}
                   status on {messageDisplay.l2Network.name}
                 </h3>
                 {messageDisplay.l1ToL2Message !== undefined && (
@@ -599,7 +598,7 @@ function App() {
                     }/tx/${getRetryableIdOrDepositHash(messageDisplay)}`}
                     showIcon
                   >
-                    Check Your Retryable Ticket on{" "}
+                    Check Your Retryable Ticket on{' '}
                     {messageDisplay.l2Network.name}
                   </ExternalLink>
                 )}
@@ -618,7 +617,7 @@ function App() {
       })}
       {(messagesDisplays.some((msg) => msg.showRedeemButton) ||
         l2ToL1MessagesToShow.some(
-          (msg) => msg.status === L2ToL1MessageStatus.CONFIRMED
+          (msg) => msg.status === L2ToL1MessageStatus.CONFIRMED,
         )) && <ConnectButtons />}
     </div>
   );

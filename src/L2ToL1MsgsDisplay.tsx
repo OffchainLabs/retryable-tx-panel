@@ -1,10 +1,10 @@
-import { Signer } from "@ethersproject/abstract-signer";
-import { L2ToL1MessageData } from "./lib";
+import { Signer } from '@ethersproject/abstract-signer';
+import { L2ToL1MessageData } from './lib';
 import {
   L2ToL1MessageStatus,
   L2ToL1MessageWriter,
-  L2ToL1Message
-} from "@arbitrum/sdk";
+  L2ToL1Message,
+} from '@arbitrum/sdk';
 
 const etaDisplay = (etaSeconds: number) => {
   const minutesLeft = Math.round(etaSeconds / 60);
@@ -12,21 +12,21 @@ const etaDisplay = (etaSeconds: number) => {
   const daysLeft = Math.round(hoursLeft / 24);
 
   if (daysLeft > 0) {
-    return `~${daysLeft} day${daysLeft === 1 ? "" : "s"}`;
+    return `~${daysLeft} day${daysLeft === 1 ? '' : 's'}`;
   }
 
   if (hoursLeft > 0) {
-    return `~${hoursLeft} hour${hoursLeft === 1 ? "" : "s"}`;
+    return `~${hoursLeft} hour${hoursLeft === 1 ? '' : 's'}`;
   }
 
   if (minutesLeft === 0) {
-    return "less than 1 hour";
+    return 'less than 1 hour';
   }
 };
 function L2ToL1MsgsDisplay({
   signer,
   l2ToL1Messages,
-  connectedNetworkId
+  connectedNetworkId,
 }: {
   l2ToL1Messages: L2ToL1MessageData[];
   signer: Signer | null;
@@ -41,10 +41,10 @@ function L2ToL1MsgsDisplay({
 
             {l2ToL1Message.confirmationInfo ? (
               <p>
-                {" ETA:"}
+                {' ETA:'}
                 {etaDisplay(
-                  l2ToL1Message.confirmationInfo.etaSeconds
-                )} <br /> (L1 block deadline:{" "}
+                  l2ToL1Message.confirmationInfo.etaSeconds,
+                )} <br /> (L1 block deadline:{' '}
                 {l2ToL1Message.confirmationInfo.deadlineBlock.toNumber()})
               </p>
             ) : null}
@@ -67,24 +67,24 @@ function L2ToL1MsgsDisplay({
                       l2ToL1Message.l2Provider,
                       {
                         fromBlock: l2ToL1Message.createdAtL2BlockNumber,
-                        toBlock: l2ToL1Message.createdAtL2BlockNumber + 1
-                      }
+                        toBlock: l2ToL1Message.createdAtL2BlockNumber + 1,
+                      },
                     );
                     const l2ToL1MessageWriter = new L2ToL1MessageWriter(
                       signer,
-                      l2ToL1TxEvent
+                      l2ToL1TxEvent,
                     );
 
                     const res = await l2ToL1MessageWriter.execute(
-                      l2ToL1Message.l2Provider
+                      l2ToL1Message.l2Provider,
                     );
                     const rec = await res.wait();
                     if (rec.status === 1) {
                       alert(
-                        `L2toL1 message successfully redeemed! ${rec.transactionHash}`
+                        `L2toL1 message successfully redeemed! ${rec.transactionHash}`,
                       );
                     } else {
-                      throw new Error("Failed to redeem");
+                      throw new Error('Failed to redeem');
                     }
                   }}
                 >
