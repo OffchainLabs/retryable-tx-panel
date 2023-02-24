@@ -34,7 +34,7 @@
     "eject": "react-scripts eject",
     "bundlesize": "react-scripts build --stats && webpack-bundle-analyzer ./build/bundle-stats.json",
     "lint": "eslint 'src/**/*.{js,ts,tsx}'",
-    "prettier:format": "yarn prettier './**/*.{js,json,md,ts,yml}' --write && yarn run lint --fix"
+    "prettier:format": "yarn prettier './**/*.{js,json,md,ts,tsx,yml}' --write && yarn run lint --fix"
   },
   "browserslist": [
     ">0.2%",
