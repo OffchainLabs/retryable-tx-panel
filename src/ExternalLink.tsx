@@ -3,7 +3,7 @@ import { ExternalLink as ExternalLinkIcon } from 'react-feather';
 
 type Props = PropsWithChildren<
   {
-    showIcon: boolean;
+    showIcon?: boolean;
   } & React.AnchorHTMLAttributes<HTMLAnchorElement>
 >;
 

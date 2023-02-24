@@ -2,7 +2,7 @@ import { WagmiConfig, createClient, configureChains } from 'wagmi';
 import { mainnet, arbitrum, arbitrumGoerli, goerli } from 'wagmi/chains';
 import { publicProvider } from 'wagmi/providers/public';
 import { jsonRpcProvider } from 'wagmi/providers/jsonRpc';
-import { PropsWithChildren } from 'react';
+import { ReactNode } from 'react';
 
 const { provider, webSocketProvider } = configureChains(
   [mainnet, goerli, arbitrum, arbitrumGoerli],
@@ -20,8 +20,6 @@ const client = createClient({
   webSocketProvider,
 });
 
-export const WagmiProvider = ({
-  children,
-}: PropsWithChildren<Record<string, never>>) => {
+export const WagmiProvider = ({ children }: { children?: ReactNode }) => {
   return <WagmiConfig client={client}>{children}</WagmiConfig>;
 };
