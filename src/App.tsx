@@ -13,14 +13,16 @@ import {
 import { useNavigate, useParams, generatePath } from 'react-router-dom';
 
 import { useNetwork, useSigner } from 'wagmi';
-import { ethers } from 'ethers';
+import { constants } from 'ethers';
 import {
   JsonRpcProvider,
   StaticJsonRpcProvider,
 } from '@ethersproject/providers';
+import { hexDataSlice } from 'ethers/lib/utils';
 
 import Redeem from './Redeem';
 import {
+  L1ToL2MessageReaderClassic,
   L1ToL2MessageWaitResult,
   EthDepositMessage,
 } from '@arbitrum/sdk/dist/lib/message/L1ToL2Message';
@@ -53,29 +55,33 @@ interface L1ToL2MessageReaderWithNetwork extends L1ToL2MessageReader {
   l2Network: L2Network;
 }
 
+interface L1ToL2MessageReaderClassicWithNetwork
+  extends L1ToL2MessageReaderClassic {
+  l2Network: L2Network;
+}
+
 interface EthDepositMessageWithNetwork extends EthDepositMessage {
   l2Network: L2Network;
 }
 
 interface L1ToL2MessagesAndDepositMessages {
   retryables: L1ToL2MessageReaderWithNetwork[];
+  retryablesClassic: L1ToL2MessageReaderClassicWithNetwork[];
   deposits: EthDepositMessageWithNetwork[];
 }
 
 const looksLikeCallToInboxethDeposit = async (
-  l1ToL2Message: L1ToL2MessageReader,
-): Promise<boolean> => {
-  const txData = await l1ToL2Message.messageData;
-  return (
-    txData.l2CallValue.isZero() &&
-    txData.gasLimit.isZero() &&
-    txData.maxFeePerGas.isZero() &&
-    (txData.data.toString() === ethers.constants.HashZero ||
-      txData.data.toString() === '' ||
-      txData.data.toString() === '0x') &&
-    txData.destAddress === txData.excessFeeRefundAddress &&
-    txData.excessFeeRefundAddress === txData.callValueRefundAddress
-  );
+  l1ToL2Message:
+    | L1ToL2MessageReaderWithNetwork
+    | L1ToL2MessageReaderClassicWithNetwork,
+) => {
+  const txData = (
+    await l1ToL2Message.l2Provider.getTransaction(
+      l1ToL2Message.retryableCreationId,
+    )
+  ).data;
+  // check that calldataSize param is zero (8th 32-byte param, offset by 4 bytes for message ID):
+  return hexDataSlice(txData, 4 + 8 * 32, 4 + 9 * 32) === constants.HashZero;
 };
 
 const receiptStateToDisplayableResult = (
@@ -143,7 +149,7 @@ interface MessageStatusDisplayBase {
   l2TxHash: string;
 }
 interface MessageStatusDisplayRetryable extends MessageStatusDisplayBase {
-  l1ToL2Message: L1ToL2MessageReader;
+  l1ToL2Message: L1ToL2MessageReader | L1ToL2MessageReaderClassic;
   ethDepositMessage: undefined;
 }
 interface MessageStatusDisplayDeposit extends MessageStatusDisplayBase {
@@ -214,7 +220,10 @@ const getL1ToL2MessagesAndDepositMessages = async (
   l1Network: L1Network,
 ): Promise<L1ToL2MessagesAndDepositMessages> => {
   let allL1ToL2Messages: L1ToL2MessageReaderWithNetwork[] = [];
+  let allL1ToL2MessagesClassic: L1ToL2MessageReaderClassicWithNetwork[] = [];
+
   let allDepositMessages: EthDepositMessageWithNetwork[] = [];
+
   for (const l2ChainID of Array.from(new Set(l1Network.partnerChainIDs))) {
     // TODO: error handle
     const l2Network = await getL2Network(l2ChainID);
@@ -244,22 +253,36 @@ const getL1ToL2MessagesAndDepositMessages = async (
         );
     }
     const l2Provider = new StaticJsonRpcProvider(l2RpcURL);
-    const l1ToL2MessagesWithNetwork: L1ToL2MessageReaderWithNetwork[] = (
-      await l1TxnReceipt.getL1ToL2Messages(l2Provider)
-    ).map((l1ToL2Message) => {
-      return Object.assign(l1ToL2Message, { l2Network });
-    });
+    const isClassic = await l1TxnReceipt.isClassic(l2Provider);
 
     const depositMessagesWithNetwork: EthDepositMessageWithNetwork[] = (
       await l1TxnReceipt.getEthDeposits(l2Provider)
     ).map((depositMessage) => {
       return Object.assign(depositMessage, { l2Network });
     });
-    allL1ToL2Messages = allL1ToL2Messages.concat(l1ToL2MessagesWithNetwork);
+
+    if (isClassic) {
+      const messages = (
+        await l1TxnReceipt.getL1ToL2MessagesClassic(l2Provider)
+      ).map((l1ToL2Message) => {
+        return Object.assign(l1ToL2Message, { l2Network });
+      });
+      allL1ToL2MessagesClassic = allL1ToL2MessagesClassic.concat(messages);
+    } else {
+      const messages = (await l1TxnReceipt.getL1ToL2Messages(l2Provider)).map(
+        (l1ToL2Message) => {
+          return Object.assign(l1ToL2Message, { l2Network });
+        },
+      );
+      allL1ToL2Messages = allL1ToL2Messages.concat(messages);
+    }
+
     allDepositMessages = allDepositMessages.concat(depositMessagesWithNetwork);
   }
+
   const allMessages: L1ToL2MessagesAndDepositMessages = {
     retryables: allL1ToL2Messages,
+    retryablesClassic: allL1ToL2MessagesClassic,
     deposits: allDepositMessages,
   };
   return allMessages;
@@ -299,14 +322,28 @@ const depositMessageStatusDisplay = async (
 };
 
 const l1ToL2MessageToStatusDisplay = async (
-  l1ToL2Message: L1ToL2MessageReaderWithNetwork,
+  l1ToL2Message:
+    | L1ToL2MessageReaderWithNetwork
+    | L1ToL2MessageReaderClassicWithNetwork,
+  isClassic: boolean,
 ): Promise<MessageStatusDisplay> => {
   const { l2Network } = l1ToL2Message;
   const { explorerUrl } = l2Network;
 
   let messageStatus: L1ToL2MessageWaitResult;
   try {
-    messageStatus = await l1ToL2Message.waitForStatus(undefined, 1);
+    if (isClassic) {
+      // @ts-ignore testestsetsetsettsetsets
+      messageStatus = {
+        status: await (
+          l1ToL2Message as L1ToL2MessageReaderWithNetwork
+        ).status(),
+      };
+    } else {
+      messageStatus = await (
+        l1ToL2Message as L1ToL2MessageReader
+      ).waitForStatus(undefined, 1);
+    }
   } catch (e) {
     // catch timeout if not immediately found
     messageStatus = { status: L1ToL2MessageStatus.NOT_YET_CREATED };
@@ -482,18 +519,33 @@ function App() {
       l1Network,
     );
     const l1ToL2Messages = allMessages.retryables;
+    const l1ToL2MessagesClassic = allMessages.retryablesClassic;
     const depositMessages = allMessages.deposits;
 
-    if (l1ToL2Messages.length === 0 && depositMessages.length === 0) {
+    if (
+      l1ToL2Messages.length === 0 &&
+      l1ToL2MessagesClassic.length === 0 &&
+      depositMessages.length === 0
+    ) {
       return setTxnHashState(ReceiptState.NO_L1_L2_MESSAGES);
     }
 
     setTxnHashState(ReceiptState.MESSAGES_FOUND);
 
     const messageStatuses: MessageStatusDisplay[] = [];
+
     for (const l1ToL2Message of l1ToL2Messages) {
       const l1ToL2MessageStatus = await l1ToL2MessageToStatusDisplay(
         l1ToL2Message,
+        false,
+      );
+      messageStatuses.push(l1ToL2MessageStatus);
+    }
+
+    for (const l1ToL2Message of l1ToL2MessagesClassic) {
+      const l1ToL2MessageStatus = await l1ToL2MessageToStatusDisplay(
+        l1ToL2Message,
+        true,
       );
       messageStatuses.push(l1ToL2MessageStatus);
     }

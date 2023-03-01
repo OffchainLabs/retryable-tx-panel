@@ -19,10 +19,10 @@
     jsonpointer "^5.0.0"
     leven "^3.1.0"
 
-"@arbitrum/sdk@^3.0.0":
-  version "3.0.0"
-  resolved "https://registry.yarnpkg.com/@arbitrum/sdk/-/sdk-3.0.0.tgz#a5dc48a00cb8c6e230a2c696c0e880a7f80c637d"
-  integrity sha512-Mws5WAxxirp3vk8JH3vyQ5H6q1NNUIAAGEd9oEnQYDMyTBHLKU293GA3s9w4w6ZfIq/RZq8YCexhy4D1R+mQng==
+"@arbitrum/sdk@^3.1.1":
+  version "3.1.1-beta.0"
+  resolved "https://registry.yarnpkg.com/@arbitrum/sdk/-/sdk-3.1.1-beta.0.tgz#c3a16d6ba68e1fe403d30adb8646bd2563273cff"
+  integrity sha512-SbYxJZDLs3UBgdj4UfoHYoKCEFnClwr0oTwbhvAHyQrS1mS7k7FqqVxkD2djliYDVE7W/IQ1oDyQn3TCX18GIQ==
   dependencies:
     "@ethersproject/address" "^5.0.8"
     "@ethersproject/bignumber" "^5.1.1"

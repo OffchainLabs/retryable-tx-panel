@@ -30,6 +30,7 @@ function Redeem({
             return;
           }
 
+          // @ts-ignore azeazeazeazeazeazeazeaez
           const _l1ToL2Message: {
             sender: string;
             messageNumber: BigNumber;
