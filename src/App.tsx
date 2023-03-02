@@ -255,12 +255,6 @@ const getL1ToL2MessagesAndDepositMessages = async (
     const l2Provider = new StaticJsonRpcProvider(l2RpcURL);
     const isClassic = await l1TxnReceipt.isClassic(l2Provider);
 
-    const depositMessagesWithNetwork: EthDepositMessageWithNetwork[] = (
-      await l1TxnReceipt.getEthDeposits(l2Provider)
-    ).map((depositMessage) => {
-      return Object.assign(depositMessage, { l2Network });
-    });
-
     if (isClassic) {
       const messages = (
         await l1TxnReceipt.getL1ToL2MessagesClassic(l2Provider)
@@ -274,10 +268,18 @@ const getL1ToL2MessagesAndDepositMessages = async (
           return Object.assign(l1ToL2Message, { l2Network });
         },
       );
-      allL1ToL2Messages = allL1ToL2Messages.concat(messages);
-    }
 
-    allDepositMessages = allDepositMessages.concat(depositMessagesWithNetwork);
+      const depositMessagesWithNetwork: EthDepositMessageWithNetwork[] = (
+        await l1TxnReceipt.getEthDeposits(l2Provider)
+      ).map((depositMessage) => {
+        return Object.assign(depositMessage, { l2Network });
+      });
+
+      allL1ToL2Messages = allL1ToL2Messages.concat(messages);
+      allDepositMessages = allDepositMessages.concat(
+        depositMessagesWithNetwork,
+      );
+    }
   }
 
   const allMessages: L1ToL2MessagesAndDepositMessages = {
@@ -330,10 +332,9 @@ const l1ToL2MessageToStatusDisplay = async (
   const { l2Network } = l1ToL2Message;
   const { explorerUrl } = l2Network;
 
-  let messageStatus: L1ToL2MessageWaitResult;
+  let messageStatus: L1ToL2MessageWaitResult | { status: L1ToL2MessageStatus };
   try {
     if (isClassic) {
-      // @ts-ignore testestsetsetsettsetsets
       messageStatus = {
         status: await (
           l1ToL2Message as L1ToL2MessageReaderWithNetwork
@@ -350,7 +351,10 @@ const l1ToL2MessageToStatusDisplay = async (
   }
 
   let l2TxHash = 'null';
-  if (messageStatus.status === L1ToL2MessageStatus.REDEEMED) {
+  if (
+    messageStatus.status === L1ToL2MessageStatus.REDEEMED &&
+    'l2TxReceipt' in messageStatus
+  ) {
     l2TxHash = messageStatus.l2TxReceipt.transactionHash;
   }
 
@@ -451,10 +455,10 @@ function App() {
     }
   }, [navigate, oldTxHash]);
 
-  const { data: signer = null } = useSigner();
+  const { chain } = useNetwork();
+  const { data: signer = null } = useSigner({ chainId: chain?.id });
 
   const resultRef = useRef<null | HTMLDivElement>(null);
-  const { chain } = useNetwork();
 
   const [input, setInput] = React.useState<string>('');
   const [txHashState, setTxnHashState] = React.useState<ReceiptState>(
