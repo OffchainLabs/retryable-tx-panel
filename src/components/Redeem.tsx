@@ -1,10 +1,8 @@
 import { useMemo } from 'react';
-import { MessageStatusDisplay } from './App';
+import { MessageStatusDisplay } from '../types';
 import { Signer } from '@ethersproject/abstract-signer';
 import { L1ToL2MessageWriter } from '@arbitrum/sdk';
 import React from 'react';
-import { BigNumber } from 'ethers';
-import { RetryableMessageParams } from '@arbitrum/sdk/dist/lib/dataEntities/message';
 
 function Redeem({
   l1ToL2Message,
@@ -30,20 +28,19 @@ function Redeem({
             return;
           }
 
-          const _l1ToL2Message: {
-            sender: string;
-            messageNumber: BigNumber;
-            l1BaseFee: BigNumber;
-            messageData: RetryableMessageParams;
-          } = l1ToL2Message.l1ToL2Message;
+          // @ts-ignore it works
+          const { sender, messageNumber, l1BaseFee, messageData } =
+            l1ToL2Message.l1ToL2Message;
+
           const l1ToL2MessageWriter = new L1ToL2MessageWriter(
             signer,
             l1ToL2Message.l2Network.chainID,
-            _l1ToL2Message.sender,
-            _l1ToL2Message.messageNumber,
-            _l1ToL2Message.l1BaseFee,
-            _l1ToL2Message.messageData,
+            sender,
+            messageNumber,
+            l1BaseFee,
+            messageData,
           );
+
           try {
             const res = await l1ToL2MessageWriter.redeem();
             const rec = await res.wait();
@@ -70,11 +67,9 @@ function Redeem({
   return (
     <>
       {redeemButton}
-      <div>
-        {message && <textarea className="redeemtext">{message}</textarea>}
-      </div>
+      {message && <textarea className="redeemtext">{message}</textarea>}
     </>
   );
 }
 
-export default Redeem;
+export { Redeem };

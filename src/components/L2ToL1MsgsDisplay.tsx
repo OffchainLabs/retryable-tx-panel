@@ -1,5 +1,5 @@
 import { Signer } from '@ethersproject/abstract-signer';
-import { L2ToL1MessageData } from './lib';
+import { L2ToL1MessageData } from '../types';
 import {
   L2ToL1MessageStatus,
   L2ToL1MessageWriter,
@@ -112,4 +112,4 @@ function L2ToL1MsgsDisplay({
   );
 }
 
-export default L2ToL1MsgsDisplay;
+export { L2ToL1MsgsDisplay };

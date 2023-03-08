@@ -42,6 +42,7 @@ body {
   background: linear-gradient(179.53deg,#000 19.46%,rgba(0,0,0,.650795) 40.76%,rgba(0,0,0,.462631) 60.09%,hsla(0,0%,100%,0) 99.6%);
   padding: var(--space-xxl) var(--space-m);
   margin: 0;
+  color: #fff;
 }
 
 h1 {
@@ -55,6 +56,11 @@ h1 {
   margin-top: 0;
 }
 
+h2 {
+  margin-top: var(--space-xl);
+  margin-bottom: var(--space-m);
+}
+
 @media screen and (max-width: 400px) {
   h1 {
     display: inline;
@@ -62,12 +68,13 @@ h1 {
 }
 
 .form-container {
-  display: flex; /* or inline-flex */
+  display: flex;
   flex-direction: row;
   flex-wrap: nowrap;
   width: 100%;
   max-width: 740px;
   gap: 10px;
+  margin: auto;
 }
 
 .input-style {
@@ -138,8 +145,8 @@ html {
 }
 
 .redeemtext {
- width: 100%;
- height: 10em; 
+  width: 100%;
+  height: 10em; 
 }
 
 .buttons-wrapper {
@@ -150,4 +157,79 @@ html {
   word-break: break-all;
   gap: var(--space-m);
   margin-top: var(--space-xl);
+}
+
+.header-logo {
+  width: 100%;
+  height: 300px;
+}
+
+@media screen and (max-width: 400px) {
+  .header-logo {
+    height: 240px;
+  }
+}
+
+.header-logo img {
+  height: 100%;
+  filter: drop-shadow(2px 4px 26px rgba(255,255,255,0.4));
+  pointer-events: none;
+}
+
+@media (prefers-reduced-motion: no-preference) {
+  .header-logo img {
+    animation: Header-logo-spin infinite 20s linear;
+  }
+}
+
+header {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  color: white;
+}
+
+header > div {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  width: 100%;
+  margin-top: var(--space-l);
+}
+
+.receipt-text {
+  margin: var(--space-m) auto;
+}
+
+@keyframes Header-logo-spin {
+  from {
+    transform: rotate(0deg);
+  }
+  to {
+    transform: rotate(360deg);
+  }
+}
+
+.external-link {
+  display: inline-flex;
+  justify-content: center;
+  align-items: center;
+  font-size: var(--font-size-m);
+}
+
+.text-align-center {
+  text-align: center;
+}
+
+.react-tooltip {
+  font-size: var(--font-size-m);
+}
+
+.resultContainer {
+  align-items: center;
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
 }
