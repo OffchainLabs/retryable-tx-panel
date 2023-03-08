@@ -14,8 +14,10 @@ function Redeem({
   connectedNetworkId?: number;
 }) {
   const [message, setMessage] = React.useState<string>('');
+
   const redeemButton = useMemo(() => {
     if (!signer) return null;
+
     if (connectedNetworkId !== l1ToL2Message.l2Network.chainID) {
       return `To redeem, connect to chain ${l1ToL2Message.l2Network.chainID} (${l1ToL2Message.l2Network.name})`;
     }
@@ -67,7 +69,11 @@ function Redeem({
   return (
     <>
       {redeemButton}
-      {message && <textarea className="redeemtext">{message}</textarea>}
+      <div>
+        {message && (
+          <textarea readOnly className="redeemtext" value={message} />
+        )}
+      </div>
     </>
   );
 }
