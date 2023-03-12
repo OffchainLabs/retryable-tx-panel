@@ -20,6 +20,6 @@ const client = createClient({
   webSocketProvider,
 });
 
-export const WagmiProvider = ({ children }: { children?: ReactNode }) => {
+export const WagmiProvider = ({ children }: { children: ReactNode }) => {
   return <WagmiConfig client={client}>{children}</WagmiConfig>;
 };

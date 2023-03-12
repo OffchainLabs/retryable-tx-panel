@@ -1,26 +1,27 @@
+'use client';
 import { useMemo } from 'react';
 import { MessageStatusDisplay } from '../types';
-import { Signer } from '@ethersproject/abstract-signer';
 import { L1ToL2MessageWriter } from '@arbitrum/sdk';
 import React from 'react';
+import { useNetwork, useSigner } from 'wagmi';
+import { WagmiProvider } from './WagmiProvider';
 
-function Redeem({
-  l1ToL2Message,
-  signer,
-  connectedNetworkId,
-}: {
+type Props = {
   l1ToL2Message: MessageStatusDisplay;
-  signer: Signer | null;
-  connectedNetworkId?: number;
-}) {
+};
+
+function RedeemInner({ l1ToL2Message }: Props) {
   const [message, setMessage] = React.useState<string>('');
+  const { chain } = useNetwork();
+  const { data: signer = null } = useSigner({ chainId: chain?.id });
 
   const redeemButton = useMemo(() => {
     if (!signer) return null;
 
-    if (connectedNetworkId !== l1ToL2Message.l2Network.chainID) {
+    if (chain?.id !== l1ToL2Message.l2Network.chainID) {
       return `To redeem, connect to chain ${l1ToL2Message.l2Network.chainID} (${l1ToL2Message.l2Network.name})`;
     }
+
     return (
       <button
         onClick={async () => {
@@ -64,7 +65,7 @@ function Redeem({
         redeem
       </button>
     );
-  }, [connectedNetworkId, l1ToL2Message, signer]);
+  }, [chain?.id, l1ToL2Message, signer]);
 
   return (
     <>
@@ -75,6 +76,14 @@ function Redeem({
         )}
       </div>
     </>
+  );
+}
+
+function Redeem({ l1ToL2Message }: Props) {
+  return (
+    <WagmiProvider>
+      <RedeemInner l1ToL2Message={l1ToL2Message} />
+    </WagmiProvider>
   );
 }
 

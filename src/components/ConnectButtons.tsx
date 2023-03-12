@@ -1,6 +1,8 @@
+'use client';
 import { useAccount, useConnect, useDisconnect } from 'wagmi';
+import { WagmiProvider } from './WagmiProvider';
 
-const ConnectButtons = () => {
+const ConnectButtonsInner = () => {
   const { address, isConnected } = useAccount();
   const { connect, connectors, error } = useConnect();
   const { disconnect } = useDisconnect();
@@ -29,6 +31,14 @@ const ConnectButtons = () => {
       )}
       {error && <div>{error.message}</div>}
     </div>
+  );
+};
+
+const ConnectButtons = () => {
+  return (
+    <WagmiProvider>
+      <ConnectButtonsInner />
+    </WagmiProvider>
   );
 };
 

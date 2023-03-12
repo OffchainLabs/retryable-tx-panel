@@ -1,10 +1,12 @@
-import { Signer } from '@ethersproject/abstract-signer';
+'use client';
 import { L2ToL1MessageData } from '../types';
 import {
   L2ToL1MessageStatus,
   L2ToL1MessageWriter,
   L2ToL1Message,
 } from '@arbitrum/sdk';
+import { useNetwork, useSigner } from 'wagmi';
+import { WagmiProvider } from './WagmiProvider';
 
 const etaDisplay = (etaSeconds: number) => {
   const minutesLeft = Math.round(etaSeconds / 60);
@@ -23,15 +25,15 @@ const etaDisplay = (etaSeconds: number) => {
     return 'less than 1 hour';
   }
 };
-function L2ToL1MsgsDisplay({
-  signer,
-  l2ToL1Messages,
-  connectedNetworkId,
-}: {
+
+type Props = {
   l2ToL1Messages: L2ToL1MessageData[];
-  signer: Signer | null;
-  connectedNetworkId?: number;
-}) {
+};
+
+function L2ToL1MsgsDisplayInner({ l2ToL1Messages }: Props) {
+  const { chain } = useNetwork();
+  const { data: signer = null } = useSigner({ chainId: chain?.id });
+
   const renderMessage = (l2ToL1Message: L2ToL1MessageData) => {
     switch (l2ToL1Message.status) {
       case L2ToL1MessageStatus.UNCONFIRMED:
@@ -54,7 +56,7 @@ function L2ToL1MsgsDisplay({
         return (
           <div>
             <p>L2 to L1 message confirmed, ready to redeem</p>
-            {connectedNetworkId !== l2ToL1Message.l1Network.chainID ? (
+            {chain?.id !== l2ToL1Message.l1Network.chainID ? (
               <div>
                 {`To redeem, connect to chain ${l2ToL1Message.l1Network.chainID} (${l2ToL1Message.l1Network.name})`}
               </div>
@@ -109,6 +111,14 @@ function L2ToL1MsgsDisplay({
         );
       })}
     </>
+  );
+}
+
+function L2ToL1MsgsDisplay({ l2ToL1Messages }: Props) {
+  return (
+    <WagmiProvider>
+      <L2ToL1MsgsDisplayInner l2ToL1Messages={l2ToL1Messages} />
+    </WagmiProvider>
   );
 }
 

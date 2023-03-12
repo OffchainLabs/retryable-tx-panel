@@ -139,73 +139,94 @@ export const getL1ToL2MessagesAndDepositMessages = async (
   l1TxnReceipt: L1TransactionReceipt,
   l1Network: L1Network,
 ): Promise<L1ToL2MessagesAndDepositMessages> => {
-  let allL1ToL2Messages: L1ToL2MessageReaderWithNetwork[] = [];
-  let allL1ToL2MessagesClassic: L1ToL2MessageReaderClassicWithNetwork[] = [];
-  let allDepositMessages: EthDepositMessageWithNetwork[] = [];
+  const messagesPromises = Array.from(new Set(l1Network.partnerChainIDs)).map(
+    async (l2ChainID) => {
+      // TODO: error handle
+      const l2Network = await getL2Network(l2ChainID);
 
-  for (const l2ChainID of Array.from(new Set(l1Network.partnerChainIDs))) {
-    // TODO: error handle
-    const l2Network = await getL2Network(l2ChainID);
-
-    // Check if any l1ToL2 msg is sent to the inbox of this l2Network
-    const logFromL2Inbox = l1TxnReceipt.logs.filter((log) => {
-      return (
-        log.address.toLowerCase() === l2Network.ethBridge.inbox.toLowerCase()
-      );
-    });
-    if (logFromL2Inbox.length === 0) continue;
-
-    let l2RpcURL;
-    switch (l2ChainID) {
-      case 42161:
-        l2RpcURL = 'https://arb1.arbitrum.io/rpc';
-        break;
-      case 42170:
-        l2RpcURL = 'https://nova.arbitrum.io/rpc';
-        break;
-      case 421613:
-        l2RpcURL = 'https://goerli-rollup.arbitrum.io/rpc';
-        break;
-      default:
-        throw new Error(
-          'Unknown L2 chain id. This chain is not supported by dashboard',
+      // Check if any l1ToL2 msg is sent to the inbox of this l2Network
+      const logFromL2Inbox = l1TxnReceipt.logs.filter((log) => {
+        return (
+          log.address.toLowerCase() === l2Network.ethBridge.inbox.toLowerCase()
         );
-    }
-    const l2Provider = new StaticJsonRpcProvider(l2RpcURL);
-    const isClassic = await l1TxnReceipt.isClassic(l2Provider);
-
-    if (isClassic) {
-      const messages = (
-        await l1TxnReceipt.getL1ToL2MessagesClassic(l2Provider)
-      ).map((l1ToL2Message) => {
-        return Object.assign(l1ToL2Message, { l2Network });
       });
-      allL1ToL2MessagesClassic = allL1ToL2MessagesClassic.concat(messages);
-    } else {
-      const messages = (await l1TxnReceipt.getL1ToL2Messages(l2Provider)).map(
-        (l1ToL2Message) => {
+      if (logFromL2Inbox.length === 0) {
+        return;
+      }
+
+      let l2RpcURL;
+      switch (l2ChainID) {
+        case 42161:
+          l2RpcURL = 'https://arb1.arbitrum.io/rpc';
+          break;
+        case 42170:
+          l2RpcURL = 'https://nova.arbitrum.io/rpc';
+          break;
+        case 421613:
+          l2RpcURL = 'https://goerli-rollup.arbitrum.io/rpc';
+          break;
+        default:
+          throw new Error(
+            'Unknown L2 chain id. This chain is not supported by dashboard',
+          );
+      }
+      const l2Provider = new StaticJsonRpcProvider(l2RpcURL);
+      const isClassic = await l1TxnReceipt.isClassic(l2Provider);
+
+      if (isClassic) {
+        const messages = (
+          await l1TxnReceipt.getL1ToL2MessagesClassic(l2Provider)
+        ).map((l1ToL2Message) => {
           return Object.assign(l1ToL2Message, { l2Network });
-        },
-      );
+        });
+        return {
+          allL1ToL2Messages: [],
+          allL1ToL2MessagesClassic: messages,
+          allDepositMessages: [],
+        };
+      } else {
+        const messages = (await l1TxnReceipt.getL1ToL2Messages(l2Provider)).map(
+          (l1ToL2Message) => {
+            return Object.assign(l1ToL2Message, { l2Network });
+          },
+        );
 
-      const depositMessagesWithNetwork: EthDepositMessageWithNetwork[] = (
-        await l1TxnReceipt.getEthDeposits(l2Provider)
-      ).map((depositMessage) => {
-        return Object.assign(depositMessage, { l2Network });
-      });
+        const depositMessagesWithNetwork: EthDepositMessageWithNetwork[] = (
+          await l1TxnReceipt.getEthDeposits(l2Provider)
+        ).map((depositMessage) => {
+          return Object.assign(depositMessage, { l2Network });
+        });
 
-      allL1ToL2Messages = allL1ToL2Messages.concat(messages);
-      allDepositMessages = allDepositMessages.concat(
-        depositMessagesWithNetwork,
-      );
-    }
-  }
+        return {
+          allL1ToL2Messages: messages,
+          allDepositMessages: depositMessagesWithNetwork,
+          allL1ToL2MessagesClassic: [],
+        };
+      }
+    },
+  );
 
-  const allMessages: L1ToL2MessagesAndDepositMessages = {
-    retryables: allL1ToL2Messages,
-    retryablesClassic: allL1ToL2MessagesClassic,
-    deposits: allDepositMessages,
-  };
+  const messages = await Promise.all(messagesPromises);
+
+  const allMessages: L1ToL2MessagesAndDepositMessages = messages.reduce(
+    (acc, value) => {
+      if (!value) {
+        return acc;
+      }
+      return {
+        retryables: acc.retryables.concat(value.allL1ToL2Messages),
+        retryablesClassic: acc.retryablesClassic.concat(
+          value.allL1ToL2MessagesClassic,
+        ),
+        deposits: acc.deposits.concat(value.allDepositMessages),
+      };
+    },
+    {
+      retryables: [],
+      retryablesClassic: [],
+      deposits: [],
+    } as L1ToL2MessagesAndDepositMessages,
+  );
   return allMessages;
 };
 
@@ -260,9 +281,11 @@ export const l1ToL2MessageToStatusDisplay = async (
         ).status(),
       };
     } else {
+      console.time('wait');
       messageStatus = await (
         l1ToL2Message as L1ToL2MessageReader
       ).waitForStatus(undefined, 1);
+      console.timeEnd('wait');
     }
   } catch (e) {
     // catch timeout if not immediately found
@@ -429,19 +452,21 @@ export const receiptStateToDisplayableResult = (
 export const getL1TxnReceipt = async (
   txnHash: string,
 ): Promise<ReceiptRes | undefined> => {
-  for (const [chainID, rpcURL] of Object.entries(supportedL1Networks)) {
-    const l1Network = await getL1Network(+chainID);
-    const l1Provider = await new StaticJsonRpcProvider(rpcURL);
+  return new Promise((resolve) => {
+    Object.entries(supportedL1Networks).map(async ([chainID, rpcURL]) => {
+      const l1Network = await getL1Network(+chainID);
+      const l1Provider = new StaticJsonRpcProvider(rpcURL);
 
-    const rec = await l1Provider.getTransactionReceipt(txnHash);
-    if (rec) {
-      return {
-        l1TxnReceipt: new L1TransactionReceipt(rec),
-        l1Network,
-        l1Provider,
-      };
-    }
-  }
+      const rec = await l1Provider.getTransactionReceipt(txnHash);
+      if (rec) {
+        resolve({
+          l1TxnReceipt: new L1TransactionReceipt(rec),
+          l1Network,
+          l1Provider,
+        });
+      }
+    });
+  });
 };
 
 export const getRetryableIdOrDepositHash = (message: MessageStatusDisplay) => {
