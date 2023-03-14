@@ -1,3 +1,4 @@
+'use client';
 import { WagmiConfig, createClient, configureChains } from 'wagmi';
 import { mainnet, arbitrum, arbitrumGoerli, goerli } from 'wagmi/chains';
 import { publicProvider } from 'wagmi/providers/public';

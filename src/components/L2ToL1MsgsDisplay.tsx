@@ -6,7 +6,6 @@ import {
   L2ToL1Message,
 } from '@arbitrum/sdk';
 import { useNetwork, useSigner } from 'wagmi';
-import { WagmiProvider } from './WagmiProvider';
 
 const etaDisplay = (etaSeconds: number) => {
   const minutesLeft = Math.round(etaSeconds / 60);
@@ -30,7 +29,7 @@ type Props = {
   l2ToL1Messages: L2ToL1MessageData[];
 };
 
-function L2ToL1MsgsDisplayInner({ l2ToL1Messages }: Props) {
+function L2ToL1MsgsDisplay({ l2ToL1Messages }: Props) {
   const { chain } = useNetwork();
   const { data: signer = null } = useSigner({ chainId: chain?.id });
 
@@ -111,14 +110,6 @@ function L2ToL1MsgsDisplayInner({ l2ToL1Messages }: Props) {
         );
       })}
     </>
-  );
-}
-
-function L2ToL1MsgsDisplay({ l2ToL1Messages }: Props) {
-  return (
-    <WagmiProvider>
-      <L2ToL1MsgsDisplayInner l2ToL1Messages={l2ToL1Messages} />
-    </WagmiProvider>
   );
 }
 
