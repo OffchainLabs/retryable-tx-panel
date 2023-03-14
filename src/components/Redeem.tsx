@@ -33,17 +33,17 @@ function Redeem({ l1ToL2Message }: Props) {
   const { chain } = useNetwork();
   const { data: signer = null } = useSigner({ chainId: chain?.id });
 
+  const {
+    chainID,
+    networkName,
+    sender,
+    messageNumber,
+    l1BaseFee,
+    messageData,
+  } = l1ToL2Message;
+
   const redeemButton = useMemo(() => {
     if (!signer) return null;
-
-    const {
-      chainID,
-      networkName,
-      sender,
-      messageNumber,
-      l1BaseFee,
-      messageData,
-    } = l1ToL2Message;
 
     if (chain?.id !== chainID) {
       return `To redeem, connect to chain ${chainID} (${networkName})`;
@@ -105,7 +105,16 @@ function Redeem({ l1ToL2Message }: Props) {
         redeem
       </button>
     );
-  }, [chain?.id, l1ToL2Message, signer]);
+  }, [
+    chain?.id,
+    signer,
+    chainID,
+    networkName,
+    sender,
+    messageNumber,
+    l1BaseFee,
+    messageData,
+  ]);
 
   return (
     <>
