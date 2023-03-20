@@ -29,10 +29,9 @@ async function getData(
     const aliasedSignerBalance = await l2Provider.getBalance(aliasedAddress);
 
     return {
-      // balanceToRecover: aliasedSignerBalance.eq(0)
-      //   ? constants.Zero
-      //   : aliasedSignerBalance,
-      balanceToRecover: BigNumber.from(2),
+      balanceToRecover: aliasedSignerBalance.eq(0)
+        ? constants.Zero
+        : aliasedSignerBalance,
       aliasedAddress,
     };
   } catch (e) {
