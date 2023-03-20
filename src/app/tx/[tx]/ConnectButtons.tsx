@@ -1,7 +1,7 @@
 'use client';
 import { useAccount, useConnect, useDisconnect } from 'wagmi';
 
-const ConnectButtons = () => {
+const ConnectButtons = ({ text }: { text: string }) => {
   const { address, isConnected } = useAccount();
   const { connect, connectors, error } = useConnect();
   const { disconnect } = useDisconnect();
@@ -25,7 +25,7 @@ const ConnectButtons = () => {
           disabled={!activeConnector.ready}
           onClick={() => connect({ connector: activeConnector })}
         >
-          Connect to Redeem
+          {text}
         </button>
       )}
       {error && <div>{error.message}</div>}

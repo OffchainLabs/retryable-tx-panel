@@ -1,0 +1,58 @@
+.funds-message {
+  margin-top: var(--space-xl);
+  text-align: center;
+}
+
+.recover-funds-form {
+  margin-top: var(--space-m);
+}
+.recover-funds-form input {
+  width: 500px;
+}
+
+.recover-funds-form button {
+  display: block;
+  margin: var(--space-m) auto 0;
+}
+
+.redeemtext,
+.recoverfundstext {
+  width: 100%;
+  margin-top: var(--space-m);
+  border: 1px solid white;
+  border-radius: 5px;
+  padding: var(--space-m);
+  background-color: silver;
+  color: black;
+}
+.redeemtext,
+.recoverfundstext a {
+  color: var(--blue-dark);
+}
+
+.recover-funds-form .loading-block {
+  margin-top: var(--space-m);
+}
+
+.buttons-wrapper {
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  flex-wrap: wrap;
+  word-break: break-all;
+  gap: var(--space-m);
+  margin-top: var(--space-xl);
+}
+
+.wallet-connection-buttons {
+  text-align: center;
+}
+
+.wallet-connection-buttons button {
+  display: block;
+  margin: var(--space-xs) auto;
+}
+
+.wallet-connection-buttons .error-message {
+  width: 100%;
+}

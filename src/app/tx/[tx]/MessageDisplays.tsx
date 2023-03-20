@@ -72,13 +72,10 @@ type Props = {
   hasL2ToL1MessagesConfirmed: boolean;
 };
 
-const ConnectButtons = dynamic(
-  () => import('../../../components/ConnectButtons'),
-  {
-    ssr: false,
-  },
-);
-const Redeem = dynamic(() => import('../../../components/Redeem'), {
+const ConnectButtons = dynamic(() => import('./ConnectButtons'), {
+  ssr: false,
+});
+const Redeem = dynamic(() => import('./Redeem'), {
   ssr: false,
 });
 
@@ -143,7 +140,7 @@ const MessageDisplays = async ({
           </div>
         );
       })}
-      {showConnectButtons && <ConnectButtons />}
+      {showConnectButtons && <ConnectButtons text="Connect to Redeem" />}
     </>
   );
 };

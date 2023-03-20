@@ -1,6 +1,7 @@
 import { L2ToL1MessageStatus } from '@arbitrum/sdk';
 import { Suspense } from 'react';
-import { L2ToL1MsgsDisplay } from '../../../components/L2ToL1MsgsDisplay';
+import { L2ToL1MsgsDisplay } from './L2ToL1MsgsDisplay';
+import { WagmiProvider } from '../../../components/WagmiProvider';
 import {
   getL1ToL2MessagesAndDepositMessages,
   getL1TxnReceipt,
@@ -15,7 +16,6 @@ import {
   ReceiptState,
 } from '../../../types';
 import { MessageDisplays } from './MessageDisplays';
-import { WithWagmiProvider } from './WithWagmiProvider';
 
 async function getData(txHash: string) {
   const receiptRes = await getL1TxnReceipt(txHash);
@@ -138,7 +138,7 @@ const Transaction = async ({ params }: Props) => {
           {l1TxnResultText}{' '}
         </div>
       </div>
-      <WithWagmiProvider>
+      <WagmiProvider>
         <L2ToL1MsgsDisplay l2ToL1Messages={l2ToL1MessagesToShow} />
 
         <Suspense fallback="Loading messages...">
@@ -150,7 +150,7 @@ const Transaction = async ({ params }: Props) => {
             )}
           />
         </Suspense>
-      </WithWagmiProvider>
+      </WagmiProvider>
     </>
   );
 };

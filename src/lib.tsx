@@ -35,7 +35,7 @@ import {
 if (!process.env.NEXT_PUBLIC_INFURA_KEY)
   throw new Error('No NEXT_PUBLIC_INFURA_KEY set');
 
-const supportedL1Networks = {
+export const supportedL1Networks = {
   1: `https://mainnet.infura.io/v3/${process.env.NEXT_PUBLIC_INFURA_KEY}`,
   5: `https://goerli.infura.io/v3/${process.env.NEXT_PUBLIC_INFURA_KEY}`,
 };
@@ -502,3 +502,29 @@ function isValidTxHash(txHash: string | undefined): txHash is string {
 }
 
 export { isValidTxHash };
+
+export const getProviderFromChainId = (chainID: number) => {
+  const l2RpcURL = {
+    42161: 'https://arb1.arbitrum.io/rpc',
+    421613: 'https://goerli-rollup.arbitrum.io/rpc',
+  }[chainID];
+
+  if (!l2RpcURL) {
+    throw new Error(
+      'Unknown L2 chain id. This chain is not supported by this tool',
+    );
+  }
+
+  return new StaticJsonRpcProvider(l2RpcURL);
+};
+
+export const getTargetChainId = (l1ChainID: number | undefined) => {
+  if (!l1ChainID) {
+    return undefined;
+  }
+
+  return {
+    1: 42161,
+    5: 421613,
+  }[l1ChainID];
+};

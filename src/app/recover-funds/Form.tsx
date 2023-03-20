@@ -1,24 +1,25 @@
 'use client';
 import { usePathname, useRouter } from 'next/navigation';
-import { Tooltip } from 'react-tooltip';
-import { isValidTxHash } from '../lib';
+import { utils } from 'ethers';
+import { useAccount } from 'wagmi';
 
 const Form = () => {
   const pathname = usePathname();
   const router = useRouter();
-  const tx = pathname.split('/tx/')[1];
+  const { address } = useAccount();
+  const addressQuery = pathname.split('/recover-funds/')[1];
 
   const handleSubmit: React.FormEventHandler<HTMLFormElement> = (e) => {
     e.preventDefault();
     const form = e.target as HTMLFormElement;
     const formData = new FormData(form);
-    const txValue = formData.get('txInput')?.toString();
+    const addressValue = formData.get('addressInput')?.toString();
 
-    if (isValidTxHash(txValue)) {
-      router.push(`/tx/${txValue}`);
+    if (addressValue && utils.isAddress(addressValue)) {
+      router.replace(`/recover-funds/${addressValue}`);
     } else {
       form.reset();
-      router.push('/');
+      router.replace('/recover-funds');
     }
   };
 
@@ -26,14 +27,13 @@ const Form = () => {
     <>
       <form className="form-container" onSubmit={handleSubmit}>
         <input
-          name="txInput"
-          placeholder="Paste your transaction hash"
+          name="addressInput"
+          placeholder="Enter the address"
           className="input-style"
-          defaultValue={tx}
+          defaultValue={addressQuery || address}
         />
         <input type="submit" value="Submit" />
       </form>
-      <Tooltip anchorId="title-info" place="top" className="tooltip" />
     </>
   );
 };

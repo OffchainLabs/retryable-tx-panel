@@ -60,6 +60,7 @@ h1 {
 h2 {
   margin-top: var(--space-xl);
   margin-bottom: var(--space-m);
+  text-align: center;
 }
 
 @media screen and (max-width: 400px) {
@@ -75,6 +76,7 @@ main {
   align-items: center;
   flex-direction: column;
   justify-content: center;
+  text-align: center;
 }
 
 .form-container {
@@ -180,11 +182,14 @@ a:visited {
     height: 240px;
   }
 }
-
+.header-logo a {
+  height: 100%;
+}
 .header-logo img {
   height: 100%;
   filter: drop-shadow(2px 4px 26px rgba(255,255,255,0.4));
   pointer-events: none;
+  width: auto;
 }
 
 @media (prefers-reduced-motion: no-preference) {
@@ -238,4 +243,8 @@ header {
   display: flex;
   flex-direction: column;
   justify-content: center;
+}
+
+.link {
+  padding: var(--space-m);
 }
