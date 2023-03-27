@@ -15,6 +15,11 @@ interface OperationInfo {
   aliasedAddress: string;
 }
 
+const hasBalanceOverThreshold = (balanceToRecover: BigNumber) => {
+  // Aliased account will always have some leftover, we can't check for balance of 0, as it would always return 0
+  return balanceToRecover.gte(0.000_5);
+};
+
 async function getData(
   chainID: number,
   address: string,
@@ -29,9 +34,9 @@ async function getData(
     const aliasedSignerBalance = await l2Provider.getBalance(aliasedAddress);
 
     return {
-      balanceToRecover: aliasedSignerBalance.eq(0)
-        ? constants.Zero
-        : aliasedSignerBalance,
+      balanceToRecover: hasBalanceOverThreshold(aliasedSignerBalance)
+        ? aliasedSignerBalance
+        : constants.Zero,
       aliasedAddress,
     };
   } catch (e) {
@@ -47,6 +52,9 @@ const RecoverFunds = ({ address }: { address: string }) => {
   const [operationInfo, setOperationInfo] = useState<OperationInfo | null>(
     null,
   );
+  const [destinationAddress, setDestinationAddress] = useState<string | null>(
+    null,
+  );
   const targetChainID = getTargetChainId(chain?.id);
 
   useEffect(() => {
@@ -59,27 +67,62 @@ const RecoverFunds = ({ address }: { address: string }) => {
     });
   }, [address, targetChainID]);
 
+  const handleSubmit: React.FormEventHandler<HTMLFormElement> = (e) => {
+    e.preventDefault();
+    const form = e.target as HTMLFormElement;
+    const formData = new FormData(form);
+    const destinationAddress = formData
+      .get('destinationAddressInput')
+      ?.toString();
+
+    if (destinationAddress && utils.isAddress(destinationAddress)) {
+      setDestinationAddress(destinationAddress);
+    } else {
+      form.reset();
+      setDestinationAddress(null);
+    }
+  };
+
   // No funds to recover
-  if (true && chain && operationInfo?.balanceToRecover.eq(0)) {
+  if (
+    chain &&
+    operationInfo &&
+    !hasBalanceOverThreshold(operationInfo.balanceToRecover)
+  ) {
     return (
       <div className="funds-message">
         There are no funds stuck on {operationInfo.aliasedAddress} (Alias of{' '}
-        {address}) on this network ({targetChainID}).
+        {address}) on this network{targetChainID ? ` (${targetChainID})` : ''}.
       </div>
     );
   }
 
   // Funds found on aliased address
-  if (chain && operationInfo?.balanceToRecover.gt(0)) {
+  if (
+    chain &&
+    operationInfo &&
+    hasBalanceOverThreshold(operationInfo.balanceToRecover)
+  ) {
     return (
       <div className="funds-message">
         There are {utils.formatEther(operationInfo.balanceToRecover)} ETH on{' '}
         {operationInfo.aliasedAddress} (Alias of {address}).
-        <RecoverFundsButton
-          chainID={chain.id}
-          address={address}
-          balanceToRecover={operationInfo.balanceToRecover}
-        />
+        <form className="form-container" onSubmit={handleSubmit}>
+          <input
+            name="destinationAddressInput"
+            placeholder="Enter the destination address"
+            className="input-style"
+            defaultValue={address}
+          />
+          <input type="submit" value="Submit" />
+        </form>
+        {destinationAddress && (
+          <RecoverFundsButton
+            chainID={chain.id}
+            balanceToRecover={operationInfo.balanceToRecover}
+            destinationAddress={destinationAddress}
+          />
+        )}
       </div>
     );
   }
@@ -92,6 +135,10 @@ const RecoverFunds = ({ address }: { address: string }) => {
         mainnet or Goerli.
       </div>
     );
+  }
+
+  if (!targetChainID) {
+    return null;
   }
 
   return <div className="funds-message">Loading...</div>;

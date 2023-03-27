@@ -14,13 +14,13 @@ import { getProviderFromChainId, getTargetChainId } from '../../../lib';
 import { BigNumber } from 'ethers';
 
 function RecoverFundsButton({
-  address,
   balanceToRecover,
   chainID,
+  destinationAddress,
 }: {
-  address: string;
   balanceToRecover: BigNumber;
   chainID: number;
+  destinationAddress: string;
 }) {
   const [message, setMessage] = useState('');
   const [loading, setLoading] = useState(false);
@@ -87,10 +87,10 @@ function RecoverFundsButton({
             const gasEstimation = await l1ToL2MessageGasEstimator.estimateAll(
               {
                 from: aliasedSignerAddress.value,
-                to: address,
+                to: destinationAddress,
                 l2CallValue: balanceToRecover,
-                excessFeeRefundAddress: address,
-                callValueRefundAddress: address,
+                excessFeeRefundAddress: destinationAddress,
+                callValueRefundAddress: destinationAddress,
                 data: '0x',
               },
               await getBaseFee(signer.provider),
@@ -109,11 +109,11 @@ function RecoverFundsButton({
               const l1SubmissionTxRaw = await inbox
                 .connect(signer)
                 .unsafeCreateRetryableTicket(
-                  address, // to
+                  destinationAddress, // to
                   l2CallValue, // l2CallValue
                   gasEstimation.maxSubmissionCost, // maxSubmissionCost
-                  address, // excessFeeRefundAddress
-                  address, // callValueRefundAddress
+                  destinationAddress, // excessFeeRefundAddress
+                  destinationAddress, // callValueRefundAddress
                   gasEstimation.gasLimit, // maxLimit
                   gasEstimation.maxFeePerGas, // maxFeePerGas
                   '0x', // data
@@ -150,7 +150,7 @@ function RecoverFundsButton({
     chain?.name,
     chainID,
     loading,
-    address,
+    destinationAddress,
     balanceToRecover,
   ]);
 
