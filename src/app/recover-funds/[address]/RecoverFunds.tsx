@@ -17,7 +17,8 @@ interface OperationInfo {
 
 const hasBalanceOverThreshold = (balanceToRecover: BigNumber) => {
   // Aliased account will always have some leftover, we can't check for balance of 0, as it would always return 0
-  return balanceToRecover.gte(0.000_5);
+  // We can't compare with 0.0005 as it would throw error
+  return balanceToRecover.mul(1_000).gte(5);
 };
 
 async function getData(
@@ -112,7 +113,6 @@ const RecoverFunds = ({ address }: { address: string }) => {
             name="destinationAddressInput"
             placeholder="Enter the destination address"
             className="input-style"
-            defaultValue={address}
           />
           <input type="submit" value="Submit" />
         </form>
