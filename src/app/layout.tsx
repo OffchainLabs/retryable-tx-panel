@@ -28,7 +28,7 @@ export default function RootLayout({ children }: LayoutProps) {
             </ExternalLink>
           </h1>
           <div className="header-logo">
-            <Image src={Logo} alt="logo" />
+            <Image src={Logo} alt="logo" priority />
           </div>
           <h2>Find out what&apos;s up with your cross-chain message</h2>
         </header>

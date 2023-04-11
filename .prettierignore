@@ -1,4 +1,9 @@
 # Ignore artifacts:
 build
 coverage
-**/*.css
+
+**/.git
+**/.svn
+**/.hg
+**/node_modules
+**/.next

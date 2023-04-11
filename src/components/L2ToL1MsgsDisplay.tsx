@@ -1,4 +1,3 @@
-'use client';
 import { L2ToL1MessageData } from '../types';
 import {
   L2ToL1MessageStatus,
@@ -99,6 +98,7 @@ function L2ToL1MsgsDisplay({ l2ToL1Messages }: Props) {
         return <div>Your message has been executed 🎉</div>;
     }
   };
+
   return (
     <>
       {l2ToL1Messages.map((l2ToL1Message, i) => {

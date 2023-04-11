@@ -1,6 +1,8 @@
+'use client';
 import dynamic from 'next/dynamic';
 import { ExternalLink } from '../../../components/ExternalLink';
 import {
+  depositMessageStatusDisplay,
   getRetryableIdOrDepositHash,
   l1ToL2MessageToStatusDisplay,
 } from '../../../lib';
@@ -52,6 +54,7 @@ const getDataFromL1ToL2Message = (
 async function getData({
   retryables: l1ToL2Messages,
   retryablesClassic: l1ToL2MessagesClassic,
+  deposits,
 }: L1ToL2MessagesAndDepositMessages) {
   const l1ToL2MessagesPromises = l1ToL2Messages.map((l1ToL2Message) =>
     l1ToL2MessageToStatusDisplay(l1ToL2Message, false),
@@ -59,10 +62,15 @@ async function getData({
   const l1ToL2MessagesClassicPromises = l1ToL2MessagesClassic.map(
     (l1ToL2Message) => l1ToL2MessageToStatusDisplay(l1ToL2Message, true),
   );
-
-  const messagesDisplays = await Promise.all(
-    l1ToL2MessagesPromises.concat(l1ToL2MessagesClassicPromises),
+  const depositsPromises = deposits.map((deposit) =>
+    depositMessageStatusDisplay(deposit),
   );
+
+  const messagesDisplays = await Promise.all([
+    ...l1ToL2MessagesPromises,
+    ...l1ToL2MessagesClassicPromises,
+    ...depositsPromises,
+  ]);
 
   return { messagesDisplays };
 }
@@ -87,7 +95,6 @@ const MessageDisplays = async ({
   hasL2ToL1MessagesConfirmed,
 }: Props) => {
   const { messagesDisplays } = await getData(messages);
-
   const showConnectButtons =
     messagesDisplays.some((msg) => msg.showRedeemButton) ||
     hasL2ToL1MessagesConfirmed;

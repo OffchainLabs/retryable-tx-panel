@@ -484,7 +484,7 @@ export const getL1TxnReceipt = async (
     },
   );
   const results = await Promise.all(promises);
-  return results.find((a) => a);
+  return results.find((r) => r);
 };
 
 export const getRetryableIdOrDepositHash = (message: MessageStatusDisplay) => {
@@ -493,12 +493,3 @@ export const getRetryableIdOrDepositHash = (message: MessageStatusDisplay) => {
   }
   return message.ethDepositMessage.l2DepositTxHash;
 };
-
-function isValidTxHash(txHash: string | undefined): txHash is string {
-  if (!txHash) {
-    return false;
-  }
-  return /^0x([A-Fa-f0-9]{64})$/.test(txHash);
-}
-
-export { isValidTxHash };
