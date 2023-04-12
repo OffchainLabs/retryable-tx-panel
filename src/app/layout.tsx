@@ -24,7 +24,6 @@ const dm_sans = DM_Sans({
 export const metadata = {
   title: 'Crosschain Message Dashboard',
   description: 'Crosschain Message Dashboard',
-  icons: 'logo.svg',
 };
 
 export type LayoutProps = {
