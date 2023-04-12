@@ -1,7 +1,6 @@
 import React from 'react';
 import { Info } from 'react-feather';
 import Image from 'next/image';
-import Head from 'next/head';
 import { Saira, DM_Sans } from 'next/font/google';
 import Logo from '../../public/logo.svg';
 import { ExternalLink } from '../components/ExternalLink';
@@ -22,6 +21,12 @@ const dm_sans = DM_Sans({
   subsets: ['latin'],
 });
 
+export const metadata = {
+  title: 'Crosschain Message Dashboard',
+  description: 'Crosschain Message Dashboard',
+  icons: 'logo.svg',
+};
+
 export type LayoutProps = {
   children: React.ReactNode;
 };
@@ -29,10 +34,6 @@ export type LayoutProps = {
 export default function RootLayout({ children }: LayoutProps) {
   return (
     <html lang="en">
-      <Head>
-        <meta name="viewport" content="width=device-width, initial-scale=1" />
-        <title>Crosschain Message Dashboard</title>
-      </Head>
       <body className={`${saira.className} ${dm_sans.className}`}>
         <header>
           <h1>
