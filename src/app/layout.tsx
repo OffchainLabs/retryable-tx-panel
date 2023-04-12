@@ -1,12 +1,26 @@
 import React from 'react';
 import { Info } from 'react-feather';
 import Image from 'next/image';
+import Head from 'next/head';
+import { Saira, DM_Sans } from 'next/font/google';
 import Logo from '../../public/logo.svg';
 import { ExternalLink } from '../components/ExternalLink';
 
 import 'react-tooltip/dist/react-tooltip.css';
 import './global.css';
 import { Form } from '../components/Form';
+
+const saira = Saira({
+  weight: ['600', '700'],
+  style: ['normal'],
+  subsets: ['latin'],
+});
+
+const dm_sans = DM_Sans({
+  weight: ['400', '700'],
+  style: ['normal'],
+  subsets: ['latin'],
+});
 
 export type LayoutProps = {
   children: React.ReactNode;
@@ -15,7 +29,11 @@ export type LayoutProps = {
 export default function RootLayout({ children }: LayoutProps) {
   return (
     <html lang="en">
-      <body>
+      <Head>
+        <meta name="viewport" content="width=device-width, initial-scale=1" />
+        <title>Crosschain Message Dashboard</title>
+      </Head>
+      <body className={`${saira.className} ${dm_sans.className}`}>
         <header>
           <h1>
             Arbitrum Cross-chain Message Dashboard{' '}
