@@ -102,7 +102,7 @@ function Redeem({ l1ToL2Message }: Props) {
           }
         }}
       >
-        redeem
+        Redeem
       </button>
     );
   }, [
