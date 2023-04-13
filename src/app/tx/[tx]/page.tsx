@@ -1,6 +1,6 @@
-'use client';
 import { L2ToL1MessageStatus } from '@arbitrum/sdk';
 import dynamic from 'next/dynamic';
+import { Suspense } from 'react';
 import { WagmiProvider } from '../../../components/WagmiProvider';
 import {
   getL1ToL2MessagesAndDepositMessages,
@@ -15,24 +15,10 @@ import {
   ReceiptRes,
   ReceiptState,
 } from '../../../types';
-
-const MessageDisplays = dynamic(
-  // @ts-expect-error Server Component
-  () => {
-    return import('./MessageDisplays').then(
-      ({ MessageDisplays }) => MessageDisplays,
-    );
-  },
-  {
-    ssr: false,
-  },
-);
+import { MessageDisplays } from './MessageDisplays';
 
 const L2ToL1MsgsDisplay = dynamic(
-  () =>
-    import('../../../components/L2ToL1MsgsDisplay').then(
-      ({ L2ToL1MsgsDisplay }) => L2ToL1MsgsDisplay,
-    ),
+  () => import('../../../components/L2ToL1MsgsDisplay'),
   {
     ssr: false,
   },
@@ -161,13 +147,15 @@ const Transaction = async ({ params }: Props) => {
       </div>
       <WagmiProvider>
         <L2ToL1MsgsDisplay l2ToL1Messages={l2ToL1MessagesToShow} />
-
-        <MessageDisplays
-          messages={allMessages}
-          hasL2ToL1MessagesConfirmed={l2ToL1MessagesToShow.some(
-            (msg) => msg.status === L2ToL1MessageStatus.CONFIRMED,
-          )}
-        />
+        <Suspense fallback={<div>Loading messages...</div>}>
+          {/* @ts-expect-error Server Component */}
+          <MessageDisplays
+            messages={allMessages}
+            hasL2ToL1MessagesConfirmed={l2ToL1MessagesToShow.some(
+              (msg) => msg.status === L2ToL1MessageStatus.CONFIRMED,
+            )}
+          />
+        </Suspense>
       </WagmiProvider>
     </>
   );

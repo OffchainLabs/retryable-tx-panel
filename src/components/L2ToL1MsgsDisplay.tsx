@@ -1,3 +1,4 @@
+'use client';
 import { L2ToL1MessageData } from '../types';
 import {
   L2ToL1MessageStatus,
@@ -113,4 +114,4 @@ function L2ToL1MsgsDisplay({ l2ToL1Messages }: Props) {
   );
 }
 
-export { L2ToL1MsgsDisplay };
+export default L2ToL1MsgsDisplay;

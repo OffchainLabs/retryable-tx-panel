@@ -1,4 +1,3 @@
-'use client';
 import dynamic from 'next/dynamic';
 import { ExternalLink } from '../../../components/ExternalLink';
 import {
