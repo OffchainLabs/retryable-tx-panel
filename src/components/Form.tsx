@@ -1,14 +1,7 @@
 'use client';
-import { Space_Grotesk } from 'next/font/google';
 import { usePathname, useRouter } from 'next/navigation';
 import { Tooltip } from 'react-tooltip';
 import { isValidTxHash } from '../isValidTxHash';
-
-const spaceGrotesk = Space_Grotesk({
-  weight: ['400', '600', '700'],
-  style: ['normal'],
-  subsets: ['latin'],
-});
 
 const Form = () => {
   const pathname = usePathname();
@@ -35,14 +28,10 @@ const Form = () => {
         <input
           name="txInput"
           placeholder="Paste your transaction hash"
-          className={`input-style ${spaceGrotesk.className}`}
+          className="input-style"
           defaultValue={tx}
         />
-        <input
-          type="submit"
-          value="Submit"
-          className={spaceGrotesk.className}
-        />
+        <input type="submit" value="Submit" />
       </form>
       <Tooltip anchorId="title-info" place="top" className="tooltip" />
     </>
