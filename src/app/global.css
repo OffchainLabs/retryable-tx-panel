@@ -35,9 +35,6 @@ body {
   align-items: center;
   flex-direction: column;
   min-height: 100vh;
-  font-family: 'DM Sans', -apple-system, BlinkMacSystemFont, 'Segoe UI',
-    'Roboto', 'Oxygen', 'Ubuntu', 'Cantarell', 'Fira Sans', 'Droid Sans',
-    'Helvetica Neue', sans-serif;
   -webkit-font-smoothing: antialiased;
   -moz-osx-font-smoothing: grayscale;
   background: linear-gradient(
@@ -57,7 +54,6 @@ h1 {
   justify-content: center;
   align-items: center;
   gap: var(--space-s);
-  font-family: 'Saira', sans-serif;
   font-size: 2.8rem;
   line-height: 1.3;
   margin-top: 0;
@@ -95,9 +91,6 @@ main {
 
 .input-style {
   font-size: var(--font-size-m);
-  font-family: 'DM Sans', -apple-system, BlinkMacSystemFont, 'Segoe UI',
-    'Roboto', 'Oxygen', 'Ubuntu', 'Cantarell', 'Fira Sans', 'Droid Sans',
-    'Helvetica Neue';
   padding: 8px 16px;
   width: 100%;
   min-width: 100px;
@@ -114,7 +107,6 @@ input[type='submit'] {
   color: #fff;
   font-weight: 600;
   font-size: var(--font-size-m);
-  font-family: 'Saira', sans-serif;
   line-height: 1.3;
   padding: var(--space-s) var(--space-xl);
   text-transform: uppercase;

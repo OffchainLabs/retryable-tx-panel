@@ -1,7 +1,7 @@
 import React from 'react';
 import { Info } from 'react-feather';
 import Image from 'next/image';
-import { Saira, DM_Sans } from 'next/font/google';
+import { Space_Grotesk } from 'next/font/google';
 import Logo from '../../public/logo.svg';
 import { ExternalLink } from '../components/ExternalLink';
 
@@ -9,14 +9,8 @@ import 'react-tooltip/dist/react-tooltip.css';
 import './global.css';
 import { Form } from '../components/Form';
 
-const saira = Saira({
-  weight: ['600', '700'],
-  style: ['normal'],
-  subsets: ['latin'],
-});
-
-const dm_sans = DM_Sans({
-  weight: ['400', '700'],
+const spaceGrotesk = Space_Grotesk({
+  weight: ['400', '600', '700'],
   style: ['normal'],
   subsets: ['latin'],
 });
@@ -33,7 +27,7 @@ export type LayoutProps = {
 export default function RootLayout({ children }: LayoutProps) {
   return (
     <html lang="en">
-      <body className={`${saira.className} ${dm_sans.className}`}>
+      <body className={spaceGrotesk.className}>
         <header>
           <h1>
             Arbitrum Cross-chain Message Dashboard{' '}
