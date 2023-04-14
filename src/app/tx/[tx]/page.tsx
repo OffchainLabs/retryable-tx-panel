@@ -1,24 +1,24 @@
 import { L2ToL1MessageStatus } from '@arbitrum/sdk';
 import dynamic from 'next/dynamic';
 import { Suspense } from 'react';
-import { WagmiProvider } from '../../../components/WagmiProvider';
+import { WagmiProvider } from '@/components/WagmiProvider';
 import {
   getL1ToL2MessagesAndDepositMessages,
   getL1TxnReceipt,
   getL2ToL1Messages,
   receiptStateToDisplayableResult,
-} from '../../../lib';
+} from '@/utils';
 import {
   L1ToL2MessagesAndDepositMessages,
   L2ToL1MessageData,
   L2TxnStatus,
   ReceiptRes,
   ReceiptState,
-} from '../../../types';
+} from '@/types';
 import { MessageDisplays } from './MessageDisplays';
 
 const L2ToL1MsgsDisplay = dynamic(
-  () => import('../../../components/L2ToL1MsgsDisplay'),
+  () => import('@/components/L2ToL1MsgsDisplay'),
   {
     ssr: false,
   },

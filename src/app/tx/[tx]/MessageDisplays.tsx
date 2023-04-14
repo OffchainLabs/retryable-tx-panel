@@ -1,14 +1,14 @@
 import dynamic from 'next/dynamic';
-import { ExternalLink } from '../../../components/ExternalLink';
+import { ExternalLink } from '@/components/ExternalLink';
 import {
   depositMessageStatusDisplay,
   getRetryableIdOrDepositHash,
   l1ToL2MessageToStatusDisplay,
-} from '../../../lib';
+} from '@/utils';
 import {
   L1ToL2MessagesAndDepositMessages,
   MessageStatusDisplay,
-} from '../../../types';
+} from '@/types';
 
 const getDataFromL1ToL2Message = (
   l1ToL2Message: MessageStatusDisplay['l1ToL2Message'],

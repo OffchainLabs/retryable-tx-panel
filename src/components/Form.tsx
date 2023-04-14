@@ -2,7 +2,7 @@
 import { usePathname, useRouter } from 'next/navigation';
 import { useState } from 'react';
 import { Tooltip } from 'react-tooltip';
-import { isValidTxHash } from '../isValidTxHash';
+import { isValidTxHash } from '@/utils/isValidTxHash';
 
 const Form = () => {
   const pathname = usePathname();

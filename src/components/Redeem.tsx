@@ -1,8 +1,7 @@
 'use client';
-import { useMemo } from 'react';
-import { MessageStatusDisplay } from '../types';
+import React, { useMemo } from 'react';
+import { MessageStatusDisplay } from '@/types';
 import { L1ToL2MessageWriter } from '@arbitrum/sdk';
-import React from 'react';
 import { useNetwork, useSigner } from 'wagmi';
 import { BigNumber } from 'ethers';
 import { RetryableMessageParams } from '@arbitrum/sdk/dist/lib/dataEntities/message';

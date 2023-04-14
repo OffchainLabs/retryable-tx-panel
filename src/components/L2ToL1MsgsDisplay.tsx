@@ -1,5 +1,5 @@
 'use client';
-import { L2ToL1MessageData } from '../types';
+import { L2ToL1MessageData } from '@/types';
 import {
   L2ToL1MessageStatus,
   L2ToL1MessageWriter,

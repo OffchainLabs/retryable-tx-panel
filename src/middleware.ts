@@ -1,6 +1,6 @@
 import { NextResponse } from 'next/server';
 import type { NextRequest } from 'next/server';
-import { isValidTxHash } from './isValidTxHash';
+import { isValidTxHash } from '@/utils/isValidTxHash';
 
 export async function middleware(request: NextRequest) {
   const { searchParams, pathname } = request.nextUrl;

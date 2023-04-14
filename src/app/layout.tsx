@@ -1,13 +1,13 @@
-import React, { useMemo } from 'react';
+import React from 'react';
 import { Info } from 'react-feather';
 import Image from 'next/image';
 import { Space_Grotesk } from 'next/font/google';
 import Logo from '../../public/logo.svg';
-import { ExternalLink } from '../components/ExternalLink';
+import { ExternalLink } from '@/components/ExternalLink';
 
 import 'react-tooltip/dist/react-tooltip.css';
 import './global.css';
-import { Form } from '../components/Form';
+import { Form } from '@/components/Form';
 
 const spaceGrotesk = Space_Grotesk({
   weight: ['400', '600', '700'],
