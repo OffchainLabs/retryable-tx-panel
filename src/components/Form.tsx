@@ -1,5 +1,6 @@
 'use client';
 import { usePathname, useRouter } from 'next/navigation';
+import { useState } from 'react';
 import { Tooltip } from 'react-tooltip';
 import { isValidTxHash } from '../isValidTxHash';
 
@@ -7,17 +8,15 @@ const Form = () => {
   const pathname = usePathname();
   const router = useRouter();
   const tx = pathname.split('/tx/')[1];
+  const [value, setValue] = useState(tx ?? '');
 
   const handleSubmit: React.FormEventHandler<HTMLFormElement> = (e) => {
     e.preventDefault();
-    const form = e.target as HTMLFormElement;
-    const formData = new FormData(form);
-    const txValue = formData.get('txInput')?.toString();
 
-    if (isValidTxHash(txValue)) {
-      router.push(`/tx/${txValue}`);
+    if (isValidTxHash(value)) {
+      router.push(`/tx/${value}`);
     } else {
-      form.reset();
+      setValue('');
       router.push('/');
     }
   };
@@ -29,11 +28,12 @@ const Form = () => {
           name="txInput"
           placeholder="Paste your transaction hash"
           className="input-style"
-          defaultValue={tx}
+          value={value}
+          onChange={(e) => setValue(e.target.value)}
         />
         <input type="submit" value="Submit" />
       </form>
-      <Tooltip anchorId="title-info" place="top" className="tooltip" />
+      <Tooltip data-tooltip-id="title-info" place="top" className="tooltip" />
     </>
   );
 };

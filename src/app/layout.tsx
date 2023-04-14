@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { useMemo } from 'react';
 import { Info } from 'react-feather';
 import Image from 'next/image';
 import { Space_Grotesk } from 'next/font/google';
@@ -25,6 +25,7 @@ export type LayoutProps = {
 };
 
 export default function RootLayout({ children }: LayoutProps) {
+  console.log('layout');
   return (
     <html lang="en">
       <body className={spaceGrotesk.className}>
