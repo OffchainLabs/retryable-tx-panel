@@ -81,12 +81,27 @@ main {
 
 .form-container {
   display: flex;
+  flex-direction: column;
+  flex-wrap: nowrap;
+  width: 100%;
+  max-width: 740px;
+  gap: 10px;
+  margin: auto;
+}
+
+.form-inner {
+  display: flex;
   flex-direction: row;
   flex-wrap: nowrap;
   width: 100%;
   max-width: 740px;
   gap: 10px;
   margin: auto;
+}
+
+.error {
+  text-align: center;
+  color: #cd0000;
 }
 
 .input-style {
