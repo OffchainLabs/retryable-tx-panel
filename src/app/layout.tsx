@@ -25,7 +25,6 @@ export type LayoutProps = {
 };
 
 export default function RootLayout({ children }: LayoutProps) {
-  console.log('layout');
   return (
     <html lang="en">
       <body className={spaceGrotesk.className}>
@@ -33,7 +32,7 @@ export default function RootLayout({ children }: LayoutProps) {
           <h1>
             Arbitrum Cross-chain Message Dashboard{' '}
             <ExternalLink
-              id="title-info"
+              data-tooltip-id="title-info"
               href="https://developer.arbitrum.io/arbos/l1-to-l2-messaging"
               data-tooltip-content="Learn more about cross-chain messaging on Arbitrum"
             >

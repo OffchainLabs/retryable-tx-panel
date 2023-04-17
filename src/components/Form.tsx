@@ -33,7 +33,7 @@ const Form = () => {
         />
         <input type="submit" value="Submit" />
       </form>
-      <Tooltip data-tooltip-id="title-info" place="top" className="tooltip" />
+      <Tooltip id="title-info" place="top" className="tooltip" />
     </>
   );
 };
