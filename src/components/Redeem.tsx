@@ -85,17 +85,14 @@ function Redeem({ l1ToL2Message }: Props) {
 
           try {
             const res = await l1ToL2MessageWriter.redeem();
-            console.log('throw before res?', res);
             const rec = await res.wait();
             if (rec.status === 1) {
-              console.log('rec stats 1');
               setMessage(
                 `Retryable successfully redeemed! ${rec.transactionHash}`,
               );
               // Reload the page to show the new status
               window.location.reload();
             } else {
-              console.log('else, ', res);
               setMessage(res.toString());
               throw new Error('Failed to redeem');
             }
