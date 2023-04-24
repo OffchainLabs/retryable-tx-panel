@@ -16,6 +16,7 @@ import {
   ReceiptState,
 } from '@/types';
 import { MessageDisplays } from './MessageDisplays';
+import { L2ToL1MessageDataLike } from '@/components/L2ToL1MsgsDisplay';
 
 const L2ToL1MsgsDisplay = dynamic(
   () => import('@/components/L2ToL1MsgsDisplay'),
@@ -120,10 +121,41 @@ type Props = {
 };
 const Transaction = async ({ params }: Props) => {
   const { tx } = params;
-  const { txHashState, l1TxnReceipt, l2ToL1MessagesToShow, allMessages } =
-    await getData(tx);
+  const {
+    txHashState,
+    l1TxnReceipt,
+    l2ToL1MessagesToShow: _l2ToL1MessagesToShow,
+    allMessages,
+  } = await getData(tx);
   const { text: l1TxnResultText } =
     receiptStateToDisplayableResult(txHashState);
+  const l2ToL1MessagesToShow: L2ToL1MessageDataLike[] =
+    _l2ToL1MessagesToShow.map(
+      ({
+        confirmationInfo,
+        status,
+        l1Network,
+        l2Network,
+        createdAtL2BlockNumber,
+      }) => ({
+        status,
+        confirmationInfo: confirmationInfo
+          ? {
+              deadlineBlock: confirmationInfo.deadlineBlock.toString(),
+              etaSeconds: confirmationInfo.etaSeconds,
+            }
+          : null,
+        l1Network: {
+          chainID: l1Network.chainID,
+          name: l1Network.name,
+        },
+        l2Network: {
+          chainID: l2Network.chainID,
+          name: l2Network.name,
+        },
+        createdAtL2BlockNumber,
+      }),
+    );
 
   return (
     <>

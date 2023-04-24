@@ -6,7 +6,7 @@ export const supportedL1Networks = {
   5: `https://goerli.infura.io/v3/${process.env.NEXT_PUBLIC_INFURA_KEY}`,
 };
 
-export const supportedL2Networks = {
+export const supportedL2Networks: Record<number, string> = {
   42161: `https://arb1.arbitrum.io/rpc`,
   421613: `https://goerli-rollup.arbitrum.io/rpc`,
   42170: `https://nova.arbitrum.io/rpc`,
