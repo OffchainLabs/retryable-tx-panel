@@ -1,5 +1,5 @@
 require('@offchainlabs/eslint-config-typescript/base');
-require('@offchainlabs/eslint-config-typescript/react');
+require('@offchainlabs/eslint-config-typescript/next');
 
 module.exports = {
   env: {
@@ -10,7 +10,7 @@ module.exports = {
   ignorePatterns: ['dist', '**/*.js', 'node_modules'],
   extends: [
     '@offchainlabs/eslint-config-typescript/base',
-    '@offchainlabs/eslint-config-typescript/react',
+    '@offchainlabs/eslint-config-typescript/next',
   ],
   parserOptions: {
     ecmaVersion: 2018, // Allows for the parsing of modern ECMAScript features

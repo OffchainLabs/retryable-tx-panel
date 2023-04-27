@@ -1,3 +1,4 @@
+'use client';
 import { WagmiConfig, createClient, configureChains } from 'wagmi';
 import { mainnet, arbitrum, arbitrumGoerli, goerli } from 'wagmi/chains';
 import { publicProvider } from 'wagmi/providers/public';
@@ -20,6 +21,6 @@ const client = createClient({
   webSocketProvider,
 });
 
-export const WagmiProvider = ({ children }: { children?: ReactNode }) => {
+export const WagmiProvider = ({ children }: { children: ReactNode }) => {
   return <WagmiConfig client={client}>{children}</WagmiConfig>;
 };

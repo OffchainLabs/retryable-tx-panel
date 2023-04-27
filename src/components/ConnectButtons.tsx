@@ -1,3 +1,4 @@
+'use client';
 import { useAccount, useConnect, useDisconnect } from 'wagmi';
 
 const ConnectButtons = () => {
@@ -32,4 +33,4 @@ const ConnectButtons = () => {
   );
 };
 
-export { ConnectButtons };
+export default ConnectButtons;
