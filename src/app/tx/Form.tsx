@@ -1,7 +1,7 @@
 'use client';
 import { usePathname, useRouter } from 'next/navigation';
 import { Tooltip } from 'react-tooltip';
-import { isValidTxHash } from '../../lib';
+import { isValidTxHash } from '@/utils';
 
 import 'react-tooltip/dist/react-tooltip.css';
 

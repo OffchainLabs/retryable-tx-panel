@@ -3,6 +3,7 @@ import { Logo } from '../../components/Logo';
 import { WagmiProvider } from '../../components/WagmiProvider';
 import { Form } from './Form';
 import dynamic from 'next/dynamic';
+import './style.css';
 
 const ConnectButtons = dynamic(
   () => import('../../components/ConnectButtons'),
@@ -10,8 +11,6 @@ const ConnectButtons = dynamic(
     ssr: false,
   },
 );
-
-import './style.css';
 
 export type LayoutProps = {
   children: React.ReactNode;

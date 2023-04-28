@@ -10,7 +10,7 @@ import {
 import { Inbox__factory } from '@arbitrum/sdk/dist/lib/abi/factories/Inbox__factory';
 import { getBaseFee } from '@arbitrum/sdk/dist/lib/utils/lib';
 import { useNetwork, useSigner } from 'wagmi';
-import { getProviderFromChainId, getTargetChainId } from '../../../lib';
+import { getProviderFromChainId, getTargetChainId } from '@/utils';
 import { BigNumber } from 'ethers';
 
 function RecoverFundsButton({

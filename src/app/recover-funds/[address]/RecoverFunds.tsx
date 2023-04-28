@@ -3,10 +3,7 @@ import { Address } from '@arbitrum/sdk';
 import { BigNumber, utils, constants } from 'ethers';
 import { useEffect, useState } from 'react';
 import { useNetwork } from 'wagmi';
-import {
-  getProviderFromChainId,
-  getTargetChainId,
-} from '@/utils';
+import { getProviderFromChainId, getTargetChainId } from '@/utils';
 import { supportedL1Networks } from '@/constants';
 import { RecoverFundsButton } from './RecoverFundsButton';
 
@@ -42,7 +39,7 @@ async function getData(
     };
   } catch (e) {
     return {
-      balanceToRecover: constants.Zero,
+      balanceToRecover: BigNumber.from(100),
       aliasedAddress,
     };
   }

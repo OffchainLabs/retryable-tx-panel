@@ -20,5 +20,6 @@ const PageIndex: NextPage = () => {
       </main>
     </>
   );
+};
 
 export default PageIndex;

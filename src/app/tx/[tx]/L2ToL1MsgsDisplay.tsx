@@ -92,7 +92,6 @@ function L2ToL1MsgsDisplay({ l2ToL1Messages }: Props) {
                       signer,
                       l2ToL1TxEvent,
                     );
-
                     const res = await l2ToL1MessageWriter.execute(l2Provider);
                     const rec = await res.wait();
                     if (rec.status === 1) {
@@ -129,4 +128,4 @@ function L2ToL1MsgsDisplay({ l2ToL1Messages }: Props) {
   );
 }
 
-export { L2ToL1MsgsDisplay };
+export default L2ToL1MsgsDisplay;

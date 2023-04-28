@@ -149,7 +149,7 @@ const MessageDisplays = async ({
           </div>
         );
       })}
-      {showConnectButtons && <ConnectButtons />}
+      {showConnectButtons && <ConnectButtons text="Connect" />}
     </>
   );
 };

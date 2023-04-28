@@ -4,6 +4,11 @@ import { ExternalLink } from '../../components/ExternalLink';
 import { Form } from './Form';
 import { Logo } from '../../components/Logo';
 
+export const metadata = {
+  title: 'Crosschain Message Dashboard',
+  description: 'Crosschain Message Dashboard',
+};
+
 export type LayoutProps = {
   children: React.ReactNode;
 };
