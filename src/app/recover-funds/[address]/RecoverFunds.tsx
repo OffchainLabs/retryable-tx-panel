@@ -6,8 +6,8 @@ import { useNetwork } from 'wagmi';
 import {
   getProviderFromChainId,
   getTargetChainId,
-  supportedL1Networks,
-} from '../../../lib';
+} from '@/utils';
+import { supportedL1Networks } from '@/constants';
 import { RecoverFundsButton } from './RecoverFundsButton';
 
 interface OperationInfo {

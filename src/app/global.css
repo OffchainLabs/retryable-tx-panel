@@ -35,12 +35,15 @@ body {
   align-items: center;
   flex-direction: column;
   min-height: 100vh;
-  font-family: 'DM Sans', -apple-system, BlinkMacSystemFont, 'Segoe UI', 'Roboto', 'Oxygen',
-    'Ubuntu', 'Cantarell', 'Fira Sans', 'Droid Sans', 'Helvetica Neue',
-    sans-serif;
   -webkit-font-smoothing: antialiased;
   -moz-osx-font-smoothing: grayscale;
-  background: linear-gradient(179.53deg,#000 19.46%,rgba(0,0,0,.650795) 40.76%,rgba(0,0,0,.462631) 60.09%,hsla(0,0%,100%,0) 99.6%);
+  background: linear-gradient(
+    179.53deg,
+    #000 19.46%,
+    rgba(0, 0, 0, 0.650795) 40.76%,
+    rgba(0, 0, 0, 0.462631) 60.09%,
+    hsla(0, 0%, 100%, 0) 99.6%
+  );
   padding: var(--space-xxl) var(--space-m);
   margin: 0;
   color: #fff;
@@ -51,7 +54,6 @@ h1 {
   justify-content: center;
   align-items: center;
   gap: var(--space-s);
-  font-family: 'Saira', sans-serif;
   font-size: 2.8rem;
   line-height: 1.3;
   margin-top: 0;
@@ -81,6 +83,16 @@ main {
 
 .form-container {
   display: flex;
+  flex-direction: column;
+  flex-wrap: nowrap;
+  width: 100%;
+  max-width: 740px;
+  gap: 10px;
+  margin: auto;
+}
+
+.form-inner {
+  display: flex;
   flex-direction: row;
   flex-wrap: nowrap;
   width: 100%;
@@ -89,10 +101,14 @@ main {
   margin: auto;
 }
 
+.error {
+  text-align: center;
+  color: #cd0000;
+}
+
 .input-style {
   font-size: var(--font-size-m);
-  font-family: 'DM Sans', -apple-system, BlinkMacSystemFont, 'Segoe UI', 'Roboto', 'Oxygen',
-  'Ubuntu', 'Cantarell', 'Fira Sans', 'Droid Sans', 'Helvetica Neue';
+  font-family: inherit;
   padding: 8px 16px;
   width: 100%;
   min-width: 100px;
@@ -104,12 +120,12 @@ main {
 }
 
 button,
-input[type="submit"] {
+input[type='submit'] {
   background-color: var(--blue);
   color: #fff;
   font-weight: 600;
+  font-family: inherit;
   font-size: var(--font-size-m);
-  font-family: 'Saira', sans-serif;
   line-height: 1.3;
   padding: var(--space-s) var(--space-xl);
   text-transform: uppercase;
@@ -120,7 +136,7 @@ input[type="submit"] {
 }
 
 button:hover,
-input[type="submit"]:hover {
+input[type='submit']:hover {
   background-color: var(--blue-dark);
 }
 
@@ -139,22 +155,21 @@ input[type="submit"]:hover {
   padding: var(--space-xs) var(--space-s);
 }
 
-a { 
+a {
   text-decoration: underline;
-  color: white; 
-  
+  color: white;
 }
 a:hover {
   text-decoration: none;
 }
-a:visited { 
+a:visited {
   text-decoration: underline;
   color: white; 
 }
 
 .redeemtext {
   width: 100%;
-  height: 10em; 
+  height: 10em;
 }
 
 .buttons-wrapper {
@@ -186,10 +201,10 @@ a:visited {
   height: 100%;
 }
 .header-logo img {
-  height: 100%;
-  filter: drop-shadow(2px 4px 26px rgba(255,255,255,0.4));
-  pointer-events: none;
   width: auto;
+  height: 100%;
+  filter: drop-shadow(2px 4px 26px rgba(255, 255, 255, 0.4));
+  pointer-events: none;
 }
 
 @media (prefers-reduced-motion: no-preference) {

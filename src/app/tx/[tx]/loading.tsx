@@ -1,3 +1,4 @@
+// Displayed when /tx/[tx] is loading
 export default function Loading() {
   return (
     <div className="resultContainer">

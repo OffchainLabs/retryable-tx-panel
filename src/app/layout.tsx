@@ -1,5 +1,6 @@
 import React from 'react';
 
+import 'react-tooltip/dist/react-tooltip.css';
 import './global.css';
 
 export type LayoutProps = {
