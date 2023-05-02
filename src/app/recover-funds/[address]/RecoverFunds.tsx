@@ -14,8 +14,8 @@ interface OperationInfo {
 
 const hasBalanceOverThreshold = (balanceToRecover: BigNumber) => {
   // Aliased account will always have some leftover, we can't check for balance of 0, as it would always return 0
-  // We can't compare with 0.0005 as it would throw error
-  return balanceToRecover.mul(1_000).gte(5);
+  // We compare with 0.005 instead
+  return balanceToRecover.gte(BigNumber.from(5_000_000_000_000_000));
 };
 
 async function getData(

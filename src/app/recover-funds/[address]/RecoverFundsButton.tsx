@@ -25,7 +25,7 @@ function RecoverFundsButton({
   const [message, setMessage] = useState('');
   const [loading, setLoading] = useState(false);
   const { chain } = useNetwork();
-  const { data: signer } = useSigner();
+  const { data: signer } = useSigner({ chainId: chain?.id });
 
   const redeemButton = useMemo(() => {
     if (!signer) return null;
@@ -103,6 +103,13 @@ function RecoverFundsButton({
             const l2CallValue = balanceToRecover
               .sub(gasEstimation.maxSubmissionCost)
               .sub(gasEstimation.gasLimit.mul(gasEstimation.maxFeePerGas));
+
+            if (l2CallValue.isNegative()) {
+              setMessage(
+                'Balance on aliased address is too low to pay for gas',
+              );
+              return;
+            }
 
             try {
               setLoading(true);
