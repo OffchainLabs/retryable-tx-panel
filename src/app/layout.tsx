@@ -11,7 +11,7 @@ const spaceGrotesk = Space_Grotesk({
 });
 
 export const metadata = {
-  title: 'Arbitrum tools',
+  title: 'Arbitrum Tools',
   description: 'Arbitrum tools',
 };
 
