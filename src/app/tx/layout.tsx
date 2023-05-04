@@ -5,7 +5,7 @@ import { Form } from './Form';
 import { Logo } from '../../components/Logo';
 
 export const metadata = {
-  title: 'Crosschain Message Dashboard',
+  title: 'Arbitrum Crosschain Message Dashboard',
   description: 'Crosschain Message Dashboard',
 };
 
