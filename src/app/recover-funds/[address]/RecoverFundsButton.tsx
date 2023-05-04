@@ -17,10 +17,12 @@ function RecoverFundsButton({
   balanceToRecover,
   chainID,
   destinationAddress,
+  aliasedAddress,
 }: {
   balanceToRecover: BigNumber;
   chainID: number;
   destinationAddress: string;
+  aliasedAddress: string;
 }) {
   const [message, setMessage] = useState('');
   const [loading, setLoading] = useState(false);
@@ -46,22 +48,18 @@ function RecoverFundsButton({
 
     return (
       <div className="recover-funds-form">
-        {loading && <div className="loading-block">Sending transaction...</div>}
         <button
           id="recover-button"
+          disabled={loading}
           onClick={async () => {
+            setLoading(true);
             setMessage('');
 
             // Start transaction
             const signerAddress = new Address(await signer.getAddress());
-            const aliasedSignerAddress = signerAddress.applyAlias();
 
             // We instantiate the Inbox factory object to make use of its methods
             const targetChainID = getTargetChainId(chainID);
-
-            if (!targetChainID) {
-              return;
-            }
 
             const baseL2Provider = getProviderFromChainId(targetChainID);
             const l2Network = await getL2Network(baseL2Provider);
@@ -76,6 +74,7 @@ function RecoverFundsButton({
             );
 
             if (!signer.provider) {
+              setLoading(false);
               return;
             }
 
@@ -86,7 +85,7 @@ function RecoverFundsButton({
             //      (4) deposit: The total amount to deposit on L1 to cover L2 gas and L2 call value
             const gasEstimation = await l1ToL2MessageGasEstimator.estimateAll(
               {
-                from: aliasedSignerAddress.value,
+                from: aliasedAddress,
                 to: destinationAddress,
                 l2CallValue: balanceToRecover,
                 excessFeeRefundAddress: destinationAddress,
@@ -108,6 +107,7 @@ function RecoverFundsButton({
               setMessage(
                 'Balance on aliased address is too low to pay for gas',
               );
+              setLoading(false);
               return;
             }
 
@@ -140,6 +140,9 @@ function RecoverFundsButton({
               setMessage(
                 `L1 submission transaction receipt is: ${l1SubmissionTxReceipt.transactionHash}. Follow the transaction in the <a target="_blank" href="https://retryable-dashboard.arbitrum.io/tx/${l1SubmissionTxReceipt.transactionHash}">Retryables Dashboard</a>.`,
               );
+
+              await l1SubmissionTxReceipt.waitForL2(baseL2Provider);
+              window.location.reload();
             } catch (err: any) {
               setMessage((err as Error).message.toString());
             } finally {
@@ -159,6 +162,7 @@ function RecoverFundsButton({
     loading,
     destinationAddress,
     balanceToRecover,
+    aliasedAddress,
   ]);
 
   return (

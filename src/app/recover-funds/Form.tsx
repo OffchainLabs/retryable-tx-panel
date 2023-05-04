@@ -16,7 +16,7 @@ const Form = () => {
     const addressValue = formData.get('addressInput')?.toString();
 
     if (addressValue && utils.isAddress(addressValue)) {
-      router.replace(`/recover-funds/${addressValue}`);
+      router.push(`/recover-funds/${addressValue}`);
     } else {
       form.reset();
       router.replace('/recover-funds');

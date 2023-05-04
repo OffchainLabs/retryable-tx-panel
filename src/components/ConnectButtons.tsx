@@ -2,7 +2,7 @@
 import { useAccount, useConnect, useDisconnect } from 'wagmi';
 
 const ConnectButtons = ({ text }: { text: string }) => {
-  const { address, isConnected } = useAccount();
+  const { isConnected } = useAccount();
   const { connect, connectors, error } = useConnect();
   const { disconnect } = useDisconnect();
 
@@ -10,7 +10,6 @@ const ConnectButtons = ({ text }: { text: string }) => {
 
   return (
     <div className="buttons-wrapper">
-      {isConnected && <div>{address}</div>}
       {isConnected && (
         <button
           className="button-outline button-small"

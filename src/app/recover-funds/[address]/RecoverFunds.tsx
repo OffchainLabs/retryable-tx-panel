@@ -4,7 +4,6 @@ import { BigNumber, utils, constants } from 'ethers';
 import { useEffect, useState } from 'react';
 import { useNetwork } from 'wagmi';
 import { getProviderFromChainId, getTargetChainId } from '@/utils';
-import { supportedL1Networks } from '@/constants';
 import { RecoverFundsButton } from './RecoverFundsButton';
 
 interface OperationInfo {
@@ -23,8 +22,8 @@ async function getData(
   address: string,
 ): Promise<OperationInfo | null> {
   // First, obtain the aliased address of the signer
-  const signerAddress = new Address(address);
-  const { value: aliasedAddress } = signerAddress.applyAlias();
+  const destinationAddress = new Address(address);
+  const { value: aliasedAddress } = destinationAddress.applyAlias();
 
   // And get its balance to find out the amount we are transferring
   try {
@@ -39,7 +38,7 @@ async function getData(
     };
   } catch (e) {
     return {
-      balanceToRecover: BigNumber.from(100),
+      balanceToRecover: constants.Zero,
       aliasedAddress,
     };
   }
@@ -53,6 +52,7 @@ const RecoverFunds = ({ address }: { address: string }) => {
   const [destinationAddress, setDestinationAddress] = useState<string | null>(
     null,
   );
+
   const targetChainID = getTargetChainId(chain?.id);
 
   useEffect(() => {
@@ -65,25 +65,13 @@ const RecoverFunds = ({ address }: { address: string }) => {
     });
   }, [address, targetChainID]);
 
-  const handleSubmit: React.FormEventHandler<HTMLFormElement> = (e) => {
-    e.preventDefault();
-    const form = e.target as HTMLFormElement;
-    const formData = new FormData(form);
-    const destinationAddress = formData
-      .get('destinationAddressInput')
-      ?.toString();
-
-    if (destinationAddress && utils.isAddress(destinationAddress)) {
-      setDestinationAddress(destinationAddress);
-    } else {
-      form.reset();
-      setDestinationAddress(null);
-    }
+  const handleChange: React.ChangeEventHandler<HTMLInputElement> = (e) => {
+    const value = e.target.value;
+    setDestinationAddress(value);
   };
 
   // No funds to recover
   if (
-    chain &&
     operationInfo &&
     !hasBalanceOverThreshold(operationInfo.balanceToRecover)
   ) {
@@ -97,7 +85,6 @@ const RecoverFunds = ({ address }: { address: string }) => {
 
   // Funds found on aliased address
   if (
-    chain &&
     operationInfo &&
     hasBalanceOverThreshold(operationInfo.balanceToRecover)
   ) {
@@ -105,37 +92,27 @@ const RecoverFunds = ({ address }: { address: string }) => {
       <div className="funds-message">
         There are {utils.formatEther(operationInfo.balanceToRecover)} ETH on{' '}
         {operationInfo.aliasedAddress} (Alias of {address}).
-        <form className="form-container" onSubmit={handleSubmit}>
+        <div className="form-container">
           <input
             name="destinationAddressInput"
             placeholder="Enter the destination address"
+            onChange={handleChange}
             className="input-style"
           />
-          <input type="submit" value="Submit" />
-        </form>
-        {destinationAddress && (
-          <RecoverFundsButton
-            chainID={chain.id}
-            balanceToRecover={operationInfo.balanceToRecover}
-            destinationAddress={destinationAddress}
-          />
-        )}
+        </div>
+        {chain &&
+          destinationAddress &&
+          utils.isAddress(destinationAddress) &&
+          operationInfo.aliasedAddress && (
+            <RecoverFundsButton
+              chainID={chain.id}
+              balanceToRecover={operationInfo.balanceToRecover}
+              destinationAddress={destinationAddress}
+              aliasedAddress={operationInfo.aliasedAddress}
+            />
+          )}
       </div>
     );
-  }
-
-  // User is connected on wrong network
-  if (chain?.id && !(chain.id in supportedL1Networks)) {
-    return (
-      <div className="funds-message">
-        You are connected to an unsupported network. Please connect to Ethereum
-        mainnet or Goerli.
-      </div>
-    );
-  }
-
-  if (!targetChainID) {
-    return null;
   }
 
   return <div className="funds-message">Loading...</div>;

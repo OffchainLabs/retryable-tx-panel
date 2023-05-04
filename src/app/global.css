@@ -140,6 +140,11 @@ input[type='submit']:hover {
   background-color: var(--blue-dark);
 }
 
+button:disabled {
+  background-color: var(--blue-lighter);
+  cursor: inherit;
+}
+
 .button-outline {
   color: var(--blue);
   background-color: transparent;
@@ -164,7 +169,7 @@ a:hover {
 }
 a:visited {
   text-decoration: underline;
-  color: white; 
+  color: white;
 }
 
 .redeemtext {
