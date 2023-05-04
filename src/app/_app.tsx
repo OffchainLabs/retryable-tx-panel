@@ -22,7 +22,7 @@ export default function App({ Component, pageProps }: AppProps) {
     <>
       <Head>
         <meta name="viewport" content="width=device-width, initial-scale=1" />
-        <title>Crosschain Message Dashboard</title>
+        <title>Arbitrum Crosschain Message Dashboard</title>
       </Head>
 
       <div className={`${saira.className} ${dm_sans.className}`}>
