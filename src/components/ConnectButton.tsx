@@ -1,7 +1,7 @@
 'use client';
 import { useAccount, useConnect, useDisconnect } from 'wagmi';
 
-const ConnectButtons = ({ text }: { text: string }) => {
+const ConnectButton = ({ text }: { text: string }) => {
   const { isConnected } = useAccount();
   const { connect, connectors, error } = useConnect();
   const { disconnect } = useDisconnect();
@@ -32,4 +32,4 @@ const ConnectButtons = ({ text }: { text: string }) => {
   );
 };
 
-export default ConnectButtons;
+export default ConnectButton;

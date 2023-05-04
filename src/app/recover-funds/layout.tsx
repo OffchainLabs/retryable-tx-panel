@@ -4,13 +4,13 @@ import { WagmiProvider } from '../../components/WagmiProvider';
 import { Form } from './Form';
 import dynamic from 'next/dynamic';
 import './style.css';
+import { useEffect } from 'react';
+import { useRouter } from 'next/navigation';
+import { useAccount } from 'wagmi';
 
-const ConnectButtons = dynamic(
-  () => import('../../components/ConnectButtons'),
-  {
-    ssr: false,
-  },
-);
+const ConnectButton = dynamic(() => import('../../components/ConnectButton'), {
+  ssr: false,
+});
 
 export type LayoutProps = {
   children: React.ReactNode;
@@ -36,7 +36,7 @@ export default function Layout({ children }: LayoutProps) {
         <WagmiProvider>
           <Form />
           {children}
-          <ConnectButtons text="Connect" />
+          <ConnectButton text="Connect" />
         </WagmiProvider>
       </main>
     </>

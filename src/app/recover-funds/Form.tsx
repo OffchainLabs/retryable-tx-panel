@@ -1,13 +1,12 @@
 'use client';
 import { usePathname, useRouter } from 'next/navigation';
-import { utils } from 'ethers';
-import { useAccount } from 'wagmi';
+import React, { useEffect, useState } from 'react';
 
 const Form = () => {
   const pathname = usePathname();
   const router = useRouter();
-  const { address } = useAccount();
   const addressQuery = pathname.split('/recover-funds/')[1];
+  const [value, setValue] = useState(addressQuery);
 
   const handleSubmit: React.FormEventHandler<HTMLFormElement> = (e) => {
     e.preventDefault();
@@ -15,14 +14,20 @@ const Form = () => {
     const formData = new FormData(form);
     const addressValue = formData.get('addressInput')?.toString();
 
-    if (addressValue && utils.isAddress(addressValue)) {
+    if (typeof addressValue === 'string') {
       router.push(`/recover-funds/${addressValue}`);
-    } else {
-      form.reset();
-      router.replace('/recover-funds');
     }
   };
 
+  const handleChange: React.ChangeEventHandler<HTMLInputElement> = (e) => {
+    setValue(e.target.value);
+  };
+
+  useEffect(() => {
+    setValue(addressQuery);
+  }, [addressQuery]);
+
+  console.log(value);
   return (
     <>
       <form className="form-container" onSubmit={handleSubmit}>
@@ -30,7 +35,8 @@ const Form = () => {
           name="addressInput"
           placeholder="Enter the address"
           className="input-style"
-          defaultValue={addressQuery || address}
+          value={value || ''}
+          onChange={handleChange}
         />
         <input type="submit" value="Submit" />
       </form>
