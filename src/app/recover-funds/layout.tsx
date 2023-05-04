@@ -4,9 +4,6 @@ import { WagmiProvider } from '../../components/WagmiProvider';
 import { Form } from './Form';
 import dynamic from 'next/dynamic';
 import './style.css';
-import { useEffect } from 'react';
-import { useRouter } from 'next/navigation';
-import { useAccount } from 'wagmi';
 
 const ConnectButton = dynamic(() => import('../../components/ConnectButton'), {
   ssr: false,
