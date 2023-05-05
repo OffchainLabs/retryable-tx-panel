@@ -17,7 +17,7 @@ export default function Layout({ children }: LayoutProps) {
   return (
     <>
       <header>
-        <h1>Funds recovery tool</h1>
+        <h1>Arbitrum Funds Recovery Tool</h1>
 
         <Logo />
 
