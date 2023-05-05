@@ -108,7 +108,7 @@ const RecoverFunds = ({ address }: { address: string }) => {
               chainID={chain.id}
               balanceToRecover={operationInfo.balanceToRecover}
               destinationAddress={destinationAddress}
-              aliasedAddress={operationInfo.aliasedAddress}
+              addressToRecoverFrom={address}
             />
           )}
       </div>

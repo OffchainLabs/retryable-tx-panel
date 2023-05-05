@@ -1,6 +1,7 @@
 'use client';
 import React, { useCallback, useState } from 'react';
 import {
+  Address,
   getL2Network,
   L1ToL2MessageGasEstimator,
   L1TransactionReceipt,
@@ -15,12 +16,12 @@ function RecoverFundsButton({
   balanceToRecover,
   chainID,
   destinationAddress,
-  aliasedAddress,
+  addressToRecoverFrom,
 }: {
   balanceToRecover: BigNumber;
   chainID: number;
   destinationAddress: string;
-  aliasedAddress: string;
+  addressToRecoverFrom: string;
 }) {
   const [message, setMessage] = useState('');
   const [loading, setLoading] = useState(false);
@@ -29,6 +30,15 @@ function RecoverFundsButton({
 
   const handleRecover = useCallback(async () => {
     if (!signer) {
+      return;
+    }
+
+    const signerAddress = new Address(await signer.getAddress());
+
+    if (signerAddress.value !== addressToRecoverFrom) {
+      setMessage(
+        `You can only retrieve funds from an address you're connected as. Please connect as ${addressToRecoverFrom}`,
+      );
       return;
     }
 
@@ -55,6 +65,8 @@ function RecoverFundsButton({
       return;
     }
 
+    const signerAliasedAddress = signerAddress.applyAlias();
+
     // The estimateAll method gives us the following values for sending an L1->L2 message
     //      (1) maxSubmissionCost: The maximum cost to be paid for submitting the transaction
     //      (2) gasLimit: The L2 gas limit
@@ -62,7 +74,7 @@ function RecoverFundsButton({
     //      (4) deposit: The total amount to deposit on L1 to cover L2 gas and L2 call value
     const gasEstimation = await l1ToL2MessageGasEstimator.estimateAll(
       {
-        from: aliasedAddress,
+        from: signerAliasedAddress.value,
         to: destinationAddress,
         l2CallValue: balanceToRecover,
         excessFeeRefundAddress: destinationAddress,
@@ -88,7 +100,6 @@ function RecoverFundsButton({
 
     try {
       setLoading(true);
-      const signerAddress = await signer.getAddress();
       const l1SubmissionTxRaw = await inbox
         .connect(signer)
         .unsafeCreateRetryableTicket(
@@ -101,7 +112,7 @@ function RecoverFundsButton({
           gasEstimation.maxFeePerGas, // maxFeePerGas
           '0x', // data
           {
-            from: signerAddress,
+            from: signerAddress.value,
             value: 0,
           },
         );
@@ -122,7 +133,7 @@ function RecoverFundsButton({
     } finally {
       setLoading(false);
     }
-  }, [aliasedAddress, balanceToRecover, chainID, destinationAddress, signer]);
+  }, [balanceToRecover, chainID, destinationAddress, signer]);
 
   if (!signer) return null;
 
