@@ -1,4 +1,5 @@
 'use client';
+import { utils } from 'ethers';
 import { usePathname, useRouter } from 'next/navigation';
 import React, { useEffect, useState } from 'react';
 
@@ -7,16 +8,18 @@ const Form = () => {
   const router = useRouter();
   const addressQuery = pathname.split('/recover-funds/')[1];
   const [value, setValue] = useState(addressQuery);
+  const [errorMessage, setErrorMessage] = useState<string | null>(null);
 
   const handleSubmit: React.FormEventHandler<HTMLFormElement> = (e) => {
     e.preventDefault();
-    const form = e.target as HTMLFormElement;
-    const formData = new FormData(form);
-    const addressValue = formData.get('addressInput')?.toString();
 
-    if (typeof addressValue === 'string') {
-      router.push(`/recover-funds/${addressValue}`);
+    if (!(typeof value === 'string') || !utils.isAddress(value)) {
+      setErrorMessage('Address is invalid');
+      return;
     }
+
+    setErrorMessage(null);
+    router.push(`/recover-funds/${value}`);
   };
 
   const handleChange: React.ChangeEventHandler<HTMLInputElement> = (e) => {
@@ -27,7 +30,6 @@ const Form = () => {
     setValue(addressQuery);
   }, [addressQuery]);
 
-  console.log(value);
   return (
     <>
       <form className="form-container" onSubmit={handleSubmit}>
@@ -39,6 +41,7 @@ const Form = () => {
           onChange={handleChange}
         />
         <input type="submit" value="Submit" />
+        {errorMessage && <span className="error">{errorMessage}</span>}
       </form>
     </>
   );
