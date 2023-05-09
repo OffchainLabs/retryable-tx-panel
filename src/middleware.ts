@@ -1,6 +1,7 @@
 import { NextResponse } from 'next/server';
 import type { NextRequest } from 'next/server';
 import { isValidTxHash } from '@/utils/isValidTxHash';
+import { utils } from 'ethers';
 
 export async function middleware(request: NextRequest) {
   const { searchParams, pathname } = request.nextUrl;
@@ -11,10 +12,16 @@ export async function middleware(request: NextRequest) {
     return NextResponse.redirect(new URL(`/tx/${txQuery}`, request.url));
   }
 
-  // Redirect on invalid hash
-  const txSlug = pathname.split('tx/')[1];
-  if (txSlug && !isValidTxHash(txSlug)) {
+  // Redirect on invalid hash (retryable dashboard)
+  const txHash = pathname.split('tx/')[1];
+  if (txHash && !isValidTxHash(txHash)) {
     return NextResponse.redirect(new URL('/', request.url));
+  }
+
+  // Redirect on invalid address (recover-funds)
+  const address = pathname.split('recover-funds/')[1];
+  if (address && !utils.isAddress(address)) {
+    return NextResponse.redirect(new URL('/recover-funds', request.url));
   }
 
   return NextResponse.next();

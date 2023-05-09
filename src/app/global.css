@@ -62,6 +62,7 @@ h1 {
 h2 {
   margin-top: var(--space-xl);
   margin-bottom: var(--space-m);
+  text-align: center;
 }
 
 @media screen and (max-width: 400px) {
@@ -77,6 +78,7 @@ main {
   align-items: center;
   flex-direction: column;
   justify-content: center;
+  text-align: center;
 }
 
 .form-container {
@@ -138,6 +140,11 @@ input[type='submit']:hover {
   background-color: var(--blue-dark);
 }
 
+button:disabled {
+  background-color: var(--blue-lighter);
+  cursor: inherit;
+}
+
 .button-outline {
   color: var(--blue);
   background-color: transparent;
@@ -195,7 +202,9 @@ a:visited {
     height: 240px;
   }
 }
-
+.header-logo a {
+  height: 100%;
+}
 .header-logo img {
   width: auto;
   height: 100%;
@@ -254,4 +263,8 @@ header {
   display: flex;
   flex-direction: column;
   justify-content: center;
+}
+
+.link {
+  padding: var(--space-m);
 }

@@ -16,14 +16,11 @@ import {
   ReceiptState,
 } from '@/types';
 import { MessageDisplays } from './MessageDisplays';
-import { L2ToL1MessageDataLike } from '@/components/L2ToL1MsgsDisplay';
+import { L2ToL1MessageDataLike } from './L2ToL1MsgsDisplay';
 
-const L2ToL1MsgsDisplay = dynamic(
-  () => import('@/components/L2ToL1MsgsDisplay'),
-  {
-    ssr: false,
-  },
-);
+const L2ToL1MsgsDisplay = dynamic(() => import('./L2ToL1MsgsDisplay'), {
+  ssr: false,
+});
 
 async function getData(txHash: string) {
   const receiptRes = await getL1TxnReceipt(txHash);

@@ -79,8 +79,8 @@ type Props = {
   hasL2ToL1MessagesConfirmed: boolean;
 };
 
-const ConnectButtons = dynamic(
-  () => import('../../../components/ConnectButtons'),
+const ConnectButton = dynamic(
+  () => import('../../../components/ConnectButton'),
   {
     ssr: false,
   },
@@ -94,7 +94,7 @@ const MessageDisplays = async ({
   hasL2ToL1MessagesConfirmed,
 }: Props) => {
   const { messagesDisplays } = await getData(messages);
-  const showConnectButtons =
+  const showConnectButton =
     messagesDisplays.some((msg) => msg.showRedeemButton) ||
     hasL2ToL1MessagesConfirmed;
 
@@ -149,7 +149,7 @@ const MessageDisplays = async ({
           </div>
         );
       })}
-      {showConnectButtons && <ConnectButtons />}
+      {showConnectButton && <ConnectButton text="Connect" />}
     </>
   );
 };
