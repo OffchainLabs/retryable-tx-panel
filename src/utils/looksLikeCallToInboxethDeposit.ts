@@ -15,6 +15,6 @@ export const looksLikeCallToInboxethDeposit = async (
       l1ToL2Message.retryableCreationId,
     )
   ).data;
-  // check that calldataSize param is zero (8th 32-byte param, offset by 4 bytes for message ID):
-  return hexDataSlice(txData, 4 + 8 * 32, 4 + 9 * 32) === constants.HashZero;
+  // check that length of retryData param is zero (12th 32-byte param, offset by 4 bytes for message ID):
+  return hexDataSlice(txData, 4 + 12 * 32, 4 + 13 * 32) === constants.HashZero;
 };
