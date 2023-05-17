@@ -33,7 +33,7 @@ export default function Layout({ children }: LayoutProps) {
         <WagmiProvider>
           <Form />
           {children}
-          <ConnectButton text="Connect" />
+          <ConnectButton />
         </WagmiProvider>
       </main>
     </>
