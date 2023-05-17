@@ -1,7 +1,7 @@
-// Displayed when /recover-funds is loading
+// Displayed when /address/[address] is loading
 export default function Loading() {
   return (
-    <div>
+    <div className="resultContainer">
       <div className="receipt-text">Loading...</div>
     </div>
   );

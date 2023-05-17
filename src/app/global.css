@@ -88,7 +88,7 @@ main {
   width: 100%;
   max-width: 740px;
   gap: 10px;
-  margin: auto;
+  margin-bottom: var(--space-xl);
 }
 
 .form-inner {
@@ -265,6 +265,7 @@ header {
   justify-content: center;
 }
 
-.link {
-  padding: var(--space-m);
+ul {
+  list-style-type: none;
+  padding-left: 0;
 }

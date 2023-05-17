@@ -1,23 +1,22 @@
 'use client';
 import { Address } from '@arbitrum/sdk';
 import { BigNumber, utils, constants } from 'ethers';
-import { useEffect, useState } from 'react';
 import { useNetwork } from 'wagmi';
 import { getProviderFromChainId, getTargetChainId } from '@/utils';
-import { RecoverFundsButton } from './RecoverFundsButton';
+import '../style.css';
 
-interface OperationInfo {
+export interface OperationInfo {
   balanceToRecover: BigNumber;
   aliasedAddress: string;
 }
 
-const hasBalanceOverThreshold = (balanceToRecover: BigNumber) => {
+export const hasBalanceOverThreshold = (balanceToRecover: BigNumber) => {
   // Aliased account will always have some leftover, we can't check for balance of 0, as it would always return 0
   // We compare with 0.005 instead
   return balanceToRecover.gte(BigNumber.from(5_000_000_000_000_000));
 };
 
-async function getData(
+export async function getData(
   chainID: number,
   address: string,
 ): Promise<OperationInfo | null> {
@@ -44,37 +43,16 @@ async function getData(
   }
 }
 
-const RecoverFunds = ({ address }: { address: string }) => {
+type Props = {
+  operationInfo: OperationInfo;
+  address: string;
+};
+const RecoverFunds = ({ operationInfo, address }: Props) => {
   const { chain } = useNetwork();
-  const [operationInfo, setOperationInfo] = useState<OperationInfo | null>(
-    null,
-  );
-  const [destinationAddress, setDestinationAddress] = useState<string | null>(
-    null,
-  );
-
   const targetChainID = getTargetChainId(chain?.id);
 
-  useEffect(() => {
-    if (!targetChainID) {
-      return;
-    }
-
-    getData(targetChainID, address).then((data) => {
-      setOperationInfo(data);
-    });
-  }, [address, targetChainID]);
-
-  const handleChange: React.ChangeEventHandler<HTMLInputElement> = (e) => {
-    const value = e.target.value;
-    setDestinationAddress(value);
-  };
-
   // No funds to recover
-  if (
-    operationInfo &&
-    !hasBalanceOverThreshold(operationInfo.balanceToRecover)
-  ) {
+  if (!hasBalanceOverThreshold(operationInfo.balanceToRecover)) {
     return (
       <div className="funds-message">
         There are no funds stuck on {operationInfo.aliasedAddress} (Alias of{' '}
@@ -84,38 +62,17 @@ const RecoverFunds = ({ address }: { address: string }) => {
   }
 
   // Funds found on aliased address
-  if (
-    operationInfo &&
-    hasBalanceOverThreshold(operationInfo.balanceToRecover)
-  ) {
+  if (hasBalanceOverThreshold(operationInfo.balanceToRecover)) {
     return (
       <div className="funds-message">
         There are {utils.formatEther(operationInfo.balanceToRecover)} ETH on{' '}
         {operationInfo.aliasedAddress} (Alias of {address}).
-        <div className="form-container">
-          <input
-            name="destinationAddressInput"
-            placeholder="Enter the destination address"
-            onChange={handleChange}
-            className="input-style"
-          />
-        </div>
-        {chain &&
-          destinationAddress &&
-          utils.isAddress(destinationAddress) &&
-          operationInfo.aliasedAddress && (
-            <RecoverFundsButton
-              chainID={chain.id}
-              balanceToRecover={operationInfo.balanceToRecover}
-              destinationAddress={destinationAddress}
-              addressToRecoverFrom={address}
-            />
-          )}
       </div>
     );
   }
 
-  return <div className="funds-message">Loading...</div>;
+  // Should never happen
+  return null;
 };
 
 export default RecoverFunds;
