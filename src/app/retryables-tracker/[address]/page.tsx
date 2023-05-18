@@ -1,3 +1,4 @@
+import Link from 'next/link';
 import { Suspense } from 'react';
 import DepositRetryables from './DepositsRetryables';
 import NonDepositsRetryables from './NonDepositsRetryables';
@@ -8,6 +9,8 @@ const Page = async ({ params }: { params: { address: string } }) => {
 
   return (
     <>
+      <Link href={`/recover-funds/${address}`}>Recover funds page</Link>
+
       <h3>Pending Retryables</h3>
       <Suspense fallback={<div>Loading...</div>}>
         {/* @ts-expect-error Server Component */}

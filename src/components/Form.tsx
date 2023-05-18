@@ -9,14 +9,12 @@ const Form = () => {
   const pathname = usePathname();
   const router = useRouter();
   const txQueryString = pathname.split('/tx/')[1];
-  const addressQueryString = pathname.split('/address/')[1];
   const recoverFundsQueryString = pathname.split('/recover-funds/')[1];
   const retryablesTrackerQueryString = pathname.split(
     '/retryables-tracker/',
   )[1];
   const [value, setValue] = useState(
     (txQueryString ||
-      addressQueryString ||
       recoverFundsQueryString ||
       retryablesTrackerQueryString) ??
       '',
@@ -28,7 +26,7 @@ const Form = () => {
 
     if (utils.isAddress(value)) {
       setError(null);
-      router.push(`/address/${value}`);
+      router.push(`/retryables-tracker/${value}`);
       return;
     }
 

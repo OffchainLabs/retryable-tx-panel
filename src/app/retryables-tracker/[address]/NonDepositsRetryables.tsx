@@ -2,10 +2,14 @@ import Link from 'next/link';
 import { querySubgraph, subgraphUrl } from './querySubgraph';
 import { BridgeRetryable } from './types';
 
-async function fetchNonDepositsRetryablesFromAddress(address: string) {
+async function fetchNonDepositsRetryablesFromAddress(
+  address: string,
+  limit?: number,
+) {
   const queryForSubmission = `
     query {
       retryables(
+        ${limit ? `first: ${limit}` : ''}
         where: {
           sender: "${address}"
         }
@@ -28,10 +32,10 @@ type Props = {
   limit?: number;
 };
 async function NonDepositsRetryables({ address, limit }: Props) {
-  const retryables = (
-    await fetchNonDepositsRetryablesFromAddress(address)
-  ).slice(0, limit);
-
+  const retryables = await fetchNonDepositsRetryablesFromAddress(
+    address,
+    limit,
+  );
   return retryables.length ? (
     <ul>
       {retryables.map((retryable) => (

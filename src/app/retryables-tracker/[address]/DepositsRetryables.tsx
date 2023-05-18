@@ -2,10 +2,14 @@ import Link from 'next/link';
 import { querySubgraph, subgraphUrl } from './querySubgraph';
 import { Deposit } from './types';
 
-async function fetchDepositsRetryablesFromAddress(address: string) {
+async function fetchDepositsRetryablesFromAddress(
+  address: string,
+  limit?: number,
+) {
   const queryForDeposit = `
     query {
       deposits(
+        ${limit ? `first: ${limit}` : ''}
         where: {
           sender: "${address}"
         },
@@ -26,6 +30,7 @@ async function fetchDepositsRetryablesFromAddress(address: string) {
   // const queryForSubmission = `
   //   query {
   //     retryables(
+  //       ${limit ? `first: ${limit}` : ''}
   //       where: {
   //         transactionHash_in: ${JSON.stringify(transactionHashes)}
   //       }
@@ -48,6 +53,7 @@ async function fetchDepositsRetryablesFromAddress(address: string) {
   // const queryForL2Ticket = `
   //   query {
   //     retryables(
+  //       ${limit ? `first: ${limit}` : ''}
   //       where: {
   //         createdAtTxHash_in: ${JSON.stringify(submissionHashes)}
   //       }
@@ -94,9 +100,10 @@ type Props = {
   limit?: number;
 };
 async function DepositRetryables({ address, limit }: Props) {
-  const depositRetryables = (
-    await fetchDepositsRetryablesFromAddress(address)
-  ).slice(0, limit);
+  const depositRetryables = await fetchDepositsRetryablesFromAddress(
+    address,
+    limit,
+  );
 
   return depositRetryables.length ? (
     <ul>
