@@ -4,13 +4,11 @@ import { querySubgraph, subgraphUrl } from './querySubgraph';
 
 async function fetchPendingRetryables(
   address: string,
-  limit?: number,
 ): Promise<`0x${string}`[]> {
   const timestamp = Math.floor(new Date().getTime() / 1000);
   const query = `
     query {
       retryables(
-        ${limit ? `first: ${limit}` : ''}
         where: {
           redeemedAtTimestamp: null,
           timeoutTimestamp_gt: ${timestamp}
@@ -31,7 +29,6 @@ async function fetchPendingRetryables(
   const queryForCreation = `
     query {
       retryables(
-        ${limit ? `first: ${limit}` : ''}
         where: {
           retryableTicketID_in: ${JSON.stringify(retryableCreationTxHashes)}
         }
@@ -57,7 +54,6 @@ async function fetchPendingRetryables(
   const queryForDeposits = `
     query {
       deposits(
-        ${limit ? `first: ${limit}` : ''}
         where: {
           transactionHash_in: ${JSON.stringify(retryableCreationTransactions)}
         }
@@ -80,7 +76,6 @@ async function fetchPendingRetryables(
 
   const retryablesWithDeposit = retryables.map((retryable) => {
     const deposit = depositsMap[retryable.transactionHash];
-
     return deposit ? deposit : retryable;
   });
 
@@ -96,7 +91,10 @@ type Props = {
   limit?: number;
 };
 async function PendingRetryables({ address, limit }: Props) {
-  const retryablesHashes = await fetchPendingRetryables(address, limit);
+  const retryablesHashes = (await fetchPendingRetryables(address)).slice(
+    0,
+    limit,
+  );
 
   return retryablesHashes.length ? (
     <ul>

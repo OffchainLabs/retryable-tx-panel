@@ -24,7 +24,7 @@ const Page = async ({ params }: Props) => {
       </h3>
 
       {/* @ts-expect-error Server Component */}
-      <PendingRetryables address={address} limit={5} />
+      <PendingRetryables address={address} />
     </>
   );
 };
