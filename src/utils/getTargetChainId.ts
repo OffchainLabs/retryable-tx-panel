@@ -1,5 +1,7 @@
+import { ChainId } from './network';
+
 export const getTargetChainId = (chainID: number | undefined) => {
-  const defaultTargetChainId = 42161;
+  const defaultTargetChainId = ChainId.ArbitrumOne;
 
   if (!chainID) {
     return defaultTargetChainId;
@@ -7,10 +9,10 @@ export const getTargetChainId = (chainID: number | undefined) => {
 
   return (
     {
-      1: 42161,
-      5: 421613,
-      42161: 42161,
-      421613: 421613,
+      [ChainId.Mainnet]: ChainId.ArbitrumOne,
+      [ChainId.Goerli]: ChainId.ArbitrumGoerli,
+      [ChainId.ArbitrumOne]: ChainId.ArbitrumOne,
+      [ChainId.ArbitrumGoerli]: ChainId.ArbitrumGoerli,
     }[chainID] || defaultTargetChainId
   );
 };
