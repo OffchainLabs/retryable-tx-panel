@@ -3,7 +3,7 @@
     "allowJs": true,
     "baseUrl": "../../../",
     "types": [
-      "cypress.d.ts",
+      "cypress",
       "@synthetixio/synpress/support",
       "cypress-wait-until",
       "@testing-library/cypress"
