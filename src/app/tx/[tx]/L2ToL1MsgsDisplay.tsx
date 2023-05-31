@@ -1,5 +1,5 @@
 'use client';
-import { supportedL2Networks } from '@/constants';
+import { ChainId, supportedL2Networks } from '@/utils/network';
 import { L2ToL1MessageData } from '@/types';
 import {
   L2ToL1MessageStatus,
@@ -67,7 +67,7 @@ function L2ToL1MsgsDisplay({ l2ToL1Messages }: Props) {
         );
       case L2ToL1MessageStatus.CONFIRMED:
         const l2Provider = new JsonRpcProvider(
-          supportedL2Networks[l2ToL1Message.l2Network.chainID],
+          supportedL2Networks[l2ToL1Message.l2Network.chainID as ChainId],
         );
         return (
           <div>

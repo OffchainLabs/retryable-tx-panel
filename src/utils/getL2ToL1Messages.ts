@@ -1,4 +1,4 @@
-import { supportedL1Networks, supportedL2Networks } from '@/constants';
+import { supportedL1Networks, supportedL2Networks } from '@/utils/network';
 import {
   L2ToL1MessageData,
   L2ToL1MessageSearchResult,

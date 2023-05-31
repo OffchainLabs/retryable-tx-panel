@@ -1,4 +1,7 @@
-import { supportedL1Networks } from '@/constants';
+import {
+  safeAddDefaultLocalNetwork,
+  supportedL1Networks,
+} from '@/utils/network';
 import { ReceiptRes } from '@/types';
 import { getL1Network, L1TransactionReceipt } from '@arbitrum/sdk';
 import { StaticJsonRpcProvider } from '@ethersproject/providers';
@@ -6,6 +9,7 @@ import { StaticJsonRpcProvider } from '@ethersproject/providers';
 export const getL1TxnReceipt = async (
   txnHash: string,
 ): Promise<ReceiptRes | undefined> => {
+  safeAddDefaultLocalNetwork();
   const promises = Object.entries(supportedL1Networks).map(
     async ([chainID, rpcURL]) => {
       const l1Network = await getL1Network(+chainID);
