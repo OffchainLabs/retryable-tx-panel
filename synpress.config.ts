@@ -1,31 +1,8 @@
-import { Wallet, utils } from 'ethers';
 import { defineConfig } from 'cypress';
-import { StaticJsonRpcProvider } from '@ethersproject/providers';
 import synpressPlugins from '@synthetixio/synpress/plugins';
 
 const ethRpcUrl = process.env.NEXT_PUBLIC_LOCAL_ETHEREUM_RPC_URL;
 const arbRpcUrl = process.env.NEXT_PUBLIC_LOCAL_ARBITRUM_RPC_URL;
-
-const ethProvider = new StaticJsonRpcProvider(ethRpcUrl);
-const arbProvider = new StaticJsonRpcProvider(arbRpcUrl);
-
-const localWallet = new Wallet(process.env.PRIVATE_KEY_CUSTOM!);
-const userWallet = new Wallet(process.env.PRIVATE_KEY_USER!);
-
-async function fundUserWallet(networkType: 'L1' | 'L2') {
-  console.log(`Funding user wallet: ${networkType}...`);
-  const address = await userWallet.getAddress();
-  const provider = networkType === 'L1' ? ethProvider : arbProvider;
-  const balance = await provider.getBalance(address);
-  // Fund only if the balance is less than 2 eth
-  if (balance.lt(utils.parseEther('2'))) {
-    const tx = await localWallet.connect(provider).sendTransaction({
-      to: address,
-      value: utils.parseEther('2'),
-    });
-    await tx.wait();
-  }
-}
 
 export default defineConfig({
   userAgent: 'synpress',
@@ -47,16 +24,9 @@ export default defineConfig({
   requestTimeout: 30000,
   e2e: {
     async setupNodeEvents(on, config) {
-      const userWalletAddress = await userWallet.getAddress();
-
-      fundUserWallet('L1');
-      fundUserWallet('L2');
-
       // Set Cypress variables
       config.env.ETH_RPC_URL = ethRpcUrl;
       config.env.ARB_RPC_URL = arbRpcUrl;
-      config.env.ADDRESS = userWalletAddress;
-      config.env.PRIVATE_KEY = userWallet.privateKey;
       config.env.INFURA_KEY = process.env.NEXT_PUBLIC_INFURA_KEY;
 
       synpressPlugins(on, config);
