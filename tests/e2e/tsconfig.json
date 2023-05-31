@@ -1,14 +1,15 @@
 {
   "compilerOptions": {
     "allowJs": true,
-    "baseUrl": "../../node_modules",
+    "baseUrl": "../../../",
     "types": [
-      "cypress",
+      "cypress.d.ts",
       "@synthetixio/synpress/support",
       "cypress-wait-until",
       "@testing-library/cypress"
     ],
     "outDir": "./output"
   },
-  "include": ["**/*.*"]
+  "include": ["**/*.*"],
+  "exclude": ["node_modules"]
 }

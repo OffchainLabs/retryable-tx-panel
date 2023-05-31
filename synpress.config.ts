@@ -49,8 +49,8 @@ export default defineConfig({
     async setupNodeEvents(on, config) {
       const userWalletAddress = await userWallet.getAddress();
 
-      fundUserWallet('L1');
-      fundUserWallet('L2');
+      await fundUserWallet('L1');
+      await fundUserWallet('L2');
 
       // Set Cypress variables
       config.env.ETH_RPC_URL = ethRpcUrl;
