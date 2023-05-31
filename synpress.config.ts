@@ -4,6 +4,14 @@ import synpressPlugins from '@synthetixio/synpress/plugins';
 const ethRpcUrl = process.env.NEXT_PUBLIC_LOCAL_ETHEREUM_RPC_URL;
 const arbRpcUrl = process.env.NEXT_PUBLIC_LOCAL_ARBITRUM_RPC_URL;
 
+if (!ethRpcUrl) {
+  throw new Error('process.env.NEXT_PUBLIC_LOCAL_ETHEREUM_RPC_URL is not set');
+}
+
+if (!arbRpcUrl) {
+  throw new Error('process.env.NEXT_PUBLIC_LOCAL_ARBITRUM_RPC_URL is not set');
+}
+
 export default defineConfig({
   userAgent: 'synpress',
   retries: 2,

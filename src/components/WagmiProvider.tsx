@@ -18,7 +18,7 @@ import { ChainId, rpcURLs } from '@/utils/network';
 export const localL1Network: Chain = {
   id: ChainId.Local,
   name: 'EthLocal',
-  network: 'local',
+  network: 'localhost',
   nativeCurrency: { name: 'Ether', symbol: 'ETH', decimals: 18 },
   rpcUrls: {
     default: rpcURLs[ChainId.Local],
