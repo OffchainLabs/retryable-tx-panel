@@ -1,7 +1,8 @@
 import { addDefaultLocalNetwork } from '@arbitrum/sdk';
 import { loadEnvironmentVariableWithFallback } from './loadEnvironmentVariableWithFallback';
 
-export const INFURA_KEY = process.env.NEXT_PUBLIC_INFURA_KEY;
+const INFURA_KEY = process.env.NEXT_PUBLIC_INFURA_KEY;
+
 if (typeof INFURA_KEY === 'undefined') {
   throw new Error('process.env.NEXT_PUBLIC_INFURA_KEY not provided');
 }

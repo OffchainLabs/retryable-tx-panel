@@ -4,6 +4,7 @@ import { safeAddDefaultLocalNetwork } from './src/utils/network';
 
 const ethRpcUrl = process.env.NEXT_PUBLIC_LOCAL_ETHEREUM_RPC_URL;
 const arbRpcUrl = process.env.NEXT_PUBLIC_LOCAL_ARBITRUM_RPC_URL;
+const privateKey = process.env.PRIVATE_KEY;
 
 if (!ethRpcUrl) {
   throw new Error('process.env.NEXT_PUBLIC_LOCAL_ETHEREUM_RPC_URL is not set');
@@ -11,6 +12,10 @@ if (!ethRpcUrl) {
 
 if (!arbRpcUrl) {
   throw new Error('process.env.NEXT_PUBLIC_LOCAL_ARBITRUM_RPC_URL is not set');
+}
+
+if (!privateKey) {
+  throw new Error('process.env.PRIVATE_KEY is not set');
 }
 
 export default defineConfig({
@@ -36,9 +41,11 @@ export default defineConfig({
       safeAddDefaultLocalNetwork();
 
       // Set Cypress variables
+      config.env = { ...process.env };
       config.env.ETH_RPC_URL = ethRpcUrl;
       config.env.ARB_RPC_URL = arbRpcUrl;
       config.env.INFURA_KEY = process.env.NEXT_PUBLIC_INFURA_KEY;
+      config.env.PRIVATE_KEY = privateKey;
 
       synpressPlugins(on, config);
       return config;
