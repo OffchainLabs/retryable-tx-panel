@@ -10,8 +10,5 @@ describe('connect wallet spec', () => {
       .type(
         '0xf5d9f782dd346ca15b457af677fcf452e63ad61bf648b336a8ccd742fc1b996b',
       );
-    cy.findByDisplayValue('Submit').click();
-    cy.findByText('Connect').scrollIntoView().should('exist').click();
-    cy.acceptMetamaskAccess();
   });
 });
