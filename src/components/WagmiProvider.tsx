@@ -48,7 +48,7 @@ const { provider, webSocketProvider } = configureChains(
   [
     publicProvider(),
     jsonRpcProvider({
-      rpc: (chain) => ({ http: rpcURLs[chain.id] }),
+      rpc: (chain) => ({ http: rpcURLs[chain.id as ChainId] }),
     }),
   ],
 );
