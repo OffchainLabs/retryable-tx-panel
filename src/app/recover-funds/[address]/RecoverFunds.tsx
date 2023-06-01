@@ -55,24 +55,20 @@ const RecoverFunds = ({ operationInfo, address }: Props) => {
   if (!hasBalanceOverThreshold(operationInfo.balanceToRecover)) {
     return (
       <div className="funds-message">
-        There are no funds stuck on {operationInfo.aliasedAddress} (Alias of{' '}
-        {address}) on this network{targetChainID ? ` (${targetChainID})` : ''}.
+        There are no funds stuck on {operationInfo.aliasedAddress}
+        <br />
+        (Alias of {address}) on this network
+        {targetChainID ? ` (${targetChainID})` : ''}.
       </div>
     );
   }
 
-  // Funds found on aliased address
-  if (hasBalanceOverThreshold(operationInfo.balanceToRecover)) {
-    return (
-      <div className="funds-message">
-        There are {utils.formatEther(operationInfo.balanceToRecover)} ETH on{' '}
-        {operationInfo.aliasedAddress} (Alias of {address}).
-      </div>
-    );
-  }
-
-  // Should never happen
-  return null;
+  return (
+    <div className="funds-message">
+      There are {utils.formatEther(operationInfo.balanceToRecover)} ETH on{' '}
+      {operationInfo.aliasedAddress} (Alias of {address}).
+    </div>
+  );
 };
 
 export default RecoverFunds;
