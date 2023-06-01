@@ -2,6 +2,7 @@ import {
   EthDepositMessageWithNetwork,
   L1ToL2MessagesAndDepositMessages,
 } from '@/types';
+import { ChainId, rpcURLs } from '@/utils/network';
 import { getL2Network, L1Network, L1TransactionReceipt } from '@arbitrum/sdk';
 import { StaticJsonRpcProvider } from '@ethersproject/providers';
 
@@ -24,22 +25,7 @@ export const getL1ToL2MessagesAndDepositMessages = async (
         return;
       }
 
-      let l2RpcURL;
-      switch (l2ChainID) {
-        case 42161:
-          l2RpcURL = 'https://arb1.arbitrum.io/rpc';
-          break;
-        case 42170:
-          l2RpcURL = 'https://nova.arbitrum.io/rpc';
-          break;
-        case 421613:
-          l2RpcURL = 'https://goerli-rollup.arbitrum.io/rpc';
-          break;
-        default:
-          throw new Error(
-            'Unknown L2 chain id. This chain is not supported by dashboard',
-          );
-      }
+      const l2RpcURL = rpcURLs[l2ChainID as ChainId];
       const l2Provider = new StaticJsonRpcProvider(l2RpcURL);
       const isClassic = await l1TxnReceipt.isClassic(l2Provider);
 
