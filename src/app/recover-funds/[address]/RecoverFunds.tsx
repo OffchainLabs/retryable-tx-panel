@@ -66,7 +66,9 @@ const RecoverFunds = ({ operationInfo, address }: Props) => {
   return (
     <div className="funds-message">
       There are {utils.formatEther(operationInfo.balanceToRecover)} ETH on{' '}
-      {operationInfo.aliasedAddress} (Alias of {address}).
+      {operationInfo.aliasedAddress}
+      <br />
+      (Alias of {address}).
     </div>
   );
 };
