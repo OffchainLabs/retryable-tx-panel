@@ -1,6 +1,7 @@
 import { NextPage } from 'next';
-import { Logo } from '../components/Logo';
-import Link from 'next/link';
+import { WagmiProvider } from '@/components/WagmiProvider';
+import { Logo } from '@/components/Logo';
+import { Form } from '@/components/Form';
 
 const PageIndex: NextPage = () => {
   return (
@@ -11,12 +12,9 @@ const PageIndex: NextPage = () => {
       </header>
 
       <main>
-        <Link href="/tx" className="link">
-          Arbitrum Cross-chain Message Dashboard
-        </Link>
-        <Link href="/recover-funds" className="link">
-          Funds recovery tool
-        </Link>
+        <WagmiProvider>
+          <Form />
+        </WagmiProvider>
       </main>
     </>
   );
