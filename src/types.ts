@@ -64,10 +64,12 @@ interface MessageStatusDisplayBase {
 interface MessageStatusDisplayRetryable extends MessageStatusDisplayBase {
   l1ToL2Message: L1ToL2MessageReader | L1ToL2MessageReaderClassic;
   ethDepositMessage: undefined;
+  autoRedeemHash: string | undefined;
 }
 interface MessageStatusDisplayDeposit extends MessageStatusDisplayBase {
   l1ToL2Message: undefined;
   ethDepositMessage: EthDepositMessage;
+  autoRedeemHash: string | undefined;
 }
 export type MessageStatusDisplay =
   | MessageStatusDisplayRetryable

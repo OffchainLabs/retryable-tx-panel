@@ -19,6 +19,7 @@ export const depositMessageStatusDisplay = async (
     l2Network,
     ethDepositMessage,
     l2TxHash,
+    autoRedeemHash: undefined,
   };
   if (depositTxReceipt?.status === 1) {
     return {

@@ -50,40 +50,25 @@ const getDataFromL1ToL2Message = (
   };
 };
 
-type MessageStatusDisplayWithAutoRedeem = MessageStatusDisplay & {
-  autoRedeemHash: string | undefined;
-};
 async function getData({
   retryables: l1ToL2Messages,
   retryablesClassic: l1ToL2MessagesClassic,
   deposits,
 }: L1ToL2MessagesAndDepositMessages): Promise<{
-  messagesDisplays: MessageStatusDisplayWithAutoRedeem[];
+  messagesDisplays: MessageStatusDisplay[];
 }> {
-  const l1ToL2MessagesPromises = l1ToL2Messages.map(async (l1ToL2Message) => {
-    return {
-      ...(await l1ToL2MessageToStatusDisplay(l1ToL2Message, false)),
-      autoRedeemHash: (await l1ToL2Message.getAutoRedeemAttempt())
-        ?.transactionHash,
-    };
-  });
-  const l1ToL2MessagesClassicPromises = l1ToL2MessagesClassic.map(
-    async (l1ToL2Message) => ({
-      ...(await l1ToL2MessageToStatusDisplay(l1ToL2Message, true)),
-      autoRedeemHash: l1ToL2Message.autoRedeemId,
-    }),
+  const l1ToL2MessagesPromises = [
+    ...l1ToL2Messages,
+    ...l1ToL2MessagesClassic,
+  ].map((l1ToL2Message) => l1ToL2MessageToStatusDisplay(l1ToL2Message));
+  const depositsPromises = deposits.map((deposit) =>
+    depositMessageStatusDisplay(deposit),
   );
-  const depositsPromises = deposits.map(async (deposit) => ({
-    ...(await depositMessageStatusDisplay(deposit)),
-    autoRedeemHash: undefined,
-  }));
 
-  const messagesDisplays: MessageStatusDisplayWithAutoRedeem[] =
-    await Promise.all([
-      ...l1ToL2MessagesPromises,
-      ...l1ToL2MessagesClassicPromises,
-      ...depositsPromises,
-    ]);
+  const messagesDisplays: MessageStatusDisplay[] = await Promise.all([
+    ...l1ToL2MessagesPromises,
+    ...depositsPromises,
+  ]);
 
   return { messagesDisplays };
 }
