@@ -1,8 +1,8 @@
 import React from 'react';
 import { Info } from 'react-feather';
-import { ExternalLink } from '../../components/ExternalLink';
-import { Form } from './Form';
-import { Logo } from '../../components/Logo';
+import { ExternalLink } from '@/components/ExternalLink';
+import { Form } from '@/components/Form';
+import { Logo } from '@/components/Logo';
 
 export const metadata = {
   title: 'Arbitrum Crosschain Message Dashboard',
@@ -33,10 +33,8 @@ export default function Layout({ children }: LayoutProps) {
         <h2>Find out what&apos;s up with your cross-chain message</h2>
       </header>
 
-      <main>
-        <Form />
-        {children}
-      </main>
+      <Form />
+      {children}
     </>
   );
 }

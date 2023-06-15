@@ -1,11 +1,11 @@
-import { Logo } from '../../components/Logo';
-import { WagmiProvider } from '../../components/WagmiProvider';
-import { Form } from './Form';
 import dynamic from 'next/dynamic';
-import './style.css';
 import { Suspense } from 'react';
+import { Logo } from '@/components/Logo';
+import { WagmiProvider } from '@/components/WagmiProvider';
+import { Form } from '@/components/Form';
+import './style.css';
 
-const ConnectButton = dynamic(() => import('../../components/ConnectButton'), {
+const ConnectButton = dynamic(() => import('@/components/ConnectButton'), {
   ssr: false,
 });
 

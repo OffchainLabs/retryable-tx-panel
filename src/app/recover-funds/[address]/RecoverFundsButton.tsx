@@ -133,7 +133,13 @@ function RecoverFundsButton({
     } finally {
       setLoading(false);
     }
-  }, [balanceToRecover, chainID, destinationAddress, signer]);
+  }, [
+    addressToRecoverFrom,
+    balanceToRecover,
+    chainID,
+    destinationAddress,
+    signer,
+  ]);
 
   if (!signer) return null;
 
