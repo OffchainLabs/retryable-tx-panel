@@ -3,7 +3,7 @@ import { Retryable, Deposit, BridgeRetryable } from './types';
 import { querySubgraph, subgraphUrl } from './querySubgraph';
 
 async function fetchPendingRetryables(
-  address: string,
+  address?: string,
 ): Promise<`0x${string}`[]> {
   const timestamp = Math.floor(new Date().getTime() / 1000);
   const query = `
@@ -74,20 +74,20 @@ async function fetchPendingRetryables(
     return acc;
   }, {} as { [txHash: string]: Deposit });
 
-  const retryablesWithDeposit = retryables.map((retryable) => {
+  let retryablesWithDeposit = retryables.map((retryable) => {
     const deposit = depositsMap[retryable.transactionHash];
     return deposit ? deposit : retryable;
   });
-
-  return retryablesWithDeposit
-    .filter(
-      (retryable) => retryable.sender.toLowerCase() === address.toLowerCase(),
-    )
-    .map((retryable) => retryable.transactionHash);
+  if (address) {
+    retryablesWithDeposit = retryablesWithDeposit.filter((retryable) => {
+      return retryable.sender.toLowerCase() === address.toLowerCase();
+    });
+  }
+  return retryablesWithDeposit.map((retryable) => retryable.transactionHash);
 }
 
 type Props = {
-  address: string;
+  address?: string;
   limit?: number;
 };
 async function PendingRetryables({ address, limit }: Props) {
