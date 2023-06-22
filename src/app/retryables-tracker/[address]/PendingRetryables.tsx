@@ -1,4 +1,3 @@
-'use client';
 import Link from 'next/link';
 import { Retryable, Deposit, BridgeRetryable } from './types';
 import { querySubgraph, subgraphUrl } from './querySubgraph';
