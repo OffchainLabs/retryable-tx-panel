@@ -10,6 +10,7 @@ export async function querySubgraph(query: string, url: subgraphUrl) {
       'Content-Type': 'application/json',
     },
     body: JSON.stringify({ query }),
+    cache: 'no-cache',
   });
 
   const { data } = await response.json();
