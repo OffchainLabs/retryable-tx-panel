@@ -26,7 +26,9 @@
     "build": "next build",
     "start": "rm -r .next && next build && next start",
     "lint": "eslint 'src/**/*.{js,ts,tsx}'",
-    "prettier:format": "yarn prettier './**/*.{js,json,md,ts,tsx,yml}' --write && yarn run lint --fix"
+    "prettier:format": "yarn prettier './**/*.{js,json,md,ts,tsx,yml}' --write && yarn run lint --fix",
+    "e2e:open": "env-cmd -f .e2e.env yarn synpress open --configFile synpress.config.ts",
+    "e2e:run": "env-cmd -f .e2e.env yarn synpress run --configFile synpress.config.ts --browser chrome"
   },
   "browserslist": [
     ">0.2%",
@@ -38,8 +40,13 @@
   "devDependencies": {
     "@offchainlabs/eslint-config-typescript": "0.2.2",
     "@offchainlabs/prettier-config": "0.2.0",
+    "@synthetixio/synpress": "^3.7.0",
+    "@testing-library/react": "^14.0.0",
     "@typescript-eslint/eslint-plugin": "^5.48.2",
     "@typescript-eslint/parser": "^5.48.2",
+    "cypress-recurse": "^1.35.2",
+    "cypress-wait-until": "^1.7.2",
+    "env-cmd": "^10.1.0",
     "eslint": "^8.32.0",
     "eslint-config-next": "^13.2.4",
     "eslint-config-prettier": "^8.6.0",

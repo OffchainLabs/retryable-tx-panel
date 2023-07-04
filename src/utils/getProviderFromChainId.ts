@@ -1,9 +1,10 @@
+import { ChainId, rpcURLs } from './network';
 import { StaticJsonRpcProvider } from '@ethersproject/providers';
 
 export const getProviderFromChainId = (chainID: number) => {
   const l2RpcURL = {
-    42161: 'https://arb1.arbitrum.io/rpc',
-    421613: 'https://goerli-rollup.arbitrum.io/rpc',
+    [ChainId.ArbitrumOne]: rpcURLs[ChainId.ArbitrumOne],
+    [ChainId.ArbitrumGoerli]: rpcURLs[ChainId.ArbitrumGoerli],
   }[chainID];
 
   if (!l2RpcURL) {
