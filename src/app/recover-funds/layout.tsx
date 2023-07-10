@@ -1,8 +1,9 @@
-'use client';
+import dynamic from 'next/dynamic';
+import { Suspense } from 'react';
 import { Logo } from '@/components/Logo';
 import { WagmiProvider } from '@/components/WagmiProvider';
 import { Form } from '@/components/Form';
-import dynamic from 'next/dynamic';
+import './style.css';
 
 const ConnectButton = dynamic(() => import('@/components/ConnectButton'), {
   ssr: false,
@@ -29,10 +30,12 @@ export default function Layout({ children }: LayoutProps) {
       </header>
 
       <main>
+        <Form />
         <WagmiProvider>
-          <Form />
           {children}
-          <ConnectButton text="Connect" />
+          <Suspense>
+            <ConnectButton />
+          </Suspense>
         </WagmiProvider>
       </main>
     </>

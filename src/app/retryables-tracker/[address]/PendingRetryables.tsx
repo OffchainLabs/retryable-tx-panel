@@ -17,7 +17,7 @@ async function fetchPendingRetryables(
         createdAtTxHash
       }
     }
-`;
+  `;
 
   const result: { retryables: Retryable[] } = await querySubgraph(
     query,

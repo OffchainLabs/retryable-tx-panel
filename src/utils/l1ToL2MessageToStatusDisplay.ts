@@ -5,33 +5,40 @@ import {
   MessageStatusDisplay,
 } from '@/types';
 import {
-  L1ToL2MessageReader,
   L1ToL2MessageStatus,
   L1ToL2MessageWaitResult,
 } from '@arbitrum/sdk/dist/lib/message/L1ToL2Message';
 import { looksLikeCallToInboxethDeposit } from './looksLikeCallToInboxethDeposit';
 
+async function getAutoRedeemAttempt(
+  l1ToL2Message:
+    | L1ToL2MessageReaderWithNetwork
+    | L1ToL2MessageReaderClassicWithNetwork,
+): Promise<string | undefined> {
+  if ('getAutoRedeemAttempt' in l1ToL2Message) {
+    return (await l1ToL2Message.getAutoRedeemAttempt())?.transactionHash;
+  }
+
+  return l1ToL2Message.autoRedeemId;
+}
+
 export const l1ToL2MessageToStatusDisplay = async (
   l1ToL2Message:
     | L1ToL2MessageReaderWithNetwork
     | L1ToL2MessageReaderClassicWithNetwork,
-  isClassic: boolean,
 ): Promise<MessageStatusDisplay> => {
   const { l2Network } = l1ToL2Message;
   const { explorerUrl } = l2Network;
 
   let messageStatus: L1ToL2MessageWaitResult | { status: L1ToL2MessageStatus };
+
   try {
-    if (isClassic) {
-      messageStatus = {
-        status: await (
-          l1ToL2Message as L1ToL2MessageReaderWithNetwork
-        ).status(),
-      };
+    if ('waitForStatus' in l1ToL2Message) {
+      messageStatus = await l1ToL2Message.waitForStatus(undefined, 1);
     } else {
-      messageStatus = await (
-        l1ToL2Message as L1ToL2MessageReader
-      ).waitForStatus(undefined, 1);
+      messageStatus = {
+        status: await l1ToL2Message.status(),
+      };
     }
   } catch (e) {
     // catch timeout if not immediately found
@@ -53,6 +60,7 @@ export const l1ToL2MessageToStatusDisplay = async (
     l2Network,
     l1ToL2Message,
     l2TxHash,
+    autoRedeemHash: await getAutoRedeemAttempt(l1ToL2Message),
   };
   switch (messageStatus.status) {
     case L1ToL2MessageStatus.CREATION_FAILED:

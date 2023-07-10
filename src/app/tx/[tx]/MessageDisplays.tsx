@@ -54,20 +54,19 @@ async function getData({
   retryables: l1ToL2Messages,
   retryablesClassic: l1ToL2MessagesClassic,
   deposits,
-}: L1ToL2MessagesAndDepositMessages) {
-  const l1ToL2MessagesPromises = l1ToL2Messages.map((l1ToL2Message) =>
-    l1ToL2MessageToStatusDisplay(l1ToL2Message, false),
-  );
-  const l1ToL2MessagesClassicPromises = l1ToL2MessagesClassic.map(
-    (l1ToL2Message) => l1ToL2MessageToStatusDisplay(l1ToL2Message, true),
-  );
+}: L1ToL2MessagesAndDepositMessages): Promise<{
+  messagesDisplays: MessageStatusDisplay[];
+}> {
+  const l1ToL2MessagesPromises = [
+    ...l1ToL2Messages,
+    ...l1ToL2MessagesClassic,
+  ].map((l1ToL2Message) => l1ToL2MessageToStatusDisplay(l1ToL2Message));
   const depositsPromises = deposits.map((deposit) =>
     depositMessageStatusDisplay(deposit),
   );
 
-  const messagesDisplays = await Promise.all([
+  const messagesDisplays: MessageStatusDisplay[] = await Promise.all([
     ...l1ToL2MessagesPromises,
-    ...l1ToL2MessagesClassicPromises,
     ...depositsPromises,
   ]);
 
@@ -121,6 +120,7 @@ const MessageDisplays = async ({
                   )}{' '}
                   status on {messageDisplay.l2Network.name}
                 </h3>
+
                 {messageDisplay.l1ToL2Message !== undefined && (
                   <ExternalLink
                     href={`${
@@ -132,6 +132,19 @@ const MessageDisplays = async ({
                     {messageDisplay.l2Network.name}
                   </ExternalLink>
                 )}
+
+                {messageDisplay.autoRedeemHash !== undefined && (
+                  <p>
+                    <ExternalLink
+                      href={`${messageDisplay.l2Network.explorerUrl}/tx/${messageDisplay.autoRedeemHash}`}
+                      showIcon
+                    >
+                      Check Your AutoRedeem transaction on{' '}
+                      {messageDisplay.l2Network.name}
+                    </ExternalLink>
+                  </p>
+                )}
+
                 <p>{messageDisplay.text}</p>
                 {messageDisplay.showRedeemButton && (
                   <Redeem
@@ -149,7 +162,7 @@ const MessageDisplays = async ({
           </div>
         );
       })}
-      {showConnectButton && <ConnectButton text="Connect" />}
+      {showConnectButton && <ConnectButton />}
     </>
   );
 };
