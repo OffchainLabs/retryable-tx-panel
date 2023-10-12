@@ -39,10 +39,6 @@ export const rpcURLs: Partial<RpcMap> = {
     env: process.env.NEXT_PUBLIC_GOERLI_RPC_URL,
     fallback: GOERLI_INFURA_RPC_URL,
   }),
-  [ChainId.Local]: loadEnvironmentVariableWithFallback({
-    env: process.env.NEXT_PUBLIC_LOCAL_ETHEREUM_RPC_URL,
-    fallback: MAINNET_INFURA_RPC_URL,
-  }),
   // L2
   [ChainId.ArbitrumOne]: loadEnvironmentVariableWithFallback({
     env: process.env.NEXT_PUBLIC_ARBITRUM_RPC_URL,
@@ -53,15 +49,20 @@ export const rpcURLs: Partial<RpcMap> = {
     env: process.env.NEXT_PUBLIC_ARBITRUM_GOERLI_RPC_URL,
     fallback: ARBITRUM_GOERLI_INFURA_RPC_URL,
   }),
+  [ChainId.ArbitrumNova]: loadEnvironmentVariableWithFallback({
+    env: process.env.NEXT_PUBLIC_ARBITRUM_NOVA_RPC_URL,
+    fallback: 'https://nova.arbitrum.io/rpc',
+  }),
+  // E2E RPCs
   ...(isE2e
     ? {
+        [ChainId.Local]: loadEnvironmentVariableWithFallback({
+          env: process.env.NEXT_PUBLIC_LOCAL_ETHEREUM_RPC_URL,
+          fallback: MAINNET_INFURA_RPC_URL,
+        }),
         [ChainId.ArbitrumLocal]: loadEnvironmentVariableWithFallback({
           env: process.env.NEXT_PUBLIC_LOCAL_ARBITRUM_RPC_URL,
           fallback: ARBITRUM_INFURA_RPC_URL,
-        }),
-        [ChainId.ArbitrumNova]: loadEnvironmentVariableWithFallback({
-          env: process.env.NEXT_PUBLIC_ARBITRUM_NOVA_RPC_URL,
-          fallback: 'https://nova.arbitrum.io/rpc',
         }),
       }
     : {}),
