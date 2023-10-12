@@ -28,7 +28,7 @@ export enum ChainId {
 const isE2e = process.env.NODE_ENV === 'test';
 
 type RpcMap = Record<ChainId, string>;
-export const rpcURLs: Partial<RpcMap> = {
+export const rpcURLs: RpcMap = {
   // L1
   [ChainId.Mainnet]: loadEnvironmentVariableWithFallback({
     env: process.env.NEXT_PUBLIC_ETHEREUM_RPC_URL,
@@ -54,18 +54,14 @@ export const rpcURLs: Partial<RpcMap> = {
     fallback: 'https://nova.arbitrum.io/rpc',
   }),
   // E2E RPCs
-  ...(isE2e
-    ? {
-        [ChainId.Local]: loadEnvironmentVariableWithFallback({
-          env: process.env.NEXT_PUBLIC_LOCAL_ETHEREUM_RPC_URL,
-          fallback: MAINNET_INFURA_RPC_URL,
-        }),
-        [ChainId.ArbitrumLocal]: loadEnvironmentVariableWithFallback({
-          env: process.env.NEXT_PUBLIC_LOCAL_ARBITRUM_RPC_URL,
-          fallback: ARBITRUM_INFURA_RPC_URL,
-        }),
-      }
-    : {}),
+  [ChainId.Local]: loadEnvironmentVariableWithFallback({
+    env: process.env.NEXT_PUBLIC_LOCAL_ETHEREUM_RPC_URL,
+    fallback: MAINNET_INFURA_RPC_URL,
+  }),
+  [ChainId.ArbitrumLocal]: loadEnvironmentVariableWithFallback({
+    env: process.env.NEXT_PUBLIC_LOCAL_ARBITRUM_RPC_URL,
+    fallback: ARBITRUM_INFURA_RPC_URL,
+  }),
 };
 
 export const supportedL1Networks: Partial<RpcMap> = {
