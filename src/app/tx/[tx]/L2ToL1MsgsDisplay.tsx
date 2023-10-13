@@ -1,4 +1,5 @@
 'use client';
+import { useState } from 'react';
 import { ChainId, supportedL2Networks } from '@/utils/network';
 import { L2ToL1MessageData } from '@/types';
 import {
@@ -47,6 +48,7 @@ type Props = {
 function L2ToL1MsgsDisplay({ l2ToL1Messages }: Props) {
   const { chain } = useNetwork();
   const { data: signer = null } = useSigner({ chainId: chain?.id });
+  const [redeeming, setIsRedeeming] = useState(false);
 
   const renderMessage = (l2ToL1Message: L2ToL1MessageDataLike) => {
     switch (l2ToL1Message.status) {
@@ -78,31 +80,40 @@ function L2ToL1MsgsDisplay({ l2ToL1Messages }: Props) {
                 {`To redeem, connect to chain ${l2ToL1Message.l1Network.chainID} (${l2ToL1Message.l1Network.name})`}
               </div>
             ) : (
-              <div>
+              <div className="redeem-button-container">
                 <button
+                  disabled={redeeming}
                   onClick={async () => {
                     if (!signer) return;
-                    // This would create a lot of duplicated getLogs call, would be nicer if we can pass the event in but it's not serializable
-                    // This also assume the order returned by getL2ToL1Events is always in order
-                    const l2ToL1TxEvents = await L2ToL1Message.getL2ToL1Events(
-                      l2Provider,
-                      {
-                        fromBlock: l2ToL1Message.createdAtL2BlockNumber,
-                        toBlock: l2ToL1Message.createdAtL2BlockNumber + 1,
-                      },
-                    );
-                    const l2ToL1MessageWriter = new L2ToL1MessageWriter(
-                      signer,
-                      l2ToL1TxEvents[l2ToL1Message.l2ToL1EventIndex],
-                    );
-                    const res = await l2ToL1MessageWriter.execute(l2Provider);
-                    const rec = await res.wait();
-                    if (rec.status === 1) {
-                      alert(
-                        `L2toL1 message successfully redeemed! ${rec.transactionHash}`,
+                    try {
+                      setIsRedeeming(true);
+                      // This would create a lot of duplicated getLogs call, would be nicer if we can pass the event in but it's not serializable
+                      // This also assume the order returned by getL2ToL1Events is always in order
+                      const l2ToL1TxEvents =
+                        await L2ToL1Message.getL2ToL1Events(l2Provider, {
+                          fromBlock: l2ToL1Message.createdAtL2BlockNumber,
+                          toBlock: l2ToL1Message.createdAtL2BlockNumber + 1,
+                        });
+                      const l2ToL1MessageWriter = new L2ToL1MessageWriter(
+                        signer,
+                        l2ToL1TxEvents[l2ToL1Message.l2ToL1EventIndex],
                       );
-                    } else {
-                      throw new Error('Failed to redeem');
+                      const res = await l2ToL1MessageWriter.execute(l2Provider);
+                      const rec = await res.wait();
+                      if (rec.status === 1) {
+                        alert(
+                          `L2toL1 message successfully redeemed! ${rec.transactionHash}`,
+                        );
+                      } else {
+                        throw new Error('Failed to redeem');
+                      }
+                    } catch (e: any) {
+                      // Ignore user rejected action
+                      if (e?.code !== 4001 && e?.code !== 'ACTION_REJECTED') {
+                        throw e;
+                      }
+                    } finally {
+                      setIsRedeeming(false);
                     }
                   }}
                 >

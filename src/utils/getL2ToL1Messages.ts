@@ -51,7 +51,7 @@ export const getL2ToL1Messages = async (
         }
 
         const l2Receipt = new L2TransactionReceipt(receipt);
-        const l2ToL1Events = await l2Receipt.getL2ToL1Events();
+        const l2ToL1Events = l2Receipt.getL2ToL1Events();
         const l2MessagesData: Promise<L2ToL1MessageData>[] = l2ToL1Events.map(
           async (l2ToL1Event, l2ToL1EventIndex) => {
             const l2ToL1Message = new L2ToL1MessageReader(
