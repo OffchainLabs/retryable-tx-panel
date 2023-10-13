@@ -134,7 +134,7 @@ const Transaction = async ({ params }: Props) => {
         l1Network,
         l2Network,
         createdAtL2BlockNumber,
-        l2ToL1EventIndex
+        l2ToL1EventIndex,
       }) => ({
         status,
         confirmationInfo: confirmationInfo
@@ -152,7 +152,7 @@ const Transaction = async ({ params }: Props) => {
           name: l2Network.name,
         },
         createdAtL2BlockNumber,
-        l2ToL1EventIndex
+        l2ToL1EventIndex,
       }),
     );
 

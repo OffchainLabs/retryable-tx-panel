@@ -15,7 +15,7 @@ export const getL1TxnReceipt = async (
       try {
         const l1Network = await getL1Network(+chainID);
         const l1Provider = new StaticJsonRpcProvider(rpcURL);
-  
+
         const rec = await l1Provider.getTransactionReceipt(txnHash);
         if (rec) {
           return {
@@ -25,7 +25,7 @@ export const getL1TxnReceipt = async (
           };
         }
       } catch (e) {
-        console.warn(rpcURL, "not working")
+        console.warn(rpcURL, 'not working');
       }
     },
   );

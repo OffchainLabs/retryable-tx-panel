@@ -29,8 +29,8 @@ export const getL2ToL1Messages = async (
         try {
           await l1Provider.getBlockNumber();
         } catch (e) {
-          console.warn(supportedL1Networks[l1ChainID], "not working")
-          return null
+          console.warn(supportedL1Networks[l1ChainID], 'not working');
+          return null;
         }
         const [l1Network, l1BlogNumber, receipt] = await Promise.all([
           getL1Network(l1ChainID),
@@ -57,7 +57,7 @@ export const getL2ToL1Messages = async (
             const l2ToL1Message = new L2ToL1MessageReader(
               l1Provider,
               l2ToL1Event,
-            )
+            );
             try {
               const status = await l2ToL1Message.status(l2Provider);
               const deadlineBlock =
