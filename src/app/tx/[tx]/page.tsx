@@ -134,6 +134,7 @@ const Transaction = async ({ params }: Props) => {
         l1Network,
         l2Network,
         createdAtL2BlockNumber,
+        l2ToL1EventIndex
       }) => ({
         status,
         confirmationInfo: confirmationInfo
@@ -151,6 +152,7 @@ const Transaction = async ({ params }: Props) => {
           name: l2Network.name,
         },
         createdAtL2BlockNumber,
+        l2ToL1EventIndex
       }),
     );
 
@@ -181,7 +183,7 @@ const Transaction = async ({ params }: Props) => {
           <MessageDisplays
             messages={allMessages}
             hasL2ToL1MessagesConfirmed={l2ToL1MessagesToShow.some(
-              (msg) => msg.status === L2ToL1MessageStatus.CONFIRMED,
+              (msg) => msg.status !== L2ToL1MessageStatus.UNCONFIRMED, // Also show executed
             )}
           />
         </Suspense>

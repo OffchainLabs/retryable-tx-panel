@@ -7,6 +7,7 @@ import {
 import {
   getL1Network,
   getL2Network,
+  L2ToL1MessageReader,
   L2ToL1MessageStatus,
   L2TransactionReceipt,
 } from '@arbitrum/sdk';
@@ -50,9 +51,13 @@ export const getL2ToL1Messages = async (
         }
 
         const l2Receipt = new L2TransactionReceipt(receipt);
-        const l2ToL1Messages = await l2Receipt.getL2ToL1Messages(l1Provider);
-        const l2MessagesData: Promise<L2ToL1MessageData>[] = l2ToL1Messages.map(
-          async (l2ToL1Message) => {
+        const l2ToL1Events = await l2Receipt.getL2ToL1Events();
+        const l2MessagesData: Promise<L2ToL1MessageData>[] = l2ToL1Events.map(
+          async (l2ToL1Event, l2ToL1EventIndex) => {
+            const l2ToL1Message = new L2ToL1MessageReader(
+              l1Provider,
+              l2ToL1Event,
+            )
             try {
               const status = await l2ToL1Message.status(l2Provider);
               const deadlineBlock =
@@ -76,6 +81,7 @@ export const getL2ToL1Messages = async (
                 l2Network,
                 l2Provider,
                 createdAtL2BlockNumber: l2Receipt.blockNumber,
+                l2ToL1EventIndex,
               };
             } catch (e) {
               const expectedError = "batch doesn't exist";
@@ -93,6 +99,7 @@ export const getL2ToL1Messages = async (
                   l2Network,
                   l2Provider,
                   createdAtL2BlockNumber: l2Receipt.blockNumber,
+                  l2ToL1EventIndex,
                 };
               } else {
                 throw e;

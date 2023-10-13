@@ -38,6 +38,7 @@ export type L2ToL1MessageDataLike = Pick<
     deadlineBlock: string;
     etaSeconds: number;
   } | null;
+  l2ToL1EventIndex: number;
 };
 type Props = {
   l2ToL1Messages: L2ToL1MessageDataLike[];
@@ -81,7 +82,9 @@ function L2ToL1MsgsDisplay({ l2ToL1Messages }: Props) {
                 <button
                   onClick={async () => {
                     if (!signer) return;
-                    const [l2ToL1TxEvent] = await L2ToL1Message.getL2ToL1Events(
+                    // This would create a lot of duplicated getLogs call, would be nicer if we can pass the event in but it's not serializable
+                    // This also assume the order returned by getL2ToL1Events is always in order
+                    const l2ToL1TxEvents = await L2ToL1Message.getL2ToL1Events(
                       l2Provider,
                       {
                         fromBlock: l2ToL1Message.createdAtL2BlockNumber,
@@ -90,7 +93,7 @@ function L2ToL1MsgsDisplay({ l2ToL1Messages }: Props) {
                     );
                     const l2ToL1MessageWriter = new L2ToL1MessageWriter(
                       signer,
-                      l2ToL1TxEvent,
+                      l2ToL1TxEvents[l2ToL1Message.l2ToL1EventIndex],
                     );
                     const res = await l2ToL1MessageWriter.execute(l2Provider);
                     const rec = await res.wait();

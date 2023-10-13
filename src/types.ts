@@ -121,6 +121,7 @@ export interface L2ToL1MessageData {
   l2Network: L2Network;
   l2Provider: JsonRpcProvider;
   createdAtL2BlockNumber: number;
+  l2ToL1EventIndex: number;
 }
 
 export interface L2ToL1MessageSearchResult {
