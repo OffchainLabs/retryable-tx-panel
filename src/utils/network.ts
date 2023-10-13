@@ -10,6 +10,7 @@ const MAINNET_INFURA_RPC_URL = `https://mainnet.infura.io/v3/${INFURA_KEY}`;
 const GOERLI_INFURA_RPC_URL = `https://goerli.infura.io/v3/${INFURA_KEY}`;
 const ARBITRUM_INFURA_RPC_URL = `https://arbitrum-mainnet.infura.io/v3/${INFURA_KEY}`;
 const ARBITRUM_GOERLI_INFURA_RPC_URL = `https://arbitrum-goerli.infura.io/v3/${INFURA_KEY}`;
+const LOCAL_GETH_RPC_URL = `http://localhost:8545`;
 
 export enum ChainId {
   // L1
@@ -39,7 +40,7 @@ export const rpcURLs: RpcMap = {
   }),
   [ChainId.Local]: loadEnvironmentVariableWithFallback({
     env: process.env.NEXT_PUBLIC_LOCAL_ETHEREUM_RPC_URL,
-    fallback: MAINNET_INFURA_RPC_URL,
+    fallback: LOCAL_GETH_RPC_URL,
   }),
   // L2
   [ChainId.ArbitrumOne]: loadEnvironmentVariableWithFallback({

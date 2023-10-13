@@ -25,6 +25,12 @@ export const getL2ToL1Messages = async (
         // TODO
         const l1ChainID = l2Network.partnerChainID as 1 | 5;
         const l1Provider = new JsonRpcProvider(supportedL1Networks[l1ChainID]);
+        try {
+          await l1Provider.getBlockNumber();
+        } catch (e) {
+          console.warn(supportedL1Networks[l1ChainID], "not working")
+          return null
+        }
         const [l1Network, l1BlogNumber, receipt] = await Promise.all([
           getL1Network(l1ChainID),
           l1Provider.getBlockNumber(),
