@@ -10,6 +10,7 @@ const MAINNET_INFURA_RPC_URL = `https://mainnet.infura.io/v3/${INFURA_KEY}`;
 const GOERLI_INFURA_RPC_URL = `https://goerli.infura.io/v3/${INFURA_KEY}`;
 const ARBITRUM_INFURA_RPC_URL = `https://arbitrum-mainnet.infura.io/v3/${INFURA_KEY}`;
 const ARBITRUM_GOERLI_INFURA_RPC_URL = `https://arbitrum-goerli.infura.io/v3/${INFURA_KEY}`;
+const LOCAL_GETH_RPC_URL = `http://localhost:8545`;
 
 export enum ChainId {
   // L1
@@ -25,6 +26,8 @@ export enum ChainId {
   ArbitrumLocal = 412346,
 }
 
+const isE2e = process.env.NODE_ENV === 'test';
+
 type RpcMap = Record<ChainId, string>;
 export const rpcURLs: RpcMap = {
   // L1
@@ -37,10 +40,6 @@ export const rpcURLs: RpcMap = {
     env: process.env.NEXT_PUBLIC_GOERLI_RPC_URL,
     fallback: GOERLI_INFURA_RPC_URL,
   }),
-  [ChainId.Local]: loadEnvironmentVariableWithFallback({
-    env: process.env.NEXT_PUBLIC_LOCAL_ETHEREUM_RPC_URL,
-    fallback: MAINNET_INFURA_RPC_URL,
-  }),
   // L2
   [ChainId.ArbitrumOne]: loadEnvironmentVariableWithFallback({
     env: process.env.NEXT_PUBLIC_ARBITRUM_RPC_URL,
@@ -51,27 +50,32 @@ export const rpcURLs: RpcMap = {
     env: process.env.NEXT_PUBLIC_ARBITRUM_GOERLI_RPC_URL,
     fallback: ARBITRUM_GOERLI_INFURA_RPC_URL,
   }),
-  [ChainId.ArbitrumLocal]: loadEnvironmentVariableWithFallback({
-    env: process.env.NEXT_PUBLIC_LOCAL_ARBITRUM_RPC_URL,
-    fallback: ARBITRUM_INFURA_RPC_URL,
-  }),
   [ChainId.ArbitrumNova]: loadEnvironmentVariableWithFallback({
     env: process.env.NEXT_PUBLIC_ARBITRUM_NOVA_RPC_URL,
     fallback: 'https://nova.arbitrum.io/rpc',
+  }),
+  // E2E RPCs
+  [ChainId.Local]: loadEnvironmentVariableWithFallback({
+    env: process.env.NEXT_PUBLIC_LOCAL_ETHEREUM_RPC_URL,
+    fallback: LOCAL_GETH_RPC_URL,
+  }),
+  [ChainId.ArbitrumLocal]: loadEnvironmentVariableWithFallback({
+    env: process.env.NEXT_PUBLIC_LOCAL_ARBITRUM_RPC_URL,
+    fallback: ARBITRUM_INFURA_RPC_URL,
   }),
 };
 
 export const supportedL1Networks: Partial<RpcMap> = {
   [ChainId.Mainnet]: rpcURLs[ChainId.Mainnet],
   [ChainId.Goerli]: rpcURLs[ChainId.Goerli],
-  [ChainId.Local]: rpcURLs[ChainId.Local],
+  ...(isE2e ? { [ChainId.Local]: rpcURLs[ChainId.Local] } : {}),
 };
 
 export const supportedL2Networks: Partial<RpcMap> = {
   [ChainId.ArbitrumOne]: rpcURLs[ChainId.ArbitrumOne],
   [ChainId.ArbitrumNova]: rpcURLs[ChainId.ArbitrumNova],
   [ChainId.ArbitrumGoerli]: rpcURLs[ChainId.ArbitrumGoerli],
-  [ChainId.ArbitrumLocal]: rpcURLs[ChainId.ArbitrumLocal],
+  ...(isE2e ? { [ChainId.ArbitrumLocal]: rpcURLs[ChainId.ArbitrumLocal] } : {}),
 };
 
 // Because of React Server Component, we might need to call this function more than once

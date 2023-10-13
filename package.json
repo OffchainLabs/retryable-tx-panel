@@ -27,8 +27,8 @@
     "start": "rm -r .next && next build && next start",
     "lint": "eslint 'src/**/*.{js,ts,tsx}'",
     "prettier:format": "yarn prettier './**/*.{js,json,md,ts,tsx,yml}' --write && yarn run lint --fix",
-    "e2e:open": "env-cmd -f .e2e.env yarn synpress open --configFile synpress.config.ts",
-    "e2e:run": "env-cmd -f .e2e.env yarn synpress run --configFile synpress.config.ts --browser chrome"
+    "e2e:open": "NODE_ENV=test env-cmd -f .e2e.env yarn synpress open --configFile synpress.config.ts",
+    "e2e:run": "NODE_ENV=test env-cmd -f .e2e.env yarn synpress run --configFile synpress.config.ts --browser chrome"
   },
   "browserslist": [
     ">0.2%",

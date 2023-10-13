@@ -12,16 +12,20 @@ export const getL1TxnReceipt = async (
   safeAddDefaultLocalNetwork();
   const promises = Object.entries(supportedL1Networks).map(
     async ([chainID, rpcURL]) => {
-      const l1Network = await getL1Network(+chainID);
-      const l1Provider = new StaticJsonRpcProvider(rpcURL);
+      try {
+        const l1Network = await getL1Network(+chainID);
+        const l1Provider = new StaticJsonRpcProvider(rpcURL);
 
-      const rec = await l1Provider.getTransactionReceipt(txnHash);
-      if (rec) {
-        return {
-          l1TxnReceipt: new L1TransactionReceipt(rec),
-          l1Network,
-          l1Provider,
-        };
+        const rec = await l1Provider.getTransactionReceipt(txnHash);
+        if (rec) {
+          return {
+            l1TxnReceipt: new L1TransactionReceipt(rec),
+            l1Network,
+            l1Provider,
+          };
+        }
+      } catch (e) {
+        console.warn(rpcURL, 'not working');
       }
     },
   );
