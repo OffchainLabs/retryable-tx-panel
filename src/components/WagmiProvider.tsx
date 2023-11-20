@@ -6,11 +6,14 @@ import {
   arbitrumGoerli,
   goerli,
   localhost,
+  sepolia as sepoliaDefault,
 } from 'wagmi/chains';
 import { publicProvider } from 'wagmi/providers/public';
 import { jsonRpcProvider } from 'wagmi/providers/jsonRpc';
 import { ReactNode } from 'react';
 import { ChainId, rpcURLs } from '@/utils/network';
+
+const ether = { name: 'Ether', symbol: 'ETH', decimals: 18 };
 
 /**
  * For e2e testing
@@ -19,7 +22,7 @@ export const localL1Network: Chain = {
   id: ChainId.Local,
   name: 'EthLocal',
   network: 'localhost',
-  nativeCurrency: { name: 'Ether', symbol: 'ETH', decimals: 18 },
+  nativeCurrency: ether,
   rpcUrls: {
     default: rpcURLs[ChainId.Local],
     public: rpcURLs[ChainId.Local],
@@ -33,7 +36,7 @@ export const localL2Network: Chain = {
   id: ChainId.ArbitrumLocal,
   name: 'ArbLocal',
   network: 'arbitrum-local',
-  nativeCurrency: { name: 'Ether', symbol: 'ETH', decimals: 18 },
+  nativeCurrency: ether,
   rpcUrls: {
     default: rpcURLs[ChainId.ArbitrumLocal],
     public: rpcURLs[ChainId.ArbitrumLocal],
@@ -43,8 +46,37 @@ export const localL2Network: Chain = {
   },
 };
 
+export const sepolia: Chain = {
+  ...sepoliaDefault,
+  rpcUrls: {
+    ...sepoliaDefault.rpcUrls,
+    // override the default public RPC with the Infura RPC
+    // public RPCs are getting rate limited
+    default: rpcURLs[ChainId.Sepolia],
+  },
+};
+
+export const arbitrumSepolia: Chain = {
+  id: ChainId.ArbitrumSepolia,
+  name: 'Arbitrum Sepolia',
+  network: 'arbitrum-sepolia',
+  nativeCurrency: ether,
+  rpcUrls: {
+    default: rpcURLs[ChainId.ArbitrumSepolia]!,
+    public: rpcURLs[ChainId.ArbitrumSepolia]!,
+  },
+};
+
 const { provider, webSocketProvider } = configureChains(
-  [mainnet, goerli, arbitrum, arbitrumGoerli, localhost],
+  [
+    mainnet,
+    goerli,
+    sepolia,
+    arbitrum,
+    arbitrumGoerli,
+    arbitrumSepolia,
+    localhost,
+  ],
   [
     publicProvider(),
     jsonRpcProvider({

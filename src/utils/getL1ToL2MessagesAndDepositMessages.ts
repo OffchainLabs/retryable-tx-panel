@@ -4,6 +4,7 @@ import {
 } from '@/types';
 import { getL2Network, L1Network, L1TransactionReceipt } from '@arbitrum/sdk';
 import { StaticJsonRpcProvider } from '@ethersproject/providers';
+import { ChainId, rpcURLs } from './network';
 
 export const getL1ToL2MessagesAndDepositMessages = async (
   l1TxnReceipt: L1TransactionReceipt,
@@ -24,22 +25,13 @@ export const getL1ToL2MessagesAndDepositMessages = async (
         return;
       }
 
-      let l2RpcURL;
-      switch (l2ChainID) {
-        case 42161:
-          l2RpcURL = 'https://arb1.arbitrum.io/rpc';
-          break;
-        case 42170:
-          l2RpcURL = 'https://nova.arbitrum.io/rpc';
-          break;
-        case 421613:
-          l2RpcURL = 'https://goerli-rollup.arbitrum.io/rpc';
-          break;
-        default:
-          throw new Error(
-            'Unknown L2 chain id. This chain is not supported by dashboard',
-          );
+      const l2RpcURL = rpcURLs[l2ChainID as ChainId];
+      if (!l2RpcURL) {
+        throw new Error(
+          'Unknown L2 chain id. This chain is not supported by dashboard',
+        );
       }
+
       const l2Provider = new StaticJsonRpcProvider(l2RpcURL);
       const isClassic = await l1TxnReceipt.isClassic(l2Provider);
 
