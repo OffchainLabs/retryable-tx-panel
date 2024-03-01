@@ -89,6 +89,8 @@ main {
   max-width: 740px;
   gap: 10px;
   margin-bottom: var(--space-xl);
+  margin-left: auto;
+  margin-right: auto;
 }
 
 .form-inner {
