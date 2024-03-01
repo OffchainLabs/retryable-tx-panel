@@ -1,5 +1,5 @@
 import { NextPage } from 'next';
-import { WagmiProvider } from '@/components/WagmiProvider';
+import { Providers } from '@/components/Providers';
 import { Logo } from '@/components/Logo';
 import { Form } from '@/components/Form';
 
@@ -12,9 +12,9 @@ const PageIndex: NextPage = () => {
       </header>
 
       <main>
-        <WagmiProvider>
+        <Providers>
           <Form />
-        </WagmiProvider>
+        </Providers>
       </main>
     </>
   );

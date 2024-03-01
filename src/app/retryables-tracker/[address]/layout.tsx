@@ -1,6 +1,6 @@
 import { Form } from '@/components/Form';
 import { Logo } from '@/components/Logo';
-import { WagmiProvider } from '@/components/WagmiProvider';
+import { Providers } from '@/components/Providers';
 import { PropsWithChildren } from 'react';
 
 export default function Layout({ children }: PropsWithChildren) {
@@ -14,7 +14,7 @@ export default function Layout({ children }: PropsWithChildren) {
 
       <main>
         <Form />
-        <WagmiProvider>{children}</WagmiProvider>
+        <Providers>{children}</Providers>
       </main>
     </>
   );

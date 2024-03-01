@@ -1,4 +1,12 @@
 'use client';
+import {
+  connectorsForWallets,
+  darkTheme,
+  RainbowKitProvider,
+  getDefaultWallets,
+} from '@rainbow-me/rainbowkit';
+import { trustWallet } from '@rainbow-me/rainbowkit/wallets';
+import { PropsWithChildren } from 'react';
 import { WagmiConfig, createClient, configureChains, Chain } from 'wagmi';
 import {
   mainnet,
@@ -12,6 +20,7 @@ import { publicProvider } from 'wagmi/providers/public';
 import { jsonRpcProvider } from 'wagmi/providers/jsonRpc';
 import { ReactNode } from 'react';
 import { ChainId, rpcURLs } from '@/utils/network';
+
 
 const ether = { name: 'Ether', symbol: 'ETH', decimals: 18 };
 
@@ -67,7 +76,7 @@ export const arbitrumSepolia: Chain = {
   },
 };
 
-const { provider, webSocketProvider } = configureChains(
+const { provider, chains } = configureChains(
   [
     mainnet,
     goerli,
@@ -85,12 +94,63 @@ const { provider, webSocketProvider } = configureChains(
   ],
 );
 
-const client = createClient({
-  autoConnect: true,
-  provider,
-  webSocketProvider,
+const projectId = process.env.NEXT_PUBLIC_WALLETCONNECT_PROJECT_ID!;
+
+if (!projectId) {
+  console.error('NEXT_PUBLIC_WALLETCONNECT_PROJECT_ID variable missing.');
+}
+
+const appInfo = {
+  appName: 'Bridge to Arbitrum',
+  projectId,
+};
+
+const { wallets } = getDefaultWallets({
+  ...appInfo,
+  chains,
 });
 
-export const WagmiProvider = ({ children }: { children: ReactNode }) => {
+const connectors = connectorsForWallets([
+  ...wallets,
+  {
+    groupName: 'More',
+    wallets: [trustWallet({ chains, projectId })],
+  },
+]);
+
+const client = createClient({
+  autoConnect: true,
+  connectors,
+  provider,
+});
+
+const WagmiProvider = ({ children }: { children: ReactNode }) => {
   return <WagmiConfig client={client}>{children}</WagmiConfig>;
 };
+
+const theme = darkTheme();
+const rainbowkitTheme = {
+  ...theme,
+  colors: {
+    ...theme.colors,
+    accentColor: 'var(--blue)',
+  },
+  fonts: {
+    ...theme.fonts,
+    body: "'Space Grotesk', sans-serif",
+  },
+};
+
+export function Providers({ children }: PropsWithChildren) {
+  return (
+    <WagmiProvider>
+      <RainbowKitProvider
+        theme={rainbowkitTheme}
+        chains={chains}
+        appInfo={appInfo}
+      >
+        {children}
+      </RainbowKitProvider>
+    </WagmiProvider>
+  );
+}
