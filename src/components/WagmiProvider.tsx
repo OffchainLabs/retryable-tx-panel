@@ -24,8 +24,8 @@ export const localL1Network: Chain = {
   network: 'localhost',
   nativeCurrency: ether,
   rpcUrls: {
-    default: rpcURLs[ChainId.Local],
-    public: rpcURLs[ChainId.Local],
+    default: { http: [rpcURLs[ChainId.Local]] },
+    public: { http: [rpcURLs[ChainId.Local]] },
   },
   blockExplorers: {
     default: { name: 'Blockscout', url: '' },
@@ -38,8 +38,8 @@ export const localL2Network: Chain = {
   network: 'arbitrum-local',
   nativeCurrency: ether,
   rpcUrls: {
-    default: rpcURLs[ChainId.ArbitrumLocal],
-    public: rpcURLs[ChainId.ArbitrumLocal],
+    default: { http: [rpcURLs[ChainId.ArbitrumLocal]] },
+    public: { http: [rpcURLs[ChainId.ArbitrumLocal]] },
   },
   blockExplorers: {
     default: { name: 'Blockscout', url: '' },
@@ -52,7 +52,7 @@ export const sepolia: Chain = {
     ...sepoliaDefault.rpcUrls,
     // override the default public RPC with the Infura RPC
     // public RPCs are getting rate limited
-    default: rpcURLs[ChainId.Sepolia],
+    default: { http: [rpcURLs[ChainId.Sepolia]] },
   },
 };
 
@@ -62,8 +62,8 @@ export const arbitrumSepolia: Chain = {
   network: 'arbitrum-sepolia',
   nativeCurrency: ether,
   rpcUrls: {
-    default: rpcURLs[ChainId.ArbitrumSepolia]!,
-    public: rpcURLs[ChainId.ArbitrumSepolia]!,
+    default: { http: [rpcURLs[ChainId.ArbitrumSepolia]!] },
+    public: { http: [rpcURLs[ChainId.ArbitrumSepolia]!] },
   },
 };
 
