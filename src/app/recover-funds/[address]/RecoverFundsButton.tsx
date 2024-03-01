@@ -8,7 +8,7 @@ import {
 } from '@arbitrum/sdk';
 import { Inbox__factory } from '@arbitrum/sdk/dist/lib/abi/factories/Inbox__factory';
 import { getBaseFee } from '@arbitrum/sdk/dist/lib/utils/lib';
-import { useNetwork, useSigner } from 'wagmi';
+import { goerli, mainnet, sepolia, useNetwork, useSigner } from 'wagmi';
 import { getProviderFromChainId, getTargetChainId } from '@/utils';
 import { BigNumber } from 'ethers';
 
@@ -143,16 +143,20 @@ function RecoverFundsButton({
 
   if (!signer) return null;
 
-  if (chain?.id !== 1 && chain?.id !== 5) {
+  if (
+    chain?.id !== mainnet.id &&
+    chain?.id !== goerli.id &&
+    chain?.id !== sepolia.id
+  ) {
     return (
       <div>Unknown L1 chain id. This chain is not supported by this tool</div>
     );
   }
 
-  if (chain?.id !== chainID) {
+  if (getTargetChainId(chain?.id) !== chainID) {
     return (
       <div>
-        To recover funds, connect to chain ${chain?.id} (${chain?.name})
+        To recover funds, connect to chain {chain?.id} ({chain?.name})
       </div>
     );
   }
