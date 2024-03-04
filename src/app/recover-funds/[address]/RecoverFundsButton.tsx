@@ -11,6 +11,20 @@ import { getBaseFee } from '@arbitrum/sdk/dist/lib/utils/lib';
 import { goerli, mainnet, sepolia, useNetwork, useSigner } from 'wagmi';
 import { getProviderFromChainId, getTargetChainId } from '@/utils';
 import { BigNumber } from 'ethers';
+import { ChainId } from '@/utils/network';
+import { useAccountType } from '@/utils/useAccountType';
+
+function getL1ChainIdFromL2ChainId(l2ChainId: number | undefined) {
+  if (!l2ChainId) {
+    return ChainId.Mainnet;
+  }
+
+  return {
+    [ChainId.ArbitrumOne]: ChainId.Mainnet,
+    [ChainId.ArbitrumGoerli]: ChainId.Goerli,
+    [ChainId.ArbitrumSepolia]: ChainId.Sepolia,
+  }[l2ChainId];
+}
 
 function RecoverFundsButton({
   balanceToRecover,
@@ -25,8 +39,11 @@ function RecoverFundsButton({
 }) {
   const [message, setMessage] = useState('');
   const [loading, setLoading] = useState(false);
+  const { isSmartContractWallet } = useAccountType();
   const { chain } = useNetwork();
-  const { data: signer } = useSigner({ chainId: chain?.id });
+  const { data: signer } = useSigner({
+    chainId: getL1ChainIdFromL2ChainId(chain?.id),
+  });
 
   const handleRecover = useCallback(async () => {
     if (!signer) {
@@ -45,10 +62,7 @@ function RecoverFundsButton({
     setLoading(true);
     setMessage('');
 
-    // We instantiate the Inbox factory object to make use of its methods
-    const targetChainID = getTargetChainId(chainID);
-
-    const baseL2Provider = getProviderFromChainId(targetChainID);
+    const baseL2Provider = getProviderFromChainId(chainID);
     const l2Network = await getL2Network(baseL2Provider);
     const inbox = Inbox__factory.connect(
       l2Network.ethBridge.inbox,
@@ -143,11 +157,13 @@ function RecoverFundsButton({
 
   if (!signer) return null;
 
+  const l1ChainId = getL1ChainIdFromL2ChainId(chain?.id);
   if (
-    chain?.id !== mainnet.id &&
-    chain?.id !== goerli.id &&
-    chain?.id !== sepolia.id
+    l1ChainId !== mainnet.id &&
+    l1ChainId !== goerli.id &&
+    l1ChainId !== sepolia.id
   ) {
+    console.log(chain);
     return (
       <div>Unknown L1 chain id. This chain is not supported by this tool</div>
     );
@@ -167,6 +183,16 @@ function RecoverFundsButton({
         <button id="recover-button" disabled={loading} onClick={handleRecover}>
           Recover
         </button>
+        {loading && isSmartContractWallet && (
+          <div className="flex flex-col">
+            <span>
+              <b>
+                To continue, please approve tx on your smart contract wallet.
+              </b>{' '}
+              If you have k of n signers, then k of n will need to sign.
+            </span>
+          </div>
+        )}
       </div>
       <div>
         {message && (
