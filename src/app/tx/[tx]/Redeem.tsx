@@ -6,6 +6,7 @@ import React from 'react';
 import { useNetwork, useSigner } from 'wagmi';
 import { BigNumber } from 'ethers';
 import { RetryableMessageParams } from '@arbitrum/sdk/dist/lib/dataEntities/message';
+import { useAccountType } from '@/utils/useAccountType';
 
 type Props = {
   l1ToL2Message: {
@@ -32,6 +33,8 @@ function Redeem({ l1ToL2Message }: Props) {
   const [message, setMessage] = React.useState<string>('');
   const { chain } = useNetwork();
   const { data: signer = null } = useSigner({ chainId: chain?.id });
+  const [isLoading, setIsLoading] = React.useState<boolean>(false);
+  const { isSmartContractWallet } = useAccountType();
 
   const {
     chainID,
@@ -51,6 +54,7 @@ function Redeem({ l1ToL2Message }: Props) {
 
     return (
       <button
+        disabled={isLoading}
         onClick={async () => {
           const {
             destAddress = '',
@@ -85,6 +89,7 @@ function Redeem({ l1ToL2Message }: Props) {
           );
 
           try {
+            setIsLoading(true);
             const res = await l1ToL2MessageWriter.redeem();
             const rec = await res.wait();
             if (rec.status === 1) {
@@ -99,6 +104,8 @@ function Redeem({ l1ToL2Message }: Props) {
             }
           } catch (err: unknown) {
             setMessage((err as Error).message.toString());
+          } finally {
+            setIsLoading(false);
           }
         }}
       >
@@ -106,19 +113,28 @@ function Redeem({ l1ToL2Message }: Props) {
       </button>
     );
   }, [
-    chain?.id,
     signer,
+    chain?.id,
     chainID,
+    isLoading,
     networkName,
+    messageData,
     sender,
     messageNumber,
     l1BaseFee,
-    messageData,
   ]);
 
   return (
     <>
       {redeemButton}
+      {isLoading && isSmartContractWallet && (
+        <div className="flex flex-col">
+          <span>
+            <b>To continue, please approve tx on your smart contract wallet.</b>{' '}
+            If you have k of n signers, then k of n will need to sign.
+          </span>
+        </div>
+      )}
       <div>
         {message && (
           <textarea readOnly className="redeemtext" value={message} />
