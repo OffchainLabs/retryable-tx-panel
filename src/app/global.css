@@ -121,7 +121,7 @@ main {
   background-color: rgb(255, 255, 255);
 }
 
-button,
+.button,
 input[type='submit'] {
   background-color: var(--blue);
   color: #fff;
@@ -137,12 +137,12 @@ input[type='submit'] {
   cursor: pointer;
 }
 
-button:hover,
+.button:hover,
 input[type='submit']:hover {
   background-color: var(--blue-dark);
 }
 
-button:disabled {
+.button:disabled {
   background-color: var(--blue-lighter);
   cursor: inherit;
 }
@@ -275,4 +275,8 @@ ul {
 
 .redeem-button-container {
   text-align: center;
+}
+
+div[data-rk] {
+  width: 100%;
 }

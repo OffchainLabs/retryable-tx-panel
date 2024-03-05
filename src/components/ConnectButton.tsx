@@ -11,6 +11,7 @@ const ConnectButton = () => {
   return (
     <div className="buttons-wrapper">
       <button
+        className="button"
         onClick={() => {
           if (isConnected) {
             disconnect();

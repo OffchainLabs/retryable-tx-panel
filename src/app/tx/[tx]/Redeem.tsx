@@ -54,6 +54,7 @@ function Redeem({ l1ToL2Message }: Props) {
 
     return (
       <button
+        className="button"
         disabled={isLoading}
         onClick={async () => {
           const {

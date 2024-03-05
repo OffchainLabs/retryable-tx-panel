@@ -82,6 +82,7 @@ function L2ToL1MsgsDisplay({ l2ToL1Messages }: Props) {
             ) : (
               <div className="redeem-button-container">
                 <button
+                  className="button"
                   disabled={redeeming}
                   onClick={async () => {
                     if (!signer) return;

@@ -180,7 +180,12 @@ function RecoverFundsButton({
   return (
     <>
       <div className="recover-funds-form">
-        <button id="recover-button" disabled={loading} onClick={handleRecover}>
+        <button
+          className="button"
+          id="recover-button"
+          disabled={loading}
+          onClick={handleRecover}
+        >
           Recover
         </button>
         {loading && isSmartContractWallet && (
