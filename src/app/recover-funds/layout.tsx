@@ -24,8 +24,8 @@ export default function Layout({ children }: LayoutProps) {
         <h2>
           Tool to recover funds that are locked in an aliased L2 address.
           <br />
-          Connect to either Ethereum mainnet or Goerli to start the recovery
-          process.
+          Connect to either Ethereum mainnet, Goerli or Sepolia to start the
+          recovery process.
         </h2>
       </header>
 
