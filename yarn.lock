@@ -1170,7 +1170,7 @@
   optionalDependencies:
     fsevents "2.3.2"
 
-"@rainbow-me/rainbowkit@^0.12.16":
+"@rainbow-me/rainbowkit@^0.12.18":
   version "0.12.18"
   resolved "https://registry.yarnpkg.com/@rainbow-me/rainbowkit/-/rainbowkit-0.12.18.tgz#a42f1682e629586fdebdc5606b0617f7f7e52054"
   integrity sha512-Ehpr8gBCS8v4vdXLi8ZBlQ1yA6GHJOhoP66hLrdgI5iSlr6aUGTEicEfb2RaKNltHJFW/5A4BKst0AK4PkAkuw==
@@ -9176,7 +9176,7 @@ viem@^0.3.17:
     isomorphic-ws "5.0.0"
     ws "8.12.0"
 
-wagmi@^0.12.18:
+wagmi@^0.12.19:
   version "0.12.19"
   resolved "https://registry.yarnpkg.com/wagmi/-/wagmi-0.12.19.tgz#5f5038330907f70c033ea51ef8a9136289567256"
   integrity sha512-S/el9BDb/HNeQWh1v8TvntMPX/CgKLDAoJqDb8i7jifLfWPqFL7gor3vnI1Vs6ZlB8uh7m+K1Qyg+mKhbITuDQ==
