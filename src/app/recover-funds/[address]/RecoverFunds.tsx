@@ -1,3 +1,4 @@
+import { mapChainIdToName } from '@/utils/network';
 import { BigNumber, utils } from 'ethers';
 import '../style.css';
 
@@ -25,7 +26,7 @@ const RecoverFunds = ({ operationInfo, address }: Props) => {
       There are {utils.formatEther(operationInfo.balanceToRecover)} ETH on{' '}
       {operationInfo.aliasedAddress}
       <br />
-      (Alias of {address}) on this network {l2ChainId ?? ''}.
+      (Alias of {address}) on this network {mapChainIdToName[l2ChainId] ?? ''}.
     </div>
   );
 };
