@@ -31,7 +31,7 @@ export function useAccountType(): Result {
 
   // By default, assume it's an EOA
   return {
-    isSmartContractWallet: false,
+    isSmartContractWallet: isSmartContractWallet ?? false,
     isLoading: isSmartContractWallet === null,
   };
 }

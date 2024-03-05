@@ -157,13 +157,11 @@ function RecoverFundsButton({
 
   if (!signer) return null;
 
-  const l1ChainId = getL1ChainIdFromL2ChainId(chain?.id);
   if (
-    l1ChainId !== mainnet.id &&
-    l1ChainId !== goerli.id &&
-    l1ChainId !== sepolia.id
+    chain?.id !== mainnet.id &&
+    chain?.id !== goerli.id &&
+    chain?.id !== sepolia.id
   ) {
-    console.log(chain);
     return (
       <div>Unknown L1 chain id. This chain is not supported by this tool</div>
     );
@@ -180,14 +178,16 @@ function RecoverFundsButton({
   return (
     <>
       <div className="recover-funds-form">
-        <button
-          className="button"
-          id="recover-button"
-          disabled={loading}
-          onClick={handleRecover}
-        >
-          Recover
-        </button>
+        <div>
+          <button
+            className="button"
+            id="recover-button"
+            disabled={loading}
+            onClick={handleRecover}
+          >
+            Recover
+          </button>
+        </div>
         {loading && isSmartContractWallet && (
           <div className="flex flex-col">
             <span>
