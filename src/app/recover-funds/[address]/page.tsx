@@ -1,5 +1,5 @@
 'use client';
-import { supportedL2Networks } from '@/utils/network';
+import { mapChainIdToName, supportedL2Networks } from '@/utils/network';
 import { Address } from '@arbitrum/sdk';
 import { constants, utils } from 'ethers';
 import dynamic from 'next/dynamic';
@@ -88,6 +88,8 @@ function RecoverFundsDetail({
     setDestinationAddress(value);
   };
 
+  const [checkboxAccepted, setCheckboxAccepted] = useState(false);
+
   if (!hasBalanceOverThreshold(operationInfo.balanceToRecover)) {
     return null;
   }
@@ -99,13 +101,30 @@ function RecoverFundsDetail({
         <div className="form-container">
           <input
             name="destinationAddressInput"
-            placeholder="Enter the destination address"
+            placeholder={`Enter which address you want to send the funds to on ${
+              mapChainIdToName[operationInfo.chainId]
+            }`}
             onChange={handleChange}
             className="input-style"
           />
         </div>
       )}
-      {hasBalanceToRecover && hasDestinationAddress && (
+      {hasDestinationAddress && (
+        <>
+          <input
+            type="checkbox"
+            id="recover-checkbox"
+            className="w-auto"
+            onChange={(e) => setCheckboxAccepted(e.target.checked)}
+          />
+          <label htmlFor="recover-checkbox">
+            I understand I need to control the address on{' '}
+            {mapChainIdToName[operationInfo.chainId]}, or funds will be lost
+            forever!
+          </label>
+        </>
+      )}
+      {checkboxAccepted && hasBalanceToRecover && hasDestinationAddress && (
         <RecoverFundsButton
           chainID={Number(operationInfo.chainId)}
           balanceToRecover={operationInfo.balanceToRecover}
