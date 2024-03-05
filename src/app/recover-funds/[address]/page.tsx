@@ -132,7 +132,7 @@ const RecoverFundsPage = ({
   }, [address]);
 
   if (!operationInfos) {
-    return;
+    return <div>Loading...</div>;
   }
 
   // No balance to recover on any chains
