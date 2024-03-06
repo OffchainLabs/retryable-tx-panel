@@ -3,7 +3,10 @@
 }
 
 .recover-funds-form {
+  max-width: 740px;
   margin-top: var(--space-m);
+  margin-left: auto;
+  margin-right: auto;
 }
 .recover-funds-form input {
   width: 500px;
