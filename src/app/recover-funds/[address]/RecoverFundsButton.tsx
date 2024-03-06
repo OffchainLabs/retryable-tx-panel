@@ -39,10 +39,11 @@ function RecoverFundsButton({
 }) {
   const [message, setMessage] = useState('');
   const [loading, setLoading] = useState(false);
-  const { isSmartContractWallet } = useAccountType();
+  const { isSmartContractWallet, isLoading: isLoadingAccountType } =
+    useAccountType();
   const { chain } = useNetwork();
   const { data: signer } = useSigner({
-    chainId: getL1ChainIdFromL2ChainId(chain?.id),
+    chainId: getL1ChainIdFromL2ChainId(chainID),
   });
 
   const handleRecover = useCallback(async () => {
@@ -188,7 +189,7 @@ function RecoverFundsButton({
             Recover
           </button>
         </div>
-        {loading && isSmartContractWallet && (
+        {loading && isSmartContractWallet && !isLoadingAccountType && (
           <div className="flex flex-col">
             <span>
               <b>
