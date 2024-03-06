@@ -177,16 +177,18 @@ const Transaction = async ({ params }: Props) => {
         </div>
       </div>
       <Providers>
-        <L2ToL1MsgsDisplay l2ToL1Messages={l2ToL1MessagesToShow} />
-        <Suspense fallback={<div>Loading messages...</div>}>
-          {/* @ts-expect-error Server Component */}
-          <MessageDisplays
-            messages={allMessages}
-            hasL2ToL1MessagesConfirmed={l2ToL1MessagesToShow.some(
-              (msg) => msg.status !== L2ToL1MessageStatus.UNCONFIRMED, // Also show executed
-            )}
-          />
-        </Suspense>
+        <div className="resultContainer">
+          <L2ToL1MsgsDisplay l2ToL1Messages={l2ToL1MessagesToShow} />
+          <Suspense fallback={<div>Loading messages...</div>}>
+            {/* @ts-expect-error Server Component */}
+            <MessageDisplays
+              messages={allMessages}
+              hasL2ToL1MessagesConfirmed={l2ToL1MessagesToShow.some(
+                (msg) => msg.status !== L2ToL1MessageStatus.UNCONFIRMED, // Also show executed
+              )}
+            />
+          </Suspense>
+        </div>
       </Providers>
     </>
   );
