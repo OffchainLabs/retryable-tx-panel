@@ -14,7 +14,7 @@ const RecoverFunds = dynamic(() => import('./RecoverFunds'), {
 });
 
 type OperationInfoByChainId = {
-  [chainId: string]: OperationInfo;
+  [chainId: string]: OperationInfo & { error?: true };
 };
 async function getOperationInfoByChainId(
   address: string,
@@ -45,6 +45,7 @@ async function getOperationInfoByChainId(
           balanceToRecover: constants.Zero,
           aliasedAddress,
           chainId,
+          error: true,
         };
       }
     },
@@ -154,15 +155,28 @@ const RecoverFundsPage = ({
     return <div>Loading...</div>;
   }
 
+  const operationInfoKeys = Object.keys(operationInfos);
   // No balance to recover on any chains
   if (
-    Object.keys(operationInfos).every(
+    operationInfoKeys.every(
       (chainId) =>
         !hasBalanceOverThreshold(operationInfos[chainId].balanceToRecover),
     )
   ) {
-    const aliasedAddress =
-      operationInfos[Object.keys(operationInfos)[0]].aliasedAddress;
+    const aliasedAddress = operationInfos[operationInfoKeys[0]].aliasedAddress;
+    const errors = operationInfoKeys.filter(
+      (operationInfoKey) => operationInfos[operationInfoKey].error,
+    );
+
+    if (errors.length > 0) {
+      return (
+        <div className="funds-message error">
+          There was an error checking the balance of {aliasedAddress}
+          <br />
+          (Alias of {address}) on Arbitrum networks
+        </div>
+      );
+    }
 
     return (
       <div className="funds-message">
