@@ -73,7 +73,7 @@ export const getL2ToL1Messages = async (
                       deadlineBlock,
                       etaSeconds: deadlineBlock
                         .sub(currentL1Block)
-                        .mul(15)
+                        .mul(12)
                         .toNumber(),
                     }
                   : null,
