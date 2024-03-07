@@ -50,6 +50,7 @@ function Redeem({ l1ToL2Message }: Props) {
 
     return (
       <button
+        className="button"
         onClick={async () => {
           const {
             destAddress = '',

@@ -32,6 +32,18 @@ export enum ChainId {
   ArbitrumSepolia = 421614,
 }
 
+export const mapChainIdToName: Record<string, string> = {
+  [ChainId.Mainnet]: 'Ethereum',
+  [ChainId.Goerli]: 'Goerli',
+  [ChainId.Sepolia]: 'Sepolia',
+  [ChainId.Local]: 'Local',
+  [ChainId.ArbitrumOne]: 'Arbitrum One',
+  [ChainId.ArbitrumNova]: 'Arbitrum Nova',
+  [ChainId.ArbitrumGoerli]: 'Arbitrum Goerli',
+  [ChainId.ArbitrumLocal]: 'Arbitrum Local',
+  [ChainId.ArbitrumSepolia]: 'Arbitrum Sepolia',
+};
+
 const isE2e = process.env.NODE_ENV === 'test';
 
 type RpcMap = Record<ChainId, string>;

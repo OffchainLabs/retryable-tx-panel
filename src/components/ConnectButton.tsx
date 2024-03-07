@@ -1,33 +1,27 @@
 'use client';
-import { useAccount, useConnect, useDisconnect } from 'wagmi';
+import { useAccount, useDisconnect } from 'wagmi';
+import { useConnectModal } from '@rainbow-me/rainbowkit';
+import '@rainbow-me/rainbowkit/styles.css';
 
 const ConnectButton = () => {
   const { isConnected } = useAccount();
-  const { connect, connectors, error } = useConnect();
   const { disconnect } = useDisconnect();
-
-  const [activeConnector] = connectors;
+  const { openConnectModal } = useConnectModal();
 
   return (
     <div className="buttons-wrapper">
-      {isConnected && (
-        <button
-          className="button-outline button-small"
-          disabled={!activeConnector.ready}
-          onClick={() => disconnect()}
-        >
-          Disconnect
-        </button>
-      )}
-      {!isConnected && (
-        <button
-          disabled={!activeConnector.ready}
-          onClick={() => connect({ connector: activeConnector })}
-        >
-          Connect
-        </button>
-      )}
-      {error && <div>{error.message}</div>}
+      <button
+        className="button"
+        onClick={() => {
+          if (isConnected) {
+            disconnect();
+          } else {
+            openConnectModal?.();
+          }
+        }}
+      >
+        {isConnected ? 'Disconnect' : 'Connect'}
+      </button>
     </div>
   );
 };

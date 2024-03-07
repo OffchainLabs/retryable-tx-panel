@@ -8,9 +8,23 @@ import {
 } from '@arbitrum/sdk';
 import { Inbox__factory } from '@arbitrum/sdk/dist/lib/abi/factories/Inbox__factory';
 import { getBaseFee } from '@arbitrum/sdk/dist/lib/utils/lib';
-import { useNetwork, useSigner } from 'wagmi';
+import { goerli, mainnet, sepolia, useNetwork, useSigner } from 'wagmi';
 import { getProviderFromChainId, getTargetChainId } from '@/utils';
 import { BigNumber } from 'ethers';
+import { ChainId } from '@/utils/network';
+import { useAccountType } from '@/utils/useAccountType';
+
+function getL1ChainIdFromL2ChainId(l2ChainId: number | undefined) {
+  if (!l2ChainId) {
+    return ChainId.Mainnet;
+  }
+
+  return {
+    [ChainId.ArbitrumOne]: ChainId.Mainnet,
+    [ChainId.ArbitrumGoerli]: ChainId.Goerli,
+    [ChainId.ArbitrumSepolia]: ChainId.Sepolia,
+  }[l2ChainId];
+}
 
 function RecoverFundsButton({
   balanceToRecover,
@@ -25,8 +39,12 @@ function RecoverFundsButton({
 }) {
   const [message, setMessage] = useState('');
   const [loading, setLoading] = useState(false);
+  const { isSmartContractWallet, isLoading: isLoadingAccountType } =
+    useAccountType();
   const { chain } = useNetwork();
-  const { data: signer } = useSigner({ chainId: chain?.id });
+  const { data: signer } = useSigner({
+    chainId: getL1ChainIdFromL2ChainId(chainID),
+  });
 
   const handleRecover = useCallback(async () => {
     if (!signer) {
@@ -45,10 +63,7 @@ function RecoverFundsButton({
     setLoading(true);
     setMessage('');
 
-    // We instantiate the Inbox factory object to make use of its methods
-    const targetChainID = getTargetChainId(chainID);
-
-    const baseL2Provider = getProviderFromChainId(targetChainID);
+    const baseL2Provider = getProviderFromChainId(chainID);
     const l2Network = await getL2Network(baseL2Provider);
     const inbox = Inbox__factory.connect(
       l2Network.ethBridge.inbox,
@@ -143,16 +158,20 @@ function RecoverFundsButton({
 
   if (!signer) return null;
 
-  if (chain?.id !== 1 && chain?.id !== 5) {
+  if (
+    chain?.id !== mainnet.id &&
+    chain?.id !== goerli.id &&
+    chain?.id !== sepolia.id
+  ) {
     return (
       <div>Unknown L1 chain id. This chain is not supported by this tool</div>
     );
   }
 
-  if (chain?.id !== chainID) {
+  if (getTargetChainId(chain?.id) !== chainID) {
     return (
       <div>
-        To recover funds, connect to chain ${chain?.id} (${chain?.name})
+        To recover funds, connect to chain {chain?.id} ({chain?.name})
       </div>
     );
   }
@@ -160,9 +179,26 @@ function RecoverFundsButton({
   return (
     <>
       <div className="recover-funds-form">
-        <button id="recover-button" disabled={loading} onClick={handleRecover}>
-          Recover
-        </button>
+        <div>
+          <button
+            className="button"
+            id="recover-button"
+            disabled={loading}
+            onClick={handleRecover}
+          >
+            Recover
+          </button>
+        </div>
+        {loading && isSmartContractWallet && !isLoadingAccountType && (
+          <div className="flex flex-col">
+            <span>
+              <b>
+                To continue, please approve tx on your smart contract wallet.
+              </b>{' '}
+              If you have k of n signers, then k of n will need to sign.
+            </span>
+          </div>
+        )}
       </div>
       <div>
         {message && (

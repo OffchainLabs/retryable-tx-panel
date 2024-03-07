@@ -1,7 +1,7 @@
 import dynamic from 'next/dynamic';
 import { Suspense } from 'react';
 import { Logo } from '@/components/Logo';
-import { WagmiProvider } from '@/components/WagmiProvider';
+import { Providers } from '@/components/Providers';
 import { Form } from '@/components/Form';
 import './style.css';
 
@@ -24,19 +24,19 @@ export default function Layout({ children }: LayoutProps) {
         <h2>
           Tool to recover funds that are locked in an aliased L2 address.
           <br />
-          Connect to either Ethereum mainnet or Goerli to start the recovery
-          process.
+          Connect to either Ethereum mainnet, Goerli or Sepolia to start the
+          recovery process.
         </h2>
       </header>
 
       <main>
         <Form />
-        <WagmiProvider>
+        <Providers>
           {children}
           <Suspense>
             <ConnectButton />
           </Suspense>
-        </WagmiProvider>
+        </Providers>
       </main>
     </>
   );

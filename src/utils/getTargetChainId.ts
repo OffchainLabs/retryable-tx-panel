@@ -11,8 +11,10 @@ export const getTargetChainId = (chainID: number | undefined) => {
     {
       [ChainId.Mainnet]: ChainId.ArbitrumOne,
       [ChainId.Goerli]: ChainId.ArbitrumGoerli,
+      [ChainId.Sepolia]: ChainId.ArbitrumSepolia,
       [ChainId.ArbitrumOne]: ChainId.ArbitrumOne,
       [ChainId.ArbitrumGoerli]: ChainId.ArbitrumGoerli,
+      [ChainId.ArbitrumSepolia]: ChainId.ArbitrumSepolia,
     }[chainID] || defaultTargetChainId
   );
 };
