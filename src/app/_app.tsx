@@ -22,15 +22,6 @@ if (process.env.NODE_ENV !== 'production') {
   safeAddDefaultLocalNetwork();
 }
 
-// Clear cache for everything related to WalletConnect v2.
-//
-// TODO: Remove this once the fix for the infinite loop / memory leak is identified.
-Object.keys(localStorage).forEach((key) => {
-  if (key === 'wagmi.requestedChains' || key.startsWith('wc@2')) {
-    localStorage.removeItem(key);
-  }
-});
-
 export default function App({ Component, pageProps }: AppProps) {
   return (
     <>

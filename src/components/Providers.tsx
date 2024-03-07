@@ -117,6 +117,13 @@ const connectors = connectorsForWallets([
   },
 ]);
 
+// Clear cache for everything related to WalletConnect v2.
+//
+// TODO: Remove this once the fix for the infinite loop / memory leak is identified.
+if (global.window?.localStorage) {
+  localStorage.clear();
+}
+
 const client = createClient({
   autoConnect: true,
   connectors,
