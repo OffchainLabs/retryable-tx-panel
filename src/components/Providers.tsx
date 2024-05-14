@@ -11,8 +11,6 @@ import { WagmiConfig, createClient, configureChains, Chain } from 'wagmi';
 import {
   mainnet,
   arbitrum,
-  arbitrumGoerli,
-  goerli,
   localhost,
   sepolia as sepoliaDefault,
 } from 'wagmi/chains';
@@ -76,15 +74,7 @@ export const arbitrumSepolia: Chain = {
 };
 
 const { provider, chains } = configureChains(
-  [
-    mainnet,
-    goerli,
-    sepolia,
-    arbitrum,
-    arbitrumGoerli,
-    arbitrumSepolia,
-    localhost,
-  ],
+  [mainnet, sepolia, arbitrum, arbitrumSepolia, localhost],
   [
     publicProvider(),
     jsonRpcProvider({

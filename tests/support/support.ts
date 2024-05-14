@@ -6,6 +6,6 @@ Cypress.Keyboard.defaults({
 });
 
 before(() => {
-  // connect to goerli to avoid connecting to localhost twice and failing
-  cy.setupMetamask(Cypress.env('PRIVATE_KEY'), 'goerli');
+  // connect to sepolia to avoid connecting to localhost twice and failing
+  cy.setupMetamask(Cypress.env('PRIVATE_KEY'), 'sepolia');
 });
