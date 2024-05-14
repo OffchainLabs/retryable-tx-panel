@@ -11,7 +11,6 @@ export const looksLikeCallToInboxethDeposit = async (
     | L1ToL2MessageReaderWithNetwork
     | L1ToL2MessageReaderClassicWithNetwork,
 ) => {
-  console.log(l1ToL2Message);
   const txData = (
     await l1ToL2Message.l2Provider.getTransaction(
       l1ToL2Message.retryableCreationId,
@@ -26,16 +25,8 @@ export const looksLikeCallToInboxethDeposit = async (
   // the slice should be 4 + 11 * 32, 4 + 12 * 32
   const sliceIndex =
     l1ToL2Message instanceof L1ToL2MessageReaderClassic ? 8 : 11;
-
-  const retryDataIsZero =
-    hexDataSlice(txData, 4 + sliceIndex * 32, 4 + (sliceIndex + 1) * 32) ===
-    constants.HashZero;
-
-  if (l1ToL2Message instanceof L1ToL2MessageReaderClassic) {
-    return retryDataIsZero;
-  }
-
   return (
-    retryDataIsZero && l1ToL2Message.messageData.l2CallValue.eq(constants.Zero)
+    hexDataSlice(txData, 4 + sliceIndex * 32, 4 + (sliceIndex + 1) * 32) ===
+    constants.HashZero
   );
 };
