@@ -25,8 +25,16 @@ export const looksLikeCallToInboxethDeposit = async (
   // the slice should be 4 + 11 * 32, 4 + 12 * 32
   const sliceIndex =
     l1ToL2Message instanceof L1ToL2MessageReaderClassic ? 8 : 11;
-  return (
+
+  const retryDataIsZero =
     hexDataSlice(txData, 4 + sliceIndex * 32, 4 + (sliceIndex + 1) * 32) ===
-    constants.HashZero
+    constants.HashZero;
+
+  if (l1ToL2Message instanceof L1ToL2MessageReaderClassic) {
+    return retryDataIsZero;
+  }
+
+  return (
+    retryDataIsZero && l1ToL2Message.messageData.l2CallValue.eq(constants.Zero)
   );
 };
