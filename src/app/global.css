@@ -23,7 +23,7 @@
 
 html {
   font-size: var(--font-size-m);
-  background-image: url('https://bridge.arbitrum.io/images/space.webp');
+  background-image: url('/space.webp');
   background-repeat: repeat;
   background-color: black;
   scroll-behavior: smooth;
