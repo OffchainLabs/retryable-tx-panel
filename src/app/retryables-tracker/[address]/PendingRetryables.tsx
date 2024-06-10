@@ -1,6 +1,6 @@
 import Link from 'next/link';
 import { Retryable, Deposit, BridgeRetryable } from './types';
-import { querySubgraph, subgraphUrl } from './querySubgraph';
+import { querySubgraph, SubgraphQuery } from './querySubgraph';
 
 async function fetchPendingRetryables(
   address?: string,
@@ -21,7 +21,7 @@ async function fetchPendingRetryables(
 
   const result: { retryables: Retryable[] } = await querySubgraph(
     query,
-    subgraphUrl.Retryables,
+    SubgraphQuery.Retryables,
   );
   const retryableCreationTxHashes = result.retryables.map(
     (retryable) => retryable.createdAtTxHash,
@@ -40,7 +40,7 @@ async function fetchPendingRetryables(
   `;
   const { retryables }: { retryables: BridgeRetryable[] } = await querySubgraph(
     queryForCreation,
-    subgraphUrl.Bridge,
+    SubgraphQuery.Bridge,
   );
 
   if (retryables.length === 0) {
@@ -66,7 +66,7 @@ async function fetchPendingRetryables(
 
   const { deposits }: { deposits: Deposit[] } = await querySubgraph(
     queryForDeposits,
-    subgraphUrl.Bridge,
+    SubgraphQuery.Bridge,
   );
 
   const depositsMap = deposits.reduce((acc, deposit) => {
