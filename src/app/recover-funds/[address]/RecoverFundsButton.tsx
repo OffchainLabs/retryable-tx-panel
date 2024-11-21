@@ -53,7 +53,9 @@ function RecoverFundsButton({
 
     const signerAddress = new Address(await signer.getAddress());
 
-    if (signerAddress.value !== addressToRecoverFrom) {
+    if (
+      signerAddress.value.toLowerCase() !== addressToRecoverFrom.toLowerCase()
+    ) {
       setMessage(
         `You can only retrieve funds from an address you're connected as. Please connect as ${addressToRecoverFrom}`,
       );
