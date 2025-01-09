@@ -24,7 +24,7 @@ export const getL2ToL1Messages = async (
         const l2Provider = new JsonRpcProvider(rpcURL);
 
         // TODO
-        const l1ChainID = l2Network.partnerChainID as 1 | 5;
+        const l1ChainID = l2Network.partnerChainID as 1 | 11155111;
         const l1Provider = new JsonRpcProvider(supportedL1Networks[l1ChainID]);
         try {
           await l1Provider.getBlockNumber();

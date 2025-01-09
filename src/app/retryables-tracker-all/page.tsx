@@ -1,6 +1,8 @@
 import { Suspense } from 'react';
 import PendingRetryables from '../retryables-tracker/[address]/PendingRetryables';
 
+export const dynamic = 'force-dynamic';
+
 const Page = async () => {
   return (
     <>
