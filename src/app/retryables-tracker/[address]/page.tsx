@@ -2,6 +2,8 @@ import Link from 'next/link';
 import { Suspense } from 'react';
 import PendingRetryables from './PendingRetryables';
 
+export const dynamic = 'force-dynamic';
+
 const Page = async ({ params }: { params: { address: string } }) => {
   const { address } = params;
 
