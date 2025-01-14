@@ -1,16 +1,15 @@
 import {
-  L2ToL1Message,
-  L2ToL1MessageStatus,
-  L1ToL2MessageReader,
-  L2Network,
-  L1TransactionReceipt,
-  L1Network,
+  ArbitrumNetwork,
+  ChildToParentMessage,
+  ChildToParentMessageStatus,
+  ParentToChildMessageReader,
+  ParentTransactionReceipt,
 } from '@arbitrum/sdk';
 
 import {
   EthDepositMessage,
-  L1ToL2MessageReaderClassic,
-} from '@arbitrum/sdk/dist/lib/message/L1ToL2Message';
+  ParentToChildMessageReaderClassic,
+} from '@arbitrum/sdk/dist/lib/message/ParentToChildMessage';
 
 import { JsonRpcProvider } from '@ethersproject/providers';
 import { BigNumber } from 'ethers';
@@ -20,11 +19,11 @@ export enum ReceiptState {
   LOADING,
   INVALID_INPUT_LENGTH,
   NOT_FOUND,
-  L1_FAILED,
-  L2_FAILED,
-  NO_L1_L2_MESSAGES,
+  PARENT_FAILED,
+  CHILD_FAILED,
+  NO_PARENT_TO_CHILD_MESSAGES,
   MESSAGES_FOUND,
-  NO_L2_L1_MESSAGES,
+  NO_CHILD_TO_PARENT_MESSAGES,
 }
 
 export enum AlertLevel {
@@ -34,22 +33,23 @@ export enum AlertLevel {
   NONE,
 }
 
-export interface L1ToL2MessageReaderWithNetwork extends L1ToL2MessageReader {
-  l2Network: L2Network;
+export interface ParentToChildMessageReaderWithNetwork
+  extends ParentToChildMessageReader {
+  childNetwork: ArbitrumNetwork;
 }
 
-export interface L1ToL2MessageReaderClassicWithNetwork
-  extends L1ToL2MessageReaderClassic {
-  l2Network: L2Network;
+export interface ParentToChildMessageReaderClassicWithNetwork
+  extends ParentToChildMessageReaderClassic {
+  childNetwork: ArbitrumNetwork;
 }
 
 export interface EthDepositMessageWithNetwork extends EthDepositMessage {
-  l2Network: L2Network;
+  childNetwork: ArbitrumNetwork;
 }
 
-export interface L1ToL2MessagesAndDepositMessages {
-  retryables: L1ToL2MessageReaderWithNetwork[];
-  retryablesClassic: L1ToL2MessageReaderClassicWithNetwork[];
+export interface ParentToChildMessagesAndDepositMessages {
+  retryables: ParentToChildMessageReaderWithNetwork[];
+  retryablesClassic: ParentToChildMessageReaderClassicWithNetwork[];
   deposits: EthDepositMessageWithNetwork[];
 }
 
@@ -58,16 +58,18 @@ interface MessageStatusDisplayBase {
   alertLevel: AlertLevel;
   showRedeemButton: boolean;
   explorerUrl: string;
-  l2Network: L2Network;
-  l2TxHash: string;
+  childNetwork: ArbitrumNetwork;
+  childTxHash: string;
 }
 interface MessageStatusDisplayRetryable extends MessageStatusDisplayBase {
-  l1ToL2Message: L1ToL2MessageReader | L1ToL2MessageReaderClassic;
+  parentToChildMessage:
+    | ParentToChildMessageReader
+    | ParentToChildMessageReaderClassic;
   ethDepositMessage: undefined;
   autoRedeemHash: string | undefined;
 }
 interface MessageStatusDisplayDeposit extends MessageStatusDisplayBase {
-  l1ToL2Message: undefined;
+  parentToChildMessage: undefined;
   ethDepositMessage: EthDepositMessage;
   autoRedeemHash: string | undefined;
 }
@@ -82,7 +84,7 @@ export enum Status {
   SUCCEEDED,
 }
 
-export enum L2TxnStatus {
+export enum ChildTxnStatus {
   SUCCESS = 'SUCCESS',
   FAILURE = 'FAILURE',
   NOT_FOUND = 'NOT_FOUND',
@@ -94,38 +96,44 @@ export interface Result {
 }
 
 export interface RetryableTxs {
-  l1BlockExplorerUrl: string;
-  l2BlockExplorerUrl: string;
-  l1Tx?: string;
-  l2Tx?: string;
+  parentBlockExplorerUrl: string;
+  childBlockExplorerUrl: string;
+  parentTx?: string;
+  childTx?: string;
   autoRedeem?: string;
   ticket?: string;
   result: Result;
-  l2ChainId: number;
+  childChainId: number;
 }
 
 export interface ReceiptRes {
-  l1TxnReceipt: L1TransactionReceipt;
-  l1Network: L1Network;
-  l1Provider: JsonRpcProvider;
+  parentTxnReceipt: ParentTransactionReceipt;
+  parentNetwork: {
+    chainId: number;
+    name: string;
+  };
+  parentProvider: JsonRpcProvider;
 }
 
-export interface L2ToL1MessageData {
-  status: L2ToL1MessageStatus;
-  l2ToL1Message: L2ToL1Message;
+export interface ChildToParentMessageData {
+  status: ChildToParentMessageStatus;
+  childToParentMessage: ChildToParentMessage;
   confirmationInfo: {
     deadlineBlock: BigNumber;
     etaSeconds: number;
   } | null;
-  l1Network: L1Network;
-  l2Network: L2Network;
-  l2Provider: JsonRpcProvider;
-  createdAtL2BlockNumber: number;
-  l2ToL1EventIndex: number;
+  parentNetwork: {
+    chainId: number;
+    name: string;
+  };
+  childNetwork: ArbitrumNetwork;
+  childProvider: JsonRpcProvider;
+  createdAtChildBlockNumber: number;
+  childToParentEventIndex: number;
 }
 
-export interface L2ToL1MessageSearchResult {
-  l2TxnStatus: L2TxnStatus;
-  l2ToL1Messages: L2ToL1MessageData[];
-  l2TxHash: string;
+export interface ChildToParentMessageSearchResult {
+  childTxnStatus: ChildTxnStatus;
+  childToParentMessages: ChildToParentMessageData[];
+  childTxHash: string;
 }

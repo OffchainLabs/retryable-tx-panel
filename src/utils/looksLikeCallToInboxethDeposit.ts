@@ -1,19 +1,19 @@
 import {
-  L1ToL2MessageReaderClassicWithNetwork,
-  L1ToL2MessageReaderWithNetwork,
+  ParentToChildMessageReaderClassicWithNetwork,
+  ParentToChildMessageReaderWithNetwork,
 } from '@/types';
-import { L1ToL2MessageReaderClassic } from '@arbitrum/sdk';
+import { ParentToChildMessageReaderClassic } from '@arbitrum/sdk';
 import { constants } from 'ethers';
-import { hexDataSlice } from 'ethers/lib/utils.js';
+import { hexDataSlice } from 'ethers/lib/utils';
 
 export const looksLikeCallToInboxethDeposit = async (
-  l1ToL2Message:
-    | L1ToL2MessageReaderWithNetwork
-    | L1ToL2MessageReaderClassicWithNetwork,
+  parentToChildMessage:
+    | ParentToChildMessageReaderWithNetwork
+    | ParentToChildMessageReaderClassicWithNetwork,
 ) => {
   const txData = (
-    await l1ToL2Message.l2Provider.getTransaction(
-      l1ToL2Message.retryableCreationId,
+    await parentToChildMessage.childProvider.getTransaction(
+      parentToChildMessage.retryableCreationId,
     )
   ).data;
   // Check that length of retryData param is zero
@@ -24,17 +24,18 @@ export const looksLikeCallToInboxethDeposit = async (
   // #10 mean 11th parameter (for the position) and 12th parameter is it's length
   // the slice should be 4 + 11 * 32, 4 + 12 * 32
   const sliceIndex =
-    l1ToL2Message instanceof L1ToL2MessageReaderClassic ? 8 : 11;
+    parentToChildMessage instanceof ParentToChildMessageReaderClassic ? 8 : 11;
 
   const retryDataIsZero =
     hexDataSlice(txData, 4 + sliceIndex * 32, 4 + (sliceIndex + 1) * 32) ===
     constants.HashZero;
 
-  if (l1ToL2Message instanceof L1ToL2MessageReaderClassic) {
+  if (parentToChildMessage instanceof ParentToChildMessageReaderClassic) {
     return retryDataIsZero;
   }
 
   return (
-    retryDataIsZero && l1ToL2Message.messageData.l2CallValue.eq(constants.Zero)
+    retryDataIsZero &&
+    parentToChildMessage.messageData.l2CallValue.eq(constants.Zero)
   );
 };

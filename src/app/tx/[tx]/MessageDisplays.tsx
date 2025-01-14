@@ -3,18 +3,19 @@ import { ExternalLink } from '@/components/ExternalLink';
 import {
   depositMessageStatusDisplay,
   getRetryableIdOrDepositHash,
-  l1ToL2MessageToStatusDisplay,
+  parentToChildMessageToStatusDisplay,
 } from '@/utils';
 import {
-  L1ToL2MessagesAndDepositMessages,
   MessageStatusDisplay,
+  ParentToChildMessagesAndDepositMessages,
 } from '@/types';
+import { getExplorer } from '@/utils/getExplorer';
 
-const getDataFromL1ToL2Message = (
-  l1ToL2Message: MessageStatusDisplay['l1ToL2Message'],
+const getDataFromParentToChildMessage = (
+  parentToChildMessage: MessageStatusDisplay['parentToChildMessage'],
 ) => {
-  if (l1ToL2Message && 'sender' in l1ToL2Message) {
-    const { sender, l1BaseFee, messageData } = l1ToL2Message;
+  if (parentToChildMessage && 'sender' in parentToChildMessage) {
+    const { sender, parentBaseFee, messageData } = parentToChildMessage;
     const {
       destAddress,
       l2CallValue,
@@ -28,7 +29,7 @@ const getDataFromL1ToL2Message = (
     } = messageData;
     return {
       sender,
-      l1BaseFee: l1BaseFee.toString(),
+      parentBaseFee: parentBaseFee.toString(),
       messageData: {
         destAddress,
         l2CallValue: l2CallValue.toString(),
@@ -45,28 +46,30 @@ const getDataFromL1ToL2Message = (
 
   return {
     sender: null,
-    l1BaseFee: null,
+    parentBaseFee: null,
     messageData: null,
   };
 };
 
 async function getData({
-  retryables: l1ToL2Messages,
-  retryablesClassic: l1ToL2MessagesClassic,
+  retryables: parentToChildMessages,
+  retryablesClassic: parentToChildMessagesClassic,
   deposits,
-}: L1ToL2MessagesAndDepositMessages): Promise<{
+}: ParentToChildMessagesAndDepositMessages): Promise<{
   messagesDisplays: MessageStatusDisplay[];
 }> {
-  const l1ToL2MessagesPromises = [
-    ...l1ToL2Messages,
-    ...l1ToL2MessagesClassic,
-  ].map((l1ToL2Message) => l1ToL2MessageToStatusDisplay(l1ToL2Message));
+  const parentToChildMessagesPromises = [
+    ...parentToChildMessages,
+    ...parentToChildMessagesClassic,
+  ].map((parentToChildMessage) =>
+    parentToChildMessageToStatusDisplay(parentToChildMessage),
+  );
   const depositsPromises = deposits.map((deposit) =>
     depositMessageStatusDisplay(deposit),
   );
 
   const messagesDisplays: MessageStatusDisplay[] = await Promise.all([
-    ...l1ToL2MessagesPromises,
+    ...parentToChildMessagesPromises,
     ...depositsPromises,
   ]);
 
@@ -74,8 +77,8 @@ async function getData({
 }
 
 type Props = {
-  messages: L1ToL2MessagesAndDepositMessages;
-  hasL2ToL1MessagesConfirmed: boolean;
+  messages: ParentToChildMessagesAndDepositMessages;
+  hasChildToParentMessagesConfirmed: boolean;
 };
 
 const ConnectButton = dynamic(
@@ -90,12 +93,12 @@ const Redeem = dynamic(() => import('../../../components/Redeem'), {
 
 const MessageDisplays = async ({
   messages,
-  hasL2ToL1MessagesConfirmed,
+  hasChildToParentMessagesConfirmed: hasChildToParentMessagesConfirmed,
 }: Props) => {
   const { messagesDisplays } = await getData(messages);
   const showConnectButton =
     messagesDisplays.some((msg) => msg.showRedeemButton) ||
-    hasL2ToL1MessagesConfirmed;
+    hasChildToParentMessagesConfirmed;
 
   return (
     <>
@@ -109,19 +112,19 @@ const MessageDisplays = async ({
               <>
                 <h3>
                   L2{' '}
-                  {messageDisplay.l2TxHash !== 'null' ? (
+                  {messageDisplay.childTxHash !== 'null' ? (
                     <ExternalLink
-                      href={`${messageDisplay.explorerUrl}/tx/${messageDisplay.l2TxHash}`}
+                      href={`${messageDisplay.explorerUrl}/tx/${messageDisplay.childTxHash}`}
                     >
                       Transaction
                     </ExternalLink>
                   ) : (
                     'Transaction'
                   )}{' '}
-                  status on {messageDisplay.l2Network.name}
+                  status on {messageDisplay.childNetwork.name}
                 </h3>
 
-                {messageDisplay.l1ToL2Message !== undefined && (
+                {messageDisplay.parentToChildMessage !== undefined && (
                   <ExternalLink
                     href={`${
                       messageDisplay.explorerUrl
@@ -129,18 +132,20 @@ const MessageDisplays = async ({
                     showIcon
                   >
                     Check Your Retryable Ticket on{' '}
-                    {messageDisplay.l2Network.name}
+                    {messageDisplay.childNetwork.name}
                   </ExternalLink>
                 )}
 
                 {messageDisplay.autoRedeemHash !== undefined && (
                   <p>
                     <ExternalLink
-                      href={`${messageDisplay.l2Network.explorerUrl}/tx/${messageDisplay.autoRedeemHash}`}
+                      href={`${getExplorer(
+                        messageDisplay.childNetwork.chainId,
+                      )}/tx/${messageDisplay.autoRedeemHash}`}
                       showIcon
                     >
                       Check Your AutoRedeem transaction on{' '}
-                      {messageDisplay.l2Network.name}
+                      {messageDisplay.childNetwork.name}
                     </ExternalLink>
                   </p>
                 )}
@@ -148,12 +153,14 @@ const MessageDisplays = async ({
                 <p>{messageDisplay.text}</p>
                 {messageDisplay.showRedeemButton && (
                   <Redeem
-                    l1ToL2Message={{
-                      chainID: messageDisplay.l2Network.chainID,
-                      networkName: messageDisplay.l2Network.name,
+                    parentToChildMessage={{
+                      chainId: messageDisplay.childNetwork.chainId,
+                      networkName: messageDisplay.childNetwork.name,
                       messageNumber:
-                        messageDisplay.l1ToL2Message?.messageNumber?.toString(),
-                      ...getDataFromL1ToL2Message(messageDisplay.l1ToL2Message),
+                        messageDisplay.parentToChildMessage?.messageNumber?.toString(),
+                      ...getDataFromParentToChildMessage(
+                        messageDisplay.parentToChildMessage,
+                      ),
                     }}
                   />
                 )}
