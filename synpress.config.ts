@@ -1,6 +1,5 @@
 import { defineConfig } from 'cypress';
 import synpressPlugins from '@synthetixio/synpress/plugins';
-import { safeAddDefaultLocalNetwork } from './src/utils/network';
 
 const ethRpcUrl = process.env.NEXT_PUBLIC_LOCAL_ETHEREUM_RPC_URL;
 const arbRpcUrl = process.env.NEXT_PUBLIC_LOCAL_ARBITRUM_RPC_URL;
@@ -33,8 +32,6 @@ export default defineConfig({
   requestTimeout: 30000,
   e2e: {
     async setupNodeEvents(on, config) {
-      safeAddDefaultLocalNetwork();
-
       // Set Cypress variables
       config.env.ETH_RPC_URL = ethRpcUrl;
       config.env.ARB_RPC_URL = arbRpcUrl;
