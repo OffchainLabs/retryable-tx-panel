@@ -3,22 +3,24 @@ import {
   EthDepositMessageWithNetwork,
   MessageStatusDisplay,
 } from '@/types';
+import { getExplorer } from './getExplorer';
 
 export const depositMessageStatusDisplay = async (
   ethDepositMessage: EthDepositMessageWithNetwork,
 ): Promise<MessageStatusDisplay> => {
-  const { l2Network } = ethDepositMessage;
-  const { explorerUrl } = l2Network;
+  const { childNetwork } = ethDepositMessage;
+  const explorerUrl = getExplorer(childNetwork.chainId);
+
   const depositTxReceipt = await ethDepositMessage.wait();
-  const l2TxHash = ethDepositMessage.l2DepositTxHash;
+  const childTxHash = ethDepositMessage.childTxHash;
 
   // naming is hard
   const stuffTheyAllHave = {
-    l1ToL2Message: undefined,
+    parentToChildMessage: undefined,
     explorerUrl,
-    l2Network,
+    childNetwork,
     ethDepositMessage,
-    l2TxHash,
+    childTxHash,
     autoRedeemHash: undefined,
   };
   if (depositTxReceipt?.status === 1) {

@@ -1,4 +1,3 @@
-import { addDefaultLocalNetwork } from '@arbitrum/sdk';
 import { loadEnvironmentVariableWithFallback } from './loadEnvironmentVariableWithFallback';
 
 export const INFURA_KEY = process.env.NEXT_PUBLIC_INFURA_KEY;
@@ -89,10 +88,3 @@ export const supportedL2Networks: Partial<RpcMap> = {
   [ChainId.ArbitrumSepolia]: rpcURLs[ChainId.ArbitrumSepolia],
   ...(isE2e ? { [ChainId.ArbitrumLocal]: rpcURLs[ChainId.ArbitrumLocal] } : {}),
 };
-
-// Because of React Server Component, we might need to call this function more than once
-export function safeAddDefaultLocalNetwork() {
-  try {
-    addDefaultLocalNetwork();
-  } catch (e) {}
-}

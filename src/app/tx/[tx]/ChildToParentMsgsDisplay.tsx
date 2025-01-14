@@ -1,11 +1,11 @@
 'use client';
 import { useState } from 'react';
 import { ChainId, supportedL2Networks } from '@/utils/network';
-import { L2ToL1MessageData } from '@/types';
+import { ChildToParentMessageData } from '@/types';
 import {
-  L2ToL1MessageStatus,
-  L2ToL1MessageWriter,
-  L2ToL1Message,
+  ChildToParentMessageStatus,
+  ChildToParentMessage,
+  ChildToParentMessageWriter,
 } from '@arbitrum/sdk';
 import { useNetwork, useSigner } from 'wagmi';
 import { JsonRpcProvider } from '@ethersproject/providers';
@@ -29,55 +29,66 @@ const etaDisplay = (etaSeconds: number) => {
 };
 
 // messages need to be serialized when passed from server component to client props
-export type L2ToL1MessageDataLike = Pick<
-  L2ToL1MessageData,
-  'status' | 'createdAtL2BlockNumber'
+export type ChildToParentMessageDataLike = Pick<
+  ChildToParentMessageData,
+  'status' | 'createdAtChildBlockNumber'
 > & {
-  l1Network: Pick<L2ToL1MessageData['l1Network'], 'chainID' | 'name'>;
-  l2Network: Pick<L2ToL1MessageData['l2Network'], 'chainID' | 'name'>;
+  parentNetwork: Pick<
+    ChildToParentMessageData['parentNetwork'],
+    'chainId' | 'name'
+  >;
+  childNetwork: Pick<
+    ChildToParentMessageData['childNetwork'],
+    'chainId' | 'name'
+  >;
   confirmationInfo: {
     deadlineBlock: string;
     etaSeconds: number;
   } | null;
-  l2ToL1EventIndex: number;
+  childToParentEventIndex: number;
 };
 type Props = {
-  l2ToL1Messages: L2ToL1MessageDataLike[];
+  childToParentMessages: ChildToParentMessageDataLike[];
 };
 
-function L2ToL1MsgsDisplay({ l2ToL1Messages }: Props) {
+function ChildToParentMsgsDisplay({ childToParentMessages }: Props) {
   const { chain } = useNetwork();
   const { data: signer = null } = useSigner({ chainId: chain?.id });
   const [redeeming, setIsRedeeming] = useState(false);
 
-  const renderMessage = (l2ToL1Message: L2ToL1MessageDataLike) => {
-    switch (l2ToL1Message.status) {
-      case L2ToL1MessageStatus.UNCONFIRMED:
+  const renderMessage = (
+    childToParentMessage: ChildToParentMessageDataLike,
+  ) => {
+    switch (childToParentMessage.status) {
+      case ChildToParentMessageStatus.UNCONFIRMED:
         return (
           <div>
             <p>L2 to L1 message not yet confirmed</p>
 
-            {l2ToL1Message.confirmationInfo ? (
+            {childToParentMessage.confirmationInfo ? (
               <p>
                 {' ETA:'}
                 {etaDisplay(
-                  l2ToL1Message.confirmationInfo.etaSeconds,
-                )} <br /> (L1 block deadline:{' '}
-                {l2ToL1Message.confirmationInfo.deadlineBlock})
+                  childToParentMessage.confirmationInfo.etaSeconds,
+                )}{' '}
+                <br /> (L1 block deadline:{' '}
+                {childToParentMessage.confirmationInfo.deadlineBlock})
               </p>
             ) : null}
           </div>
         );
-      case L2ToL1MessageStatus.CONFIRMED:
-        const l2Provider = new JsonRpcProvider(
-          supportedL2Networks[l2ToL1Message.l2Network.chainID as ChainId],
+      case ChildToParentMessageStatus.CONFIRMED:
+        const childProvider = new JsonRpcProvider(
+          supportedL2Networks[
+            childToParentMessage.childNetwork.chainId as ChainId
+          ],
         );
         return (
           <div>
             <p>L2 to L1 message confirmed, ready to redeem</p>
-            {chain?.id !== l2ToL1Message.l1Network.chainID ? (
+            {chain?.id !== childToParentMessage.parentNetwork.chainId ? (
               <div>
-                {`To redeem, connect to chain ${l2ToL1Message.l1Network.chainID} (${l2ToL1Message.l1Network.name})`}
+                {`To redeem, connect to chain ${childToParentMessage.parentNetwork.chainId} (${childToParentMessage.parentNetwork.name})`}
               </div>
             ) : (
               <div className="redeem-button-container">
@@ -89,21 +100,32 @@ function L2ToL1MsgsDisplay({ l2ToL1Messages }: Props) {
                     try {
                       setIsRedeeming(true);
                       // This would create a lot of duplicated getLogs call, would be nicer if we can pass the event in but it's not serializable
-                      // This also assume the order returned by getL2ToL1Events is always in order
-                      const l2ToL1TxEvents =
-                        await L2ToL1Message.getL2ToL1Events(l2Provider, {
-                          fromBlock: l2ToL1Message.createdAtL2BlockNumber,
-                          toBlock: l2ToL1Message.createdAtL2BlockNumber + 1,
-                        });
-                      const l2ToL1MessageWriter = new L2ToL1MessageWriter(
-                        signer,
-                        l2ToL1TxEvents[l2ToL1Message.l2ToL1EventIndex],
+                      // This also assume the order returned by getChildToParentEvents is always in order
+                      const childToParentTxEvents =
+                        await ChildToParentMessage.getChildToParentEvents(
+                          childProvider,
+                          {
+                            fromBlock:
+                              childToParentMessage.createdAtChildBlockNumber,
+                            toBlock:
+                              childToParentMessage.createdAtChildBlockNumber +
+                              1,
+                          },
+                        );
+                      const childToParentMessageWriter =
+                        new ChildToParentMessageWriter(
+                          signer,
+                          childToParentTxEvents[
+                            childToParentMessage.childToParentEventIndex
+                          ],
+                        );
+                      const res = await childToParentMessageWriter.execute(
+                        childProvider,
                       );
-                      const res = await l2ToL1MessageWriter.execute(l2Provider);
                       const rec = await res.wait();
                       if (rec.status === 1) {
                         alert(
-                          `L2toL1 message successfully redeemed! ${rec.transactionHash}`,
+                          `L2 to L1 message successfully redeemed! ${rec.transactionHash}`,
                         );
                       } else {
                         throw new Error('Failed to redeem');
@@ -124,18 +146,18 @@ function L2ToL1MsgsDisplay({ l2ToL1Messages }: Props) {
             )}
           </div>
         );
-      case L2ToL1MessageStatus.EXECUTED:
+      case ChildToParentMessageStatus.EXECUTED:
         return <div>Your message has been executed 🎉</div>;
     }
   };
 
   return (
     <>
-      {l2ToL1Messages.map((l2ToL1Message, i) => {
+      {childToParentMessages.map((childToParentMessage, i) => {
         return (
           <div key={i}>
             <h2>Your transaction status:</h2>
-            {renderMessage(l2ToL1Message)}
+            {renderMessage(childToParentMessage)}
           </div>
         );
       })}
@@ -143,4 +165,4 @@ function L2ToL1MsgsDisplay({ l2ToL1Messages }: Props) {
   );
 }
 
-export default L2ToL1MsgsDisplay;
+export default ChildToParentMsgsDisplay;
