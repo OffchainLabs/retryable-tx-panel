@@ -25,7 +25,7 @@ export const getChildToParentMessages = async (
   return new Promise(async (resolve) => {
     const messagesPromises = Object.entries(supportedL2Networks).map(
       async ([chainID, rpcURL]) => {
-        const childNetwork = getArbitrumNetwork(+chainID);
+        const childNetwork = getArbitrumNetwork(Number(chainID));
         const childProvider = new JsonRpcProvider(rpcURL);
 
         const parentChainID = childNetwork.parentChainId as
