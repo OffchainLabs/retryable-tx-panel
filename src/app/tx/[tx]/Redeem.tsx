@@ -1,7 +1,7 @@
 'use client';
 import { useMemo } from 'react';
 import { MessageStatusDisplay } from '../../../types';
-import { L1ToL2MessageWriter } from '@arbitrum/sdk';
+import { ParentToChildMessageWriter } from '@arbitrum/sdk';
 import React from 'react';
 import { useNetwork, useSigner } from 'wagmi';
 import { BigNumber } from 'ethers';
@@ -9,12 +9,12 @@ import { RetryableMessageParams } from '@arbitrum/sdk/dist/lib/dataEntities/mess
 import { useAccountType } from '@/utils/useAccountType';
 
 type Props = {
-  l1ToL2Message: {
-    chainID: MessageStatusDisplay['l2Network']['chainID'];
-    networkName: MessageStatusDisplay['l2Network']['name'];
+  parentToChildMessage: {
+    chainId: MessageStatusDisplay['childNetwork']['chainId'];
+    networkName: MessageStatusDisplay['childNetwork']['name'];
     sender: string | null;
     messageNumber: string | undefined;
-    l1BaseFee: string | null;
+    parentBaseFee: string | null;
     messageData: {
       destAddress: string;
       l2CallValue: string;
@@ -29,7 +29,7 @@ type Props = {
   };
 };
 
-function Redeem({ l1ToL2Message }: Props) {
+function Redeem({ parentToChildMessage }: Props) {
   const [message, setMessage] = React.useState<string>('');
   const { chain } = useNetwork();
   const { data: signer = null } = useSigner({ chainId: chain?.id });
@@ -37,19 +37,19 @@ function Redeem({ l1ToL2Message }: Props) {
   const { isSmartContractWallet } = useAccountType();
 
   const {
-    chainID,
+    chainId,
     networkName,
     sender,
     messageNumber,
-    l1BaseFee,
+    parentBaseFee,
     messageData,
-  } = l1ToL2Message;
+  } = parentToChildMessage;
 
   const redeemButton = useMemo(() => {
     if (!signer) return null;
 
-    if (chain?.id !== chainID) {
-      return `To redeem, connect to chain ${chainID} (${networkName})`;
+    if (chain?.id !== chainId) {
+      return `To redeem, connect to chain ${chainId} (${networkName})`;
     }
 
     return (
@@ -80,18 +80,18 @@ function Redeem({ l1ToL2Message }: Props) {
             maxFeePerGas: BigNumber.from(maxFeePerGas),
           };
 
-          const l1ToL2MessageWriter = new L1ToL2MessageWriter(
+          const parentToChildMessageWriter = new ParentToChildMessageWriter(
             signer,
-            chainID,
+            chainId,
             sender || '',
             BigNumber.from(messageNumber),
-            BigNumber.from(l1BaseFee),
+            BigNumber.from(parentBaseFee),
             messageDataParsed,
           );
 
           try {
             setIsLoading(true);
-            const res = await l1ToL2MessageWriter.redeem();
+            const res = await parentToChildMessageWriter.redeem();
             const rec = await res.wait();
             if (rec.status === 1) {
               setMessage(
@@ -116,13 +116,13 @@ function Redeem({ l1ToL2Message }: Props) {
   }, [
     signer,
     chain?.id,
-    chainID,
+    chainId,
     isLoading,
     networkName,
     messageData,
     sender,
     messageNumber,
-    l1BaseFee,
+    parentBaseFee,
   ]);
 
   return (

@@ -19,14 +19,15 @@ type Props = {
   address: string;
 };
 const RecoverFunds = ({ operationInfo, address }: Props) => {
-  const l2ChainId = operationInfo.chainId;
+  const childChainId = operationInfo.chainId;
 
   return (
     <div className="funds-message">
       There are {utils.formatEther(operationInfo.balanceToRecover)} ETH on{' '}
       {operationInfo.aliasedAddress}
       <br />
-      (Alias of {address}) on this network {mapChainIdToName[l2ChainId] ?? ''}.
+      (Alias of {address}) on this network{' '}
+      {mapChainIdToName[childChainId] ?? ''}.
     </div>
   );
 };

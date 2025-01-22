@@ -1,12 +1,12 @@
 import { AlertLevel, ReceiptState } from '@/types';
 
 export const receiptStateToDisplayableResult = (
-  l1ReceiptState: ReceiptState,
+  parentReceiptState: ReceiptState,
 ): {
   text: string;
   alertLevel: AlertLevel;
 } => {
-  switch (l1ReceiptState) {
+  switch (parentReceiptState) {
     case ReceiptState.EMPTY:
       return {
         text: '',
@@ -27,17 +27,17 @@ export const receiptStateToDisplayableResult = (
         text: 'L1 transaction not found',
         alertLevel: AlertLevel.YELLOW,
       };
-    case ReceiptState.L1_FAILED:
+    case ReceiptState.PARENT_FAILED:
       return {
         text: 'Error: L1 transaction reverted',
         alertLevel: AlertLevel.RED,
       };
-    case ReceiptState.L2_FAILED:
+    case ReceiptState.CHILD_FAILED:
       return {
         text: 'Error: L2 transaction reverted',
         alertLevel: AlertLevel.RED,
       };
-    case ReceiptState.NO_L1_L2_MESSAGES:
+    case ReceiptState.NO_PARENT_TO_CHILD_MESSAGES:
       return {
         text: 'No L1-to-L2 messages created by provided L1 transaction',
         alertLevel: AlertLevel.YELLOW,
@@ -47,7 +47,7 @@ export const receiptStateToDisplayableResult = (
         text: 'Cross chain messages found',
         alertLevel: AlertLevel.GREEN,
       };
-    case ReceiptState.NO_L2_L1_MESSAGES: {
+    case ReceiptState.NO_CHILD_TO_PARENT_MESSAGES: {
       return {
         text: 'No L1-to-L2 messages created by provided L1 transaction',
         alertLevel: AlertLevel.YELLOW,

@@ -1,78 +1,81 @@
 import {
   AlertLevel,
-  L1ToL2MessageReaderClassicWithNetwork,
-  L1ToL2MessageReaderWithNetwork,
+  ParentToChildMessageReaderClassicWithNetwork,
+  ParentToChildMessageReaderWithNetwork,
   MessageStatusDisplay,
 } from '@/types';
 import {
-  L1ToL2MessageStatus,
-  L1ToL2MessageWaitResult,
-} from '@arbitrum/sdk/dist/lib/message/L1ToL2Message';
+  ParentToChildMessageStatus,
+  ParentToChildMessageWaitForStatusResult,
+} from '@arbitrum/sdk/dist/lib/message/ParentToChildMessage';
+import { getExplorer } from './getExplorer';
 import { looksLikeCallToInboxethDeposit } from './looksLikeCallToInboxethDeposit';
 
 async function getAutoRedeemAttempt(
-  l1ToL2Message:
-    | L1ToL2MessageReaderWithNetwork
-    | L1ToL2MessageReaderClassicWithNetwork,
+  parentToChildMessage:
+    | ParentToChildMessageReaderWithNetwork
+    | ParentToChildMessageReaderClassicWithNetwork,
 ): Promise<string | undefined> {
-  if ('getAutoRedeemAttempt' in l1ToL2Message) {
-    return (await l1ToL2Message.getAutoRedeemAttempt())?.transactionHash;
+  if ('getAutoRedeemAttempt' in parentToChildMessage) {
+    return (await parentToChildMessage.getAutoRedeemAttempt())?.transactionHash;
   }
 
-  return l1ToL2Message.autoRedeemId;
+  return parentToChildMessage.autoRedeemId;
 }
 
-export const l1ToL2MessageToStatusDisplay = async (
-  l1ToL2Message:
-    | L1ToL2MessageReaderWithNetwork
-    | L1ToL2MessageReaderClassicWithNetwork,
+export const parentToChildMessageToStatusDisplay = async (
+  parentToChildMessage:
+    | ParentToChildMessageReaderWithNetwork
+    | ParentToChildMessageReaderClassicWithNetwork,
 ): Promise<MessageStatusDisplay> => {
-  const { l2Network } = l1ToL2Message;
-  const { explorerUrl } = l2Network;
+  const { childNetwork } = parentToChildMessage;
+  const explorerUrl = getExplorer(childNetwork.chainId);
 
-  let messageStatus: L1ToL2MessageWaitResult | { status: L1ToL2MessageStatus };
+  let messageStatus:
+    | ParentToChildMessageWaitForStatusResult
+    | { status: ParentToChildMessageStatus };
 
   try {
-    if ('waitForStatus' in l1ToL2Message) {
-      messageStatus = await l1ToL2Message.waitForStatus(undefined, 1);
+    if ('waitForStatus' in parentToChildMessage) {
+      messageStatus = await parentToChildMessage.waitForStatus(undefined, 1);
     } else {
       messageStatus = {
-        status: await l1ToL2Message.status(),
+        status: await parentToChildMessage.status(),
       };
     }
   } catch (e) {
     // catch timeout if not immediately found
-    messageStatus = { status: L1ToL2MessageStatus.NOT_YET_CREATED };
+    messageStatus = { status: ParentToChildMessageStatus.NOT_YET_CREATED };
   }
 
-  let l2TxHash = 'null';
+  let childTxHash = 'null';
   if (
-    messageStatus.status === L1ToL2MessageStatus.REDEEMED &&
-    'l2TxReceipt' in messageStatus
+    messageStatus.status === ParentToChildMessageStatus.REDEEMED &&
+    'childTxReceipt' in messageStatus
   ) {
-    l2TxHash = messageStatus.l2TxReceipt.transactionHash;
+    childTxHash = messageStatus.childTxReceipt.transactionHash;
   }
 
   // naming is hard
   const stuffTheyAllHave = {
     ethDepositMessage: undefined,
     explorerUrl,
-    l2Network,
-    l1ToL2Message,
-    l2TxHash,
-    autoRedeemHash: await getAutoRedeemAttempt(l1ToL2Message),
+    childNetwork,
+    parentToChildMessage,
+    childTxHash,
+    autoRedeemHash: await getAutoRedeemAttempt(parentToChildMessage),
   };
   switch (messageStatus.status) {
-    case L1ToL2MessageStatus.CREATION_FAILED:
+    case ParentToChildMessageStatus.CREATION_FAILED:
       return {
         text: 'L2 message creation reverted; perhaps provided maxSubmissionCost was too low?',
         alertLevel: AlertLevel.RED,
         showRedeemButton: false,
         ...stuffTheyAllHave,
       };
-    case L1ToL2MessageStatus.EXPIRED: {
+    case ParentToChildMessageStatus.EXPIRED: {
       const looksLikeEthDeposit = await looksLikeCallToInboxethDeposit(
-        l1ToL2Message,
+        parentToChildMessage,
       );
       if (looksLikeEthDeposit) {
         return {
@@ -89,7 +92,7 @@ export const l1ToL2MessageToStatusDisplay = async (
         ...stuffTheyAllHave,
       };
     }
-    case L1ToL2MessageStatus.NOT_YET_CREATED: {
+    case ParentToChildMessageStatus.NOT_YET_CREATED: {
       return {
         text: 'L1 to L2 message initiated from L1, but not yet created — check again in a few minutes!',
         alertLevel: AlertLevel.YELLOW,
@@ -97,7 +100,7 @@ export const l1ToL2MessageToStatusDisplay = async (
         ...stuffTheyAllHave,
       };
     }
-    case L1ToL2MessageStatus.REDEEMED: {
+    case ParentToChildMessageStatus.REDEEMED: {
       return {
         text: 'Success! 🎉 Your retryable was executed.',
         alertLevel: AlertLevel.GREEN,
@@ -105,9 +108,9 @@ export const l1ToL2MessageToStatusDisplay = async (
         ...stuffTheyAllHave,
       };
     }
-    case L1ToL2MessageStatus.FUNDS_DEPOSITED_ON_L2: {
+    case ParentToChildMessageStatus.FUNDS_DEPOSITED_ON_CHILD: {
       const looksLikeEthDeposit = await looksLikeCallToInboxethDeposit(
-        l1ToL2Message,
+        parentToChildMessage,
       );
       if (looksLikeEthDeposit) {
         return {
@@ -129,6 +132,8 @@ export const l1ToL2MessageToStatusDisplay = async (
     }
 
     default:
-      throw new Error('Uncaught L1ToL2MessageStatus type in switch statement');
+      throw new Error(
+        'Uncaught ParentToChildMessageStatus type in switch statement',
+      );
   }
 };

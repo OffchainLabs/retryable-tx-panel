@@ -26,10 +26,10 @@ async function getOperationInfoByChainId(
   // And get its balance to find out the amount we are transferring
   const operationInfoPromises = Object.entries(supportedL2Networks).map(
     async ([chainId, rpcURL]) => {
-      const l2Provider = new JsonRpcProvider(rpcURL);
+      const childProvider = new JsonRpcProvider(rpcURL);
 
       try {
-        const aliasedSignerBalance = await l2Provider.getBalance(
+        const aliasedSignerBalance = await childProvider.getBalance(
           aliasedAddress,
         );
 
