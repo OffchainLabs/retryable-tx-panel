@@ -165,19 +165,20 @@ const Transaction = async ({ params }: Props) => {
     <>
       <div className="resultContainer">
         <div className="receipt-text">
-          {parentTxnReceipt && (
-            <a
-              href={
-                getExplorer(parentTxnReceipt.parentNetwork.chainId) +
-                '/tx/' +
-                parentTxnReceipt.parentTxnReceipt.transactionHash
-              }
-              rel="noreferrer"
-              target="_blank"
-            >
-              L1 Transaction on {parentTxnReceipt.parentNetwork.name}
-            </a>
-          )}{' '}
+          {parentTxnReceipt &&
+            getExplorer(parentTxnReceipt.parentNetwork.chainId) && (
+              <a
+                href={
+                  getExplorer(parentTxnReceipt.parentNetwork.chainId) +
+                  '/tx/' +
+                  parentTxnReceipt.parentTxnReceipt.transactionHash
+                }
+                rel="noreferrer"
+                target="_blank"
+              >
+                L1 Transaction on {parentTxnReceipt.parentNetwork.name}
+              </a>
+            )}{' '}
           {parentTxnResultText}{' '}
         </div>
       </div>

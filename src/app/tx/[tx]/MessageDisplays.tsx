@@ -136,19 +136,20 @@ const MessageDisplays = async ({
                   </ExternalLink>
                 )}
 
-                {messageDisplay.autoRedeemHash !== undefined && (
-                  <p>
-                    <ExternalLink
-                      href={`${getExplorer(
-                        messageDisplay.childNetwork.chainId,
-                      )}/tx/${messageDisplay.autoRedeemHash}`}
-                      showIcon
-                    >
-                      Check Your AutoRedeem transaction on{' '}
-                      {messageDisplay.childNetwork.name}
-                    </ExternalLink>
-                  </p>
-                )}
+                {messageDisplay.autoRedeemHash !== undefined &&
+                  getExplorer(messageDisplay.childNetwork.chainId) && (
+                    <p>
+                      <ExternalLink
+                        href={`${getExplorer(
+                          messageDisplay.childNetwork.chainId,
+                        )}/tx/${messageDisplay.autoRedeemHash}`}
+                        showIcon
+                      >
+                        Check Your AutoRedeem transaction on{' '}
+                        {messageDisplay.childNetwork.name}
+                      </ExternalLink>
+                    </p>
+                  )}
 
                 <p>{messageDisplay.text}</p>
                 {messageDisplay.showRedeemButton && (

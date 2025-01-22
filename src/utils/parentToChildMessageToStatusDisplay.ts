@@ -29,12 +29,7 @@ export const parentToChildMessageToStatusDisplay = async (
     | ParentToChildMessageReaderClassicWithNetwork,
 ): Promise<MessageStatusDisplay> => {
   const { childNetwork } = parentToChildMessage;
-  let explorerUrl: string | null = null;
-  try {
-    explorerUrl = getExplorer(childNetwork.chainId);
-  } catch (e) {
-    explorerUrl = '';
-  }
+  const explorerUrl = getExplorer(childNetwork.chainId);
 
   let messageStatus:
     | ParentToChildMessageWaitForStatusResult
