@@ -27,6 +27,10 @@ export const getParentToChildMessagesAndDepositMessages = async (
   parentTxnReceipt: ParentTransactionReceipt,
   parentNetwork: ChainId,
 ): Promise<ParentToChildMessagesAndDepositMessages> => {
+  console.log(
+    parentNetwork,
+    getChildrenForNetwork(parentNetwork).map((a) => a.chainId),
+  );
   const messagesPromises: Promise<Messages>[] = Array.from(
     getChildrenForNetwork(parentNetwork),
   ).map(async (childChain) => {

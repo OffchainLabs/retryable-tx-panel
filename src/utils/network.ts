@@ -1,5 +1,30 @@
 import { loadEnvironmentVariableWithFallback } from './loadEnvironmentVariableWithFallback';
 
+export const hyChain = {
+  id: 2911,
+  network: 'hychain',
+  name: 'HYCHAIN Mainnet',
+  nativeCurrency: {
+    name: 'TOPIA',
+    symbol: 'TOPIA',
+    decimals: 18,
+  },
+  rpcUrls: {
+    default: {
+      http: ['https://hychain.calderachain.xyz/http'],
+    },
+    public: {
+      http: ['https://hychain.calderachain.xyz/http'],
+    },
+  },
+  blockExplorers: {
+    default: {
+      name: 'hychain explorer',
+      url: 'https://explorer.hychain.com',
+    },
+  },
+};
+
 export const INFURA_KEY = process.env.NEXT_PUBLIC_INFURA_KEY;
 if (typeof INFURA_KEY === 'undefined') {
   throw new Error('process.env.NEXT_PUBLIC_INFURA_KEY not provided');
@@ -25,6 +50,8 @@ export enum ChainId {
   // L2 Testnets
   ArbitrumLocal = 412346,
   ArbitrumSepolia = 421614,
+  // L3
+  HyChain = hyChain.id,
 }
 
 export const mapChainIdToName: Record<string, string> = {
@@ -35,6 +62,7 @@ export const mapChainIdToName: Record<string, string> = {
   [ChainId.ArbitrumNova]: 'Arbitrum Nova',
   [ChainId.ArbitrumLocal]: 'Arbitrum Local',
   [ChainId.ArbitrumSepolia]: 'Arbitrum Sepolia',
+  [ChainId.HyChain]: 'HYCHAIN',
 };
 
 const isE2e = process.env.NODE_ENV === 'test';
@@ -74,6 +102,7 @@ export const rpcURLs: RpcMap = {
     env: process.env.NEXT_PUBLIC_LOCAL_ARBITRUM_RPC_URL,
     fallback: ARBITRUM_INFURA_RPC_URL,
   }),
+  [ChainId.HyChain]: hyChain.rpcUrls.default.http[0],
 };
 
 export const supportedL1Networks: Partial<RpcMap> = {
@@ -87,4 +116,5 @@ export const supportedL2Networks: Partial<RpcMap> = {
   [ChainId.ArbitrumNova]: rpcURLs[ChainId.ArbitrumNova],
   [ChainId.ArbitrumSepolia]: rpcURLs[ChainId.ArbitrumSepolia],
   ...(isE2e ? { [ChainId.ArbitrumLocal]: rpcURLs[ChainId.ArbitrumLocal] } : {}),
+  [ChainId.HyChain]: rpcURLs[ChainId.HyChain],
 };
