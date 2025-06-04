@@ -9,9 +9,10 @@ import {
   getChildrenForNetwork,
   ParentToChildMessageReaderClassic,
   ParentToChildMessageReader,
+  registerCustomArbitrumNetwork,
 } from '@arbitrum/sdk';
 import { StaticJsonRpcProvider } from '@ethersproject/providers';
-import { ChainId, rpcURLs } from './network';
+import { ChainId, hyChain, rpcURLs } from './network';
 
 type Messages = {
   allParentToChildMessages: (ParentToChildMessageReader & {
@@ -27,14 +28,22 @@ export const getParentToChildMessagesAndDepositMessages = async (
   parentTxnReceipt: ParentTransactionReceipt,
   parentNetwork: ChainId,
 ): Promise<ParentToChildMessagesAndDepositMessages> => {
-  console.log(
-    parentNetwork,
-    getChildrenForNetwork(parentNetwork).map((a) => a.chainId),
-  );
   const messagesPromises: Promise<Messages>[] = Array.from(
     getChildrenForNetwork(parentNetwork),
   ).map(async (childChain) => {
     // TODO: error handle
+    registerCustomArbitrumNetwork({
+      chainId: hyChain.id,
+      confirmPeriodBlocks: 0,
+      ethBridge: {
+        inbox: hyChain.inboxAddress,
+      },
+      isCustom: true,
+      isTestnet: false,
+      name: hyChain.name,
+      parentChainId: ChainId.Mainnet,
+      isBold: false,
+    });
     const childNetwork = getArbitrumNetwork(childChain.chainId);
 
     // Check if any parent to child msg is sent to the inbox of this childNetwork

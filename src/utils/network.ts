@@ -23,6 +23,7 @@ export const hyChain = {
       url: 'https://explorer.hychain.com',
     },
   },
+  inboxAddress: '0xD6c596b7ca17870DD50D322393deCE6C2085a116',
 };
 
 export const INFURA_KEY = process.env.NEXT_PUBLIC_INFURA_KEY;
