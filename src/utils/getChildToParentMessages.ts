@@ -1,5 +1,4 @@
 import {
-  ChainId,
   mapChainIdToName,
   supportedL1Networks,
   supportedL2Networks,
@@ -28,9 +27,7 @@ export const getChildToParentMessages = async (
         const childNetwork = getArbitrumNetwork(Number(chainID));
         const childProvider = new JsonRpcProvider(rpcURL);
 
-        const parentChainID = childNetwork.parentChainId as
-          | ChainId.Mainnet
-          | ChainId.Sepolia;
+        const parentChainID = childNetwork.parentChainId;
         const parentProvider = new JsonRpcProvider(
           supportedL1Networks[parentChainID],
         );

@@ -1,5 +1,5 @@
 'use client';
-import React, { useCallback, useState } from 'react';
+import { useCallback, useState } from 'react';
 import {
   Address,
   getArbitrumNetwork,
@@ -17,6 +17,7 @@ import { useAccountType } from '@/utils/useAccountType';
 import { ParentToChildMessageGasParams } from '@arbitrum/sdk/dist/lib/message/ParentToChildMessageCreator';
 import { StaticJsonRpcProvider } from '@ethersproject/providers';
 import { inboxAbi } from './InboxAbi';
+import { EthBridge } from '@arbitrum/sdk/dist/lib/dataEntities/networks';
 
 function getParentChainIdFromChildChainId(childChainId: number | undefined) {
   if (!childChainId) {
@@ -125,7 +126,7 @@ function RecoverFundsButton({
       confirmPeriodBlocks: 0,
       ethBridge: {
         inbox: hyChain.inboxAddress,
-      },
+      } as EthBridge,
       isCustom: true,
       isTestnet: false,
       name: hyChain.name,

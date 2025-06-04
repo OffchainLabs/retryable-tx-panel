@@ -11,6 +11,7 @@ import {
   ParentToChildMessageReader,
   registerCustomArbitrumNetwork,
 } from '@arbitrum/sdk';
+import { EthBridge } from '@arbitrum/sdk/dist/lib/dataEntities/networks';
 import { StaticJsonRpcProvider } from '@ethersproject/providers';
 import { ChainId, hyChain, rpcURLs } from './network';
 
@@ -37,7 +38,7 @@ export const getParentToChildMessagesAndDepositMessages = async (
       confirmPeriodBlocks: 0,
       ethBridge: {
         inbox: hyChain.inboxAddress,
-      },
+      } as EthBridge,
       isCustom: true,
       isTestnet: false,
       name: hyChain.name,
