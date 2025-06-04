@@ -79,7 +79,6 @@ async function getData(txHash: string) {
 
   const { parentTxnReceipt: _parentTxnReceipt, parentNetwork } =
     parentTxnReceipt;
-  console.log(_parentTxnReceipt.status);
   if (_parentTxnReceipt.status === 0) {
     return {
       ...defaultReturn,
