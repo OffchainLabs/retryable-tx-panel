@@ -88,7 +88,7 @@ async function recoverFundsOnHychain({
     destinationAddress, // callValueRefundAddress
     gasEstimation.gasLimit, // gasLimit
     gasEstimation.maxFeePerGas, // maxFeePerGas
-    gasEstimation.gasLimit, // tokenTotalFeeAmount
+    0, // tokenTotalFeeAmount
     '0x', // data
     {
       from: signerAddress.value,
