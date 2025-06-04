@@ -2,9 +2,9 @@
 import React, { useCallback, useState } from 'react';
 import {
   Address,
-  getL2Network,
-  L1ToL2MessageGasEstimator,
-  L1TransactionReceipt,
+  getArbitrumNetwork,
+  ParentToChildMessageGasEstimator,
+  ParentTransactionReceipt,
 } from '@arbitrum/sdk';
 import { Inbox__factory } from '@arbitrum/sdk/dist/lib/abi/factories/Inbox__factory';
 import { getBaseFee } from '@arbitrum/sdk/dist/lib/utils/lib';
@@ -14,15 +14,15 @@ import { BigNumber } from 'ethers';
 import { ChainId } from '@/utils/network';
 import { useAccountType } from '@/utils/useAccountType';
 
-function getL1ChainIdFromL2ChainId(l2ChainId: number | undefined) {
-  if (!l2ChainId) {
+function getParentChainIdFromChildChainId(childChainId: number | undefined) {
+  if (!childChainId) {
     return ChainId.Mainnet;
   }
 
   return {
     [ChainId.ArbitrumOne]: ChainId.Mainnet,
     [ChainId.ArbitrumSepolia]: ChainId.Sepolia,
-  }[l2ChainId];
+  }[childChainId];
 }
 
 function RecoverFundsButton({
@@ -42,7 +42,7 @@ function RecoverFundsButton({
     useAccountType();
   const { chain } = useNetwork();
   const { data: signer } = useSigner({
-    chainId: getL1ChainIdFromL2ChainId(chainID),
+    chainId: getParentChainIdFromChildChainId(chainID),
   });
 
   const handleRecover = useCallback(async () => {
@@ -64,17 +64,16 @@ function RecoverFundsButton({
     setLoading(true);
     setMessage('');
 
-    const baseL2Provider = getProviderFromChainId(chainID);
-    const l2Network = await getL2Network(baseL2Provider);
+    const baseChildProvider = getProviderFromChainId(chainID);
+    const childNetwork = await getArbitrumNetwork(baseChildProvider);
     const inbox = Inbox__factory.connect(
-      l2Network.ethBridge.inbox,
-      baseL2Provider,
+      childNetwork.ethBridge.inbox,
+      baseChildProvider,
     );
 
     // We estimate gas usage
-    const l1ToL2MessageGasEstimator = new L1ToL2MessageGasEstimator(
-      baseL2Provider,
-    );
+    const parentToChildMessageGasEstimator =
+      new ParentToChildMessageGasEstimator(baseChildProvider);
 
     if (!signer.provider) {
       setLoading(false);
@@ -83,12 +82,12 @@ function RecoverFundsButton({
 
     const signerAliasedAddress = signerAddress.applyAlias();
 
-    // The estimateAll method gives us the following values for sending an L1->L2 message
+    // The estimateAll method gives us the following values for sending an Parent->Child message
     //      (1) maxSubmissionCost: The maximum cost to be paid for submitting the transaction
-    //      (2) gasLimit: The L2 gas limit
-    //      (3) maxFeePerGas: The price bid per gas on L2
-    //      (4) deposit: The total amount to deposit on L1 to cover L2 gas and L2 call value
-    const gasEstimation = await l1ToL2MessageGasEstimator.estimateAll(
+    //      (2) gasLimit: The child chain gas limit
+    //      (3) maxFeePerGas: The price bid per gas on child chain
+    //      (4) deposit: The total amount to deposit on parent chain to cover child chain gas and l2CallValue
+    const gasEstimation = await parentToChildMessageGasEstimator.estimateAll(
       {
         from: signerAliasedAddress.value,
         to: destinationAddress,
@@ -103,7 +102,7 @@ function RecoverFundsButton({
 
     // And we send the request through the method unsafeCreateRetryableTicket of the Inbox contract
     // We need this method because we don't want the contract to check that we are not sending the l2CallValue
-    // in the "value" of the transaction, because we want to use the amount that is already on L2
+    // in the "value" of the transaction, because we want to use the amount that is already on child chain
     const l2CallValue = balanceToRecover
       .sub(gasEstimation.maxSubmissionCost)
       .sub(gasEstimation.gasLimit.mul(gasEstimation.maxFeePerGas));
@@ -116,7 +115,7 @@ function RecoverFundsButton({
 
     try {
       setLoading(true);
-      const l1SubmissionTxRaw = await inbox
+      const parentSubmissionTxRaw = await inbox
         .connect(signer)
         .unsafeCreateRetryableTicket(
           destinationAddress, // to
@@ -134,15 +133,19 @@ function RecoverFundsButton({
         );
 
       // We wrap the transaction in monkeyPatchContractCallWait so we can also waitForL2 later on
-      const l1SubmissionTx =
-        L1TransactionReceipt.monkeyPatchContractCallWait(l1SubmissionTxRaw);
-      const l1SubmissionTxReceipt = await l1SubmissionTx.wait();
+      const parentSubmissionTx =
+        ParentTransactionReceipt.monkeyPatchContractCallWait(
+          parentSubmissionTxRaw,
+        );
+      const parentSubmissionTxReceipt = await parentSubmissionTx.wait();
 
       setMessage(
-        `L1 submission transaction receipt is: ${l1SubmissionTxReceipt.transactionHash}. Follow the transaction in the <a target="_blank" href="https://retryable-dashboard.arbitrum.io/tx/${l1SubmissionTxReceipt.transactionHash}">Retryables Dashboard</a>.`,
+        `L1 submission transaction receipt is: ${parentSubmissionTxReceipt.transactionHash}. Follow the transaction in the <a target="_blank" href="https://retryable-dashboard.arbitrum.io/tx/${parentSubmissionTxReceipt.transactionHash}">Retryables Dashboard</a>.`,
       );
 
-      await l1SubmissionTxReceipt.waitForL2(baseL2Provider);
+      await parentSubmissionTxReceipt.waitForChildTransactionReceipt(
+        baseChildProvider,
+      );
       window.location.reload();
     } catch (err: any) {
       setMessage((err as Error).message.toString());

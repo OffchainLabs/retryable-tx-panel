@@ -4,7 +4,7 @@
   "license": "Apache-2.0",
   "private": true,
   "dependencies": {
-    "@arbitrum/sdk": "^3.7.2",
+    "@arbitrum/sdk": "^4.0.2",
     "@ethersproject/bignumber": "^5.1.1",
     "@rainbow-me/rainbowkit": "^0.12.18",
     "@types/node": "^16.7.13",

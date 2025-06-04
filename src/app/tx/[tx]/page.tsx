@@ -1,33 +1,36 @@
-import { L2ToL1MessageStatus } from '@arbitrum/sdk';
 import dynamic from 'next/dynamic';
 import { Suspense } from 'react';
 import { Providers } from '@/components/Providers';
 import {
-  getL1ToL2MessagesAndDepositMessages,
-  getL1TxnReceipt,
-  getL2ToL1Messages,
+  getChildToParentMessages,
+  getParentToChildMessagesAndDepositMessages,
+  getParentTxnReceipt,
   receiptStateToDisplayableResult,
 } from '@/utils';
 import {
-  L1ToL2MessagesAndDepositMessages,
-  L2ToL1MessageData,
-  L2TxnStatus,
+  ChildToParentMessageData,
+  ChildTxnStatus,
+  ParentToChildMessagesAndDepositMessages,
   ReceiptRes,
   ReceiptState,
 } from '@/types';
 import { MessageDisplays } from './MessageDisplays';
-import { L2ToL1MessageDataLike } from './L2ToL1MsgsDisplay';
+import { ChildToParentMessageDataLike } from './ChildToParentMsgsDisplay';
+import { getExplorer } from '@/utils/getExplorer';
+import { ChildToParentMessageStatus } from '@arbitrum/sdk';
 
-const L2ToL1MsgsDisplay = dynamic(() => import('./L2ToL1MsgsDisplay'), {
-  ssr: false,
-});
+const ChildToParentMsgsDisplay = dynamic(
+  () => import('./ChildToParentMsgsDisplay'),
+  {
+    ssr: false,
+  },
+);
 
 async function getData(txHash: string) {
-  const receiptRes = await getL1TxnReceipt(txHash);
-  const l1TxnReceipt = receiptRes;
+  const parentTxnReceipt = await getParentTxnReceipt(txHash);
   const defaultReturn: {
-    allMessages: L1ToL2MessagesAndDepositMessages;
-    l2ToL1MessagesToShow: L2ToL1MessageData[];
+    allMessages: ParentToChildMessagesAndDepositMessages;
+    childToParentMessagesToShow: ChildToParentMessageData[];
     receiptRes: ReceiptRes | undefined;
   } = {
     allMessages: {
@@ -35,78 +38,78 @@ async function getData(txHash: string) {
       retryablesClassic: [],
       deposits: [],
     },
-    l2ToL1MessagesToShow: [],
-    receiptRes,
+    childToParentMessagesToShow: [],
+    receiptRes: parentTxnReceipt,
   };
 
-  if (receiptRes === undefined) {
-    const res = await getL2ToL1Messages(txHash);
-    const { l2TxnStatus, l2ToL1Messages } = res;
+  if (parentTxnReceipt === undefined) {
+    const res = await getChildToParentMessages(txHash);
+    const { childTxnStatus, childToParentMessages } = res;
 
     // TODO: handle terminal states
-    if (l2ToL1Messages.length > 0) {
+    if (childToParentMessages.length > 0) {
       return {
         ...defaultReturn,
-        l1TxnReceipt,
+        parentTxnReceipt,
         txHashState: ReceiptState.MESSAGES_FOUND,
-        l2ToL1MessagesToShow: l2ToL1Messages,
+        childToParentMessagesToShow: childToParentMessages,
       };
     }
-    if (l2TxnStatus === L2TxnStatus.SUCCESS) {
+    if (childTxnStatus === ChildTxnStatus.SUCCESS) {
       return {
         ...defaultReturn,
-        l1TxnReceipt,
-        txHashState: ReceiptState.NO_L2_L1_MESSAGES,
+        parentTxnReceipt,
+        txHashState: ReceiptState.NO_CHILD_TO_PARENT_MESSAGES,
       };
     }
-    if (l2TxnStatus === L2TxnStatus.FAILURE) {
+    if (childTxnStatus === ChildTxnStatus.FAILURE) {
       return {
         ...defaultReturn,
-        l1TxnReceipt,
-        txHashState: ReceiptState.L2_FAILED,
+        parentTxnReceipt,
+        txHashState: ReceiptState.CHILD_FAILED,
       };
     }
 
     return {
       ...defaultReturn,
-      l1TxnReceipt,
+      parentTxnReceipt,
       txHashState: ReceiptState.NOT_FOUND,
     };
   }
 
-  const { l1TxnReceipt: _l1TxnReceipt, l1Network } = receiptRes;
-  if (_l1TxnReceipt.status === 0) {
+  const { parentTxnReceipt: _parentTxnReceipt, parentNetwork } =
+    parentTxnReceipt;
+  if (_parentTxnReceipt.status === 0) {
     return {
       ...defaultReturn,
-      l1TxnReceipt,
-      txHashState: ReceiptState.L1_FAILED,
+      parentTxnReceipt,
+      txHashState: ReceiptState.PARENT_FAILED,
     };
   }
 
-  const allMessages = await getL1ToL2MessagesAndDepositMessages(
-    _l1TxnReceipt,
-    l1Network,
+  const allMessages = await getParentToChildMessagesAndDepositMessages(
+    _parentTxnReceipt,
+    parentNetwork.chainId,
   );
-  const l1ToL2Messages = allMessages.retryables;
-  const l1ToL2MessagesClassic = allMessages.retryablesClassic;
+  const parentToChildMessages = allMessages.retryables;
+  const parentToChildMessagesClassic = allMessages.retryablesClassic;
   const depositMessages = allMessages.deposits;
   if (
-    l1ToL2Messages.length === 0 &&
-    l1ToL2MessagesClassic.length === 0 &&
+    parentToChildMessages.length === 0 &&
+    parentToChildMessagesClassic.length === 0 &&
     depositMessages.length === 0
   ) {
     return {
       ...defaultReturn,
-      l1TxnReceipt,
-      txHashState: ReceiptState.NO_L1_L2_MESSAGES,
+      parentTxnReceipt,
+      txHashState: ReceiptState.NO_PARENT_TO_CHILD_MESSAGES,
     };
   }
 
   return {
     ...defaultReturn,
     allMessages,
-    l1TxnReceipt,
-    receiptRes,
+    parentTxnReceipt,
     txHashState: ReceiptState.MESSAGES_FOUND,
   };
 }
@@ -120,21 +123,23 @@ const Transaction = async ({ params }: Props) => {
   const { tx } = params;
   const {
     txHashState,
-    l1TxnReceipt,
-    l2ToL1MessagesToShow: _l2ToL1MessagesToShow,
+    parentTxnReceipt,
+    childToParentMessagesToShow: _childToParentMessagesToShow,
     allMessages,
   } = await getData(tx);
-  const { text: l1TxnResultText } =
+
+  const { text: parentTxnResultText } =
     receiptStateToDisplayableResult(txHashState);
-  const l2ToL1MessagesToShow: L2ToL1MessageDataLike[] =
-    _l2ToL1MessagesToShow.map(
+
+  const childToParentMessagesToShow: ChildToParentMessageDataLike[] =
+    _childToParentMessagesToShow.map(
       ({
         confirmationInfo,
         status,
-        l1Network,
-        l2Network,
-        createdAtL2BlockNumber,
-        l2ToL1EventIndex,
+        parentNetwork,
+        childNetwork,
+        createdAtChildBlockNumber,
+        childToParentEventIndex,
       }) => ({
         status,
         confirmationInfo: confirmationInfo
@@ -143,16 +148,16 @@ const Transaction = async ({ params }: Props) => {
               etaSeconds: confirmationInfo.etaSeconds,
             }
           : null,
-        l1Network: {
-          chainID: l1Network.chainID,
-          name: l1Network.name,
+        parentNetwork: {
+          chainId: parentNetwork.chainId,
+          name: parentNetwork.name,
         },
-        l2Network: {
-          chainID: l2Network.chainID,
-          name: l2Network.name,
+        childNetwork: {
+          chainId: childNetwork.chainId,
+          name: childNetwork.name,
         },
-        createdAtL2BlockNumber,
-        l2ToL1EventIndex,
+        createdAtChildBlockNumber,
+        childToParentEventIndex,
       }),
     );
 
@@ -160,31 +165,34 @@ const Transaction = async ({ params }: Props) => {
     <>
       <div className="resultContainer">
         <div className="receipt-text">
-          {l1TxnReceipt && (
-            <a
-              href={
-                l1TxnReceipt.l1Network.explorerUrl +
-                '/tx/' +
-                l1TxnReceipt.l1TxnReceipt.transactionHash
-              }
-              rel="noreferrer"
-              target="_blank"
-            >
-              L1 Transaction on {l1TxnReceipt.l1Network.name}
-            </a>
-          )}{' '}
-          {l1TxnResultText}{' '}
+          {parentTxnReceipt &&
+            getExplorer(parentTxnReceipt.parentNetwork.chainId) && (
+              <a
+                href={
+                  getExplorer(parentTxnReceipt.parentNetwork.chainId) +
+                  '/tx/' +
+                  parentTxnReceipt.parentTxnReceipt.transactionHash
+                }
+                rel="noreferrer"
+                target="_blank"
+              >
+                L1 Transaction on {parentTxnReceipt.parentNetwork.name}
+              </a>
+            )}{' '}
+          {parentTxnResultText}{' '}
         </div>
       </div>
       <Providers>
         <div className="resultContainer">
-          <L2ToL1MsgsDisplay l2ToL1Messages={l2ToL1MessagesToShow} />
+          <ChildToParentMsgsDisplay
+            childToParentMessages={childToParentMessagesToShow}
+          />
           <Suspense fallback={<div>Loading messages...</div>}>
             {/* @ts-expect-error Server Component */}
             <MessageDisplays
               messages={allMessages}
-              hasL2ToL1MessagesConfirmed={l2ToL1MessagesToShow.some(
-                (msg) => msg.status !== L2ToL1MessageStatus.UNCONFIRMED, // Also show executed
+              hasChildToParentMessagesConfirmed={childToParentMessagesToShow.some(
+                (msg) => msg.status !== ChildToParentMessageStatus.UNCONFIRMED, // Also show executed
               )}
             />
           </Suspense>

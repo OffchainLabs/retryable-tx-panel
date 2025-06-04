@@ -4,7 +4,6 @@ import Head from 'next/head';
 import type { AppProps } from 'next/app';
 
 import './_app.css';
-import { safeAddDefaultLocalNetwork } from '@/utils/network';
 
 const saira = Saira({
   weight: ['600', '700'],
@@ -17,10 +16,6 @@ const dm_sans = DM_Sans({
   style: ['normal'],
   subsets: ['latin'],
 });
-
-if (process.env.NODE_ENV !== 'production') {
-  safeAddDefaultLocalNetwork();
-}
 
 export default function App({ Component, pageProps }: AppProps) {
   return (

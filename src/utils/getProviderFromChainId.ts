@@ -2,12 +2,12 @@ import { ChainId, rpcURLs } from './network';
 import { StaticJsonRpcProvider } from '@ethersproject/providers';
 
 export const getProviderFromChainId = (chainID: number) => {
-  const l2RpcURL = rpcURLs[chainID as ChainId];
-  if (!l2RpcURL) {
+  const childRpcURL = rpcURLs[chainID as ChainId];
+  if (!childRpcURL) {
     throw new Error(
       'Unknown L2 chain id. This chain is not supported by this tool',
     );
   }
 
-  return new StaticJsonRpcProvider(l2RpcURL);
+  return new StaticJsonRpcProvider(childRpcURL);
 };
