@@ -1,4 +1,3 @@
-import React from 'react';
 import { Saira, DM_Sans } from 'next/font/google';
 import Head from 'next/head';
 import type { AppProps } from 'next/app';

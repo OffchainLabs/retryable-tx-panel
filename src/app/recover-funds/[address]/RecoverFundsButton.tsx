@@ -1,18 +1,23 @@
 'use client';
-import React, { useCallback, useState } from 'react';
+import { useCallback, useState } from 'react';
 import {
   Address,
   getArbitrumNetwork,
   ParentToChildMessageGasEstimator,
   ParentTransactionReceipt,
+  registerCustomArbitrumNetwork,
 } from '@arbitrum/sdk';
 import { Inbox__factory } from '@arbitrum/sdk/dist/lib/abi/factories/Inbox__factory';
 import { getBaseFee } from '@arbitrum/sdk/dist/lib/utils/lib';
 import { mainnet, sepolia, useNetwork, useSigner } from 'wagmi';
 import { getProviderFromChainId, getTargetChainId } from '@/utils';
-import { BigNumber } from 'ethers';
-import { ChainId } from '@/utils/network';
+import { BigNumber, Contract, ContractTransaction, Signer } from 'ethers';
+import { ChainId, hyChain } from '@/utils/network';
 import { useAccountType } from '@/utils/useAccountType';
+import { ParentToChildMessageGasParams } from '@arbitrum/sdk/dist/lib/message/ParentToChildMessageCreator';
+import { StaticJsonRpcProvider } from '@ethersproject/providers';
+import { inboxAbi } from './InboxAbi';
+import { EthBridge } from '@arbitrum/sdk/dist/lib/dataEntities/networks';
 
 function getParentChainIdFromChildChainId(childChainId: number | undefined) {
   if (!childChainId) {
@@ -23,6 +28,73 @@ function getParentChainIdFromChildChainId(childChainId: number | undefined) {
     [ChainId.ArbitrumOne]: ChainId.Mainnet,
     [ChainId.ArbitrumSepolia]: ChainId.Sepolia,
   }[childChainId];
+}
+
+async function recoverFundsOnArbitrumChains({
+  inboxAddress,
+  baseChildProvider,
+  signer,
+  destinationAddress,
+  l2CallValue,
+  gasEstimation,
+  signerAddress,
+}: {
+  inboxAddress: string;
+  baseChildProvider: StaticJsonRpcProvider;
+  signer: Signer;
+  destinationAddress: string;
+  l2CallValue: BigNumber;
+  gasEstimation: ParentToChildMessageGasParams;
+  signerAddress: Address;
+}): Promise<ContractTransaction> {
+  const inbox = Inbox__factory.connect(inboxAddress, baseChildProvider);
+  return inbox.connect(signer).unsafeCreateRetryableTicket(
+    destinationAddress, // to
+    l2CallValue, // l2CallValue
+    gasEstimation.maxSubmissionCost, // maxSubmissionCost
+    destinationAddress, // excessFeeRefundAddress
+    destinationAddress, // callValueRefundAddress
+    gasEstimation.gasLimit, // gasLimit
+    gasEstimation.maxFeePerGas, // maxFeePerGas
+    '0x', // data
+    {
+      from: signerAddress.value,
+      value: 0,
+    },
+  );
+}
+
+async function recoverFundsOnHychain({
+  inboxAddress,
+  signer,
+  destinationAddress,
+  l2CallValue,
+  gasEstimation,
+  signerAddress,
+}: {
+  inboxAddress: string;
+  signer: Signer;
+  destinationAddress: string;
+  l2CallValue: BigNumber;
+  gasEstimation: ParentToChildMessageGasParams;
+  signerAddress: Address;
+}): Promise<ContractTransaction> {
+  const inbox = new Contract(inboxAddress, inboxAbi, signer);
+  return inbox.functions.unsafeCreateRetryableTicket(
+    destinationAddress, // to
+    l2CallValue, // l2CallValue
+    gasEstimation.maxSubmissionCost, // maxSubmissionCost
+    destinationAddress, // excessFeeRefundAddress
+    destinationAddress, // callValueRefundAddress
+    gasEstimation.gasLimit, // gasLimit
+    gasEstimation.maxFeePerGas, // maxFeePerGas
+    0, // tokenTotalFeeAmount
+    '0x', // data
+    {
+      from: signerAddress.value,
+      value: 0,
+    },
+  );
 }
 
 function RecoverFundsButton({
@@ -49,6 +121,18 @@ function RecoverFundsButton({
     if (!signer) {
       return;
     }
+    registerCustomArbitrumNetwork({
+      chainId: hyChain.id,
+      confirmPeriodBlocks: 0,
+      ethBridge: {
+        inbox: hyChain.inboxAddress,
+      } as EthBridge,
+      isCustom: true,
+      isTestnet: false,
+      name: hyChain.name,
+      parentChainId: ChainId.Mainnet,
+      isBold: false,
+    });
 
     const signerAddress = new Address(await signer.getAddress());
 
@@ -66,11 +150,6 @@ function RecoverFundsButton({
 
     const baseChildProvider = getProviderFromChainId(chainID);
     const childNetwork = await getArbitrumNetwork(baseChildProvider);
-    const inbox = Inbox__factory.connect(
-      childNetwork.ethBridge.inbox,
-      baseChildProvider,
-    );
-
     // We estimate gas usage
     const parentToChildMessageGasEstimator =
       new ParentToChildMessageGasEstimator(baseChildProvider);
@@ -115,22 +194,26 @@ function RecoverFundsButton({
 
     try {
       setLoading(true);
-      const parentSubmissionTxRaw = await inbox
-        .connect(signer)
-        .unsafeCreateRetryableTicket(
-          destinationAddress, // to
-          l2CallValue, // l2CallValue
-          gasEstimation.maxSubmissionCost, // maxSubmissionCost
-          destinationAddress, // excessFeeRefundAddress
-          destinationAddress, // callValueRefundAddress
-          gasEstimation.gasLimit, // maxLimit
-          gasEstimation.maxFeePerGas, // maxFeePerGas
-          '0x', // data
-          {
-            from: signerAddress.value,
-            value: 0,
-          },
-        );
+
+      const parentSubmissionTxRaw =
+        childNetwork.chainId === ChainId.HyChain
+          ? await recoverFundsOnHychain({
+              inboxAddress: childNetwork.ethBridge.inbox,
+              destinationAddress,
+              gasEstimation,
+              l2CallValue,
+              signer,
+              signerAddress,
+            })
+          : await recoverFundsOnArbitrumChains({
+              inboxAddress: childNetwork.ethBridge.inbox,
+              baseChildProvider,
+              destinationAddress,
+              gasEstimation,
+              l2CallValue,
+              signer,
+              signerAddress,
+            });
 
       // We wrap the transaction in monkeyPatchContractCallWait so we can also waitForL2 later on
       const parentSubmissionTx =
@@ -168,7 +251,7 @@ function RecoverFundsButton({
     );
   }
 
-  if (getTargetChainId(chain?.id) !== chainID) {
+  if (chainID !== ChainId.HyChain && getTargetChainId(chain?.id) !== chainID) {
     return (
       <div>
         To recover funds, connect to chain {chain?.id} ({chain?.name})
