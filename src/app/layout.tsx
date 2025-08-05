@@ -3,7 +3,9 @@ import { Space_Grotesk } from 'next/font/google';
 
 import 'react-tooltip/dist/react-tooltip.css';
 import './global.css';
-import '@/utils/initializeArbitrumNetworks';
+import { registerHyChain } from '@/utils/registerHyChain';
+
+registerHyChain();
 
 const spaceGrotesk = Space_Grotesk({
   weight: ['400', '600', '700'],
