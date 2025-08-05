@@ -18,6 +18,9 @@ import { publicProvider } from 'wagmi/providers/public';
 import { jsonRpcProvider } from 'wagmi/providers/jsonRpc';
 import { ReactNode } from 'react';
 import { ChainId, rpcURLs } from '@/utils/network';
+import { registerHyChain } from '@/utils/registerHyChain';
+
+registerHyChain();
 
 const ether = { name: 'Ether', symbol: 'ETH', decimals: 18 };
 

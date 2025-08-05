@@ -9,11 +9,9 @@ import {
   getChildrenForNetwork,
   ParentToChildMessageReaderClassic,
   ParentToChildMessageReader,
-  registerCustomArbitrumNetwork,
 } from '@arbitrum/sdk';
-import { EthBridge } from '@arbitrum/sdk/dist/lib/dataEntities/networks';
 import { StaticJsonRpcProvider } from '@ethersproject/providers';
-import { ChainId, hyChain, rpcURLs } from './network';
+import { ChainId, rpcURLs } from './network';
 
 type Messages = {
   allParentToChildMessages: (ParentToChildMessageReader & {
@@ -33,18 +31,6 @@ export const getParentToChildMessagesAndDepositMessages = async (
     getChildrenForNetwork(parentNetwork),
   ).map(async (childChain) => {
     // TODO: error handle
-    registerCustomArbitrumNetwork({
-      chainId: hyChain.id,
-      confirmPeriodBlocks: 0,
-      ethBridge: {
-        inbox: hyChain.inboxAddress,
-      } as EthBridge,
-      isCustom: true,
-      isTestnet: false,
-      name: hyChain.name,
-      parentChainId: ChainId.Mainnet,
-      isBold: false,
-    });
     const childNetwork = getArbitrumNetwork(childChain.chainId);
 
     // Check if any parent to child msg is sent to the inbox of this childNetwork

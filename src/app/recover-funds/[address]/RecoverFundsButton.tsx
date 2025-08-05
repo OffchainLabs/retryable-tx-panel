@@ -5,19 +5,17 @@ import {
   getArbitrumNetwork,
   ParentToChildMessageGasEstimator,
   ParentTransactionReceipt,
-  registerCustomArbitrumNetwork,
 } from '@arbitrum/sdk';
 import { Inbox__factory } from '@arbitrum/sdk/dist/lib/abi/factories/Inbox__factory';
 import { getBaseFee } from '@arbitrum/sdk/dist/lib/utils/lib';
 import { mainnet, sepolia, useNetwork, useSigner } from 'wagmi';
 import { getProviderFromChainId, getTargetChainId } from '@/utils';
 import { BigNumber, Contract, ContractTransaction, Signer } from 'ethers';
-import { ChainId, hyChain } from '@/utils/network';
+import { ChainId } from '@/utils/network';
 import { useAccountType } from '@/utils/useAccountType';
 import { ParentToChildMessageGasParams } from '@arbitrum/sdk/dist/lib/message/ParentToChildMessageCreator';
 import { StaticJsonRpcProvider } from '@ethersproject/providers';
 import { inboxAbi } from './InboxAbi';
-import { EthBridge } from '@arbitrum/sdk/dist/lib/dataEntities/networks';
 
 function getParentChainIdFromChildChainId(childChainId: number | undefined) {
   if (!childChainId) {
@@ -121,18 +119,6 @@ function RecoverFundsButton({
     if (!signer) {
       return;
     }
-    registerCustomArbitrumNetwork({
-      chainId: hyChain.id,
-      confirmPeriodBlocks: 0,
-      ethBridge: {
-        inbox: hyChain.inboxAddress,
-      } as EthBridge,
-      isCustom: true,
-      isTestnet: false,
-      name: hyChain.name,
-      parentChainId: ChainId.Mainnet,
-      isBold: false,
-    });
 
     const signerAddress = new Address(await signer.getAddress());
 
