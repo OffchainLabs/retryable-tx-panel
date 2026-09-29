@@ -36,16 +36,6 @@ const PageIndex: NextPage = () => {
         >
           Arbitrum Portal
         </a>
-        . <br />
-        To claim a withdrawal, search for its transaction hash in the{' '}
-        <a
-          href="https://portal.arbitrum.io/bridge?tab=tx_history"
-          target="_blank"
-          rel="noopener noreferrer"
-          style={{ color: '#4a9eff', textDecoration: 'underline' }}
-        >
-          Arbitrum Bridge transaction history
-        </a>
         .
       </div>
 
