@@ -37,14 +37,14 @@ const PageIndex: NextPage = () => {
           Arbitrum Portal
         </a>
         . <br />
-        Withdrawals can be claimed from the transaction history on the{' '}
+        To claim a withdrawal, search for its transaction hash in the{' '}
         <a
-          href="https://portal.arbitrum.io/bridge"
+          href="https://portal.arbitrum.io/bridge?tab=tx_history"
           target="_blank"
           rel="noopener noreferrer"
           style={{ color: '#4a9eff', textDecoration: 'underline' }}
         >
-          official Arbitrum Bridge
+          Arbitrum Bridge transaction history
         </a>
         .
       </div>
